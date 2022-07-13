@@ -43,8 +43,10 @@ src/Formalisation/Formats/Ipsec/ikev2_notify.v
 src/Formalisation/Formats/Ipsec/ikev2.v
 src/Formalisation/Formats/Ipsec/ikev2_parser.v
 src/Formalisation/Formats/Ipsec/ikev2_parser_spec.v
-src/Formalisation/PHOAS.v
-src/Formalisation/RelNomPHOAS.v
+
+-Q ./src/Raffinement Raffinement
+src/Raffinement/PHOAS.v
+src/Raffinement/RelNomPHOAS.v
 src/Formalisation/Formats/SSH/parser_rel.v
 src/Formalisation/Formats/Radius/radius_attr_rel.v
 src/Formalisation/Formats/Radius/radius_rel.v

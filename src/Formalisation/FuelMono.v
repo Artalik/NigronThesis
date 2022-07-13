@@ -62,6 +62,46 @@ Section fuel_mono.
       + subst. contradiction.
   Qed.
 
+  Lemma repeat_some_fuel_mono : forall n fuel0 fuel1 X (c : X -> NomG X) s b data res,
+      (∀ (res : X) (a : list atom) (s : span) (res0 : Result (span * X)) (fuele fuel : nat),
+          run fuele (c res) a s = res0 →
+          res0 ≠ NoFuel →
+          (fuele ≤ fuel)%nat →
+          run fuel (c res) a s = res0) ->
+      (fix sem_repeat_some (n : nat) (x : X) {struct n} : MonSem X :=
+       match n with
+            | 0%nat => λ s : span, Res (s, x)
+            | S n0 =>
+                λ s : span,
+                    match run fuel0 (c x) data s with
+                    | Res (s0, x1) => sem_repeat_some n0 x1 s0
+                    | NoRes => NoRes
+                    | NoFuel => NoFuel
+                    end
+            end) n b s = res ->
+      (fuel0 ≤ fuel1)%nat →
+      res <> NoFuel ->
+      (fix sem_repeat_some (n : nat) (x : X) {struct n} : MonSem X :=
+         match n with
+         | 0%nat => λ s : span, Res (s, x)
+         | S n0 =>
+             λ s : span,
+               match run fuel1 (c x) data s with
+               | Res (s0, x1) => sem_repeat_some n0 x1 s0
+               | NoRes => NoRes
+               | NoFuel => NoFuel
+               end
+         end) n b s = res.
+  Proof.
+    induction n; simpl; intros.
+    - subst. reflexivity.
+    - destruct (run fuel0 (c b) data s) eqn:?. destruct x.
+      + eapply H in Heqr; eauto. rewrite Heqr.
+        eapply IHn; eauto.
+      + erewrite H. 2 : eapply Heqr. simpl. auto. auto. lia.
+      + subst. contradiction.
+  Qed.
+
   Lemma run_fuel_mono : forall X (e : NomG X) s a res fuele fuel,
       run fuele e s a = res ->
       res <> NoFuel ->
@@ -125,24 +165,27 @@ Section fuel_mono.
       + erewrite H; eauto. simpl. auto.
       + exfalso. eapply H2. auto.
     - edestruct o.
-      + revert b a fuele fuel H1 H2 H3. induction n using N.peano_ind; intros.
-        * rewrite run_bind_monsem. rewrite run_bind_monsem in H1.
-          unfold_MonSem. simpl in *. eapply H0; eauto.
-        * rewrite run_bind_monsem. rewrite run_bind_monsem in H1.
-          unfold_MonSem. rewrite unfold_repeat_n. rewrite unfold_repeat_n in H1.
-          rewrite run_bind_monsem. rewrite run_bind_monsem in H1.
-          unfold_MonSem. destruct (run fuele (c b) s a) eqn:?. destruct x.
-          -- erewrite H; eauto. simpl.
-             destruct (run fuele (repeat (Some n) c x) s s0) eqn:?. destruct x0.
-             ++ edestruct (IHn x s0 fuele fuel).
-                rewrite run_bind_monsem. unfold_MonSem. rewrite Heqr0. eapply H1.
-                auto. auto. rewrite run_bind_monsem. reflexivity.
-             ++ edestruct (IHn x s0 fuele fuel).
-                rewrite run_bind_monsem. unfold_MonSem. rewrite Heqr0. eapply H1.
-                auto. auto. rewrite run_bind_monsem. reflexivity.
-             ++ exfalso. eapply H2. auto.
-          -- erewrite H; eauto. simpl. auto.
-          -- exfalso. eapply H2. auto.
+      + simpl in *. unfold_MonSem.
+        destruct ((fix sem_repeat_some (n : nat) (x : X1) {struct n} : MonSem X1 :=
+                     match n with
+                     | 0%nat => λ s : span, Res (s, x)
+                     | S n0 =>
+                         λ s0 : span,
+                           match run fuel (c x) s s0 with
+                           | Res (s, x1) => sem_repeat_some n0 x1 s
+                           | NoRes => NoRes
+                           | NoFuel => NoFuel
+                           end
+                     end) (N.to_nat n) b a) eqn:?. destruct x.
+        * erewrite repeat_some_fuel_mono in Heqr.
+          erewrite Heqr in H1. eauto. eapply H. reflexivity. lia.
+          intro. rewrite H4 in H1. subst. contradiction.
+        * erewrite repeat_some_fuel_mono in Heqr.
+          erewrite Heqr in H1. eauto. eapply H. reflexivity. lia.
+          intro. rewrite H4 in H1. subst. contradiction.
+        * erewrite repeat_some_fuel_mono in Heqr.
+          erewrite Heqr in H1. eauto. eapply H. reflexivity. lia.
+          intro. rewrite H4 in H1. subst. contradiction.
       + rewrite run_bind_monsem. rewrite run_bind_monsem in H1.
         unfold_MonSem. simpl in *.
         rewrite ret_neutral_right. rewrite ret_neutral_right in H1.
