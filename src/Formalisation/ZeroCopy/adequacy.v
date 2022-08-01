@@ -493,6 +493,18 @@ Section adequacy.
     iApply soundness_triple. eapply RUN. iApply triple.
   Qed.
 
+  Theorem soundness_pure : forall X e H (Q : X -> Prop) fuel,
+      {{ H }} e {{ v; ⌜ Q v ⌝ }} ->
+      forall (a : list atom) (v : X) s s',
+        run fuel e a s = Res (s', v) ->
+        ⊢ H ∗ injectSL (pos s) (pos s') -∗ ⌜ Q v ⌝.
+  Proof.
+    intros X e H Q fuel triple a v s s' RUN.
+    iIntros "HA". iApply bi.absorbingly_pure.
+    iApply (soundness' _ _ _ (fun v => ⌜ Q v ⌝)).
+    eapply consequence_rule; eauto. eauto. iFrame.
+  Qed.
+
   Definition injectPos (start : N) (fin : N) : gset positive :=
     set_map encode (inject start fin).
 
@@ -526,24 +538,6 @@ Section adequacy.
       + iApply (D with "HB").
   Qed.
 
-  Lemma adequacy : forall X e H (Q : X -> iProp),
-      {{ H }} e {{ v; <absorb> Q v }} ->
-      forall  (v : X) s' fuel (a : list atom) s,
-        run fuel e a s = Res (s', v) ->
-        (⊢ H) -> (<absorb> Q v) () (injectPos (pos s) (pos s')).
-  Proof.
-    intros. apply equivalence. iIntros "HA".
-    iApply soundness'. eapply H0. eapply H1.
-    iSplitR. iApply H2.
-    iApply (lemma_final with "HA").
-  Qed.
-
-  Lemma adequacy' : forall X e (Q : X -> iProp) fuel,
-      {{ emp }} e {{ v; <absorb> Q v }} ->
-      forall (a : list atom) (v : X) s' s,
-        run fuel e a s = Res (s', v) ->
-        ∃ state, (<absorb> Q v) () state.
-  Proof. intros. exists (injectPos (pos s) (pos s')). eapply adequacy; eauto. Qed.
 
   Corollary adequacy_pure : forall X e (Q : X -> Prop) fuel,
       {{ emp }} e {{ v; ⌜Q v⌝ }} ->
@@ -551,24 +545,9 @@ Section adequacy.
         run fuel e a s = Res (s', v) ->
         Q v.
   Proof.
-    intros. eapply (consequence_rule e (fun v => <absorb> ⌜Q v⌝) _ emp emp) in H; eauto.
-    eapply (adequacy' X e) in H as [state P]; eauto.
-    eapply soundness_pure. eapply equivalence in P.
-    iIntros "HA". iApply bi.absorbingly_pure. iApply (P with "HA").
-  Qed.
-
-  Corollary adequacy_equational_pure : forall X e (Q : X -> Prop),
-      {{ emp }} e {{ v; ⌜Q v⌝ }} ->
-      forall e', e ⩵ e' ->
-      forall fuel (a : list atom) (v : X) s' s,
-        run fuel e' a s = Res (s', v) ->
-        Q v.
-  Proof.
-    intros. eapply (consequence_rule e (fun v => <absorb> ⌜Q v⌝) _ emp emp) in H; eauto.
-    eapply (adequacy' X e) in H as [state P]; eauto.
-    eapply soundness_pure. eapply equivalence in P.
-    iIntros "HA". iApply bi.absorbingly_pure. iApply (P with "HA").
-    rewrite H0. eauto.
+    intros. eapply SepSet.soundness_pure.
+    iIntros "HA". iApply soundness_pure; eauto.
+    iSplitR; auto. iApply lemma_final; eauto.
   Qed.
 
 End adequacy.
