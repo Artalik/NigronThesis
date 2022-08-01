@@ -20,23 +20,20 @@ Section hprop.
 
   Definition hempty : hprop := fun h => h = ∅.
 
-
   Definition hsingle `{_ : Countable X} (l : X) : hprop :=
     fun h =>  h = {[ encode l ]}.
 
   Definition set_ctx (ctx : gset positive) : hprop := fun h => h = ctx.
 
   Definition hstar (H1 H2 : hprop) : hprop :=
-    fun h => exists h1 h2, H1 h1 /\ H2 h2 /\ (h1 ## h2) /\ h = h1 ∪ h2.
+    fun h => exists h1 h2, H1 h1 /\ H2 h2 /\ h1 ## h2 /\ h = h1 ∪ h2.
 
-  Definition hexists {A} (J : A -> hprop) : hprop := fun h => exists x, J x h.
-  Definition hforall {A} (f : A -> hprop) : hprop := fun h => forall a, f a h.
+  Definition hexists {A} (J : A -> hprop) : hprop := fun h => exists a, J a h.
+  Definition hforall {A} (J : A -> hprop) : hprop := fun h => forall a, J a h.
 
   Definition hpure (P : Prop) : hprop := fun _ => P.
 
   Definition hpure_aff (P:Prop) : hprop := fun h => P /\ hempty h.
-
-  Definition htop : hprop := fun h => True.
 
   Definition hwand (H1 H2 : hprop) : hprop :=
     hexists (fun (H:hprop) => (hstar H (hpure_aff ((hstar H H1) ==> H2)))).
@@ -66,8 +63,6 @@ Section hprop.
 
   Local Notation "H1 '\*' H2" := (hstar H1 H2)
                                    (at level 41, right associativity).
-
-  Local Notation "\Top" := htop.
 
   Ltac inversion_star h P :=
     match goal with
@@ -181,7 +176,7 @@ Section hprop.
     - rewrite /hpersistent. intros P Q h P0. inversion_star h P0. apply P2.
     - intros P Q x W. destruct W. exists empty; exists x. repeat split; auto.
       apply disjoint_empty_l. rewrite union_empty_l_L. auto.
-  Qed.
+  Defined.
   Next Obligation.
     repeat split; try(solve_proper); eauto.
     - intro. apply H. auto.
@@ -189,7 +184,7 @@ Section hprop.
     - intros A Φ h a. rewrite /hlater. unfold hforall in *. unfold hlater in a. apply a.
     - intros A Φ h a. rewrite /hor. unfold hlater in *. destruct a. right. exists x. apply H.
     - intros Hp h P. unfold hlater in *. right. intro. apply P.
-  Qed.
+  Defined.
 
   Instance inhabited_unit : Inhabited unit.
   Proof.
@@ -230,6 +225,9 @@ Section hprop.
     apply disjoint_empty_r. rewrite union_empty_r_L. auto.
   Qed.
 
+  Lemma singleton_neq_2 `{Countable X} : forall (v t : X), & v ∗ & t ⊢ ⌜v ≠ t⌝.
+  Proof. iIntros (v t) "[HA HB]". iApply (singleton_neq with "HA HB"). Qed.
+
   Lemma emp_trivial : ⊢ (emp : monPred biInd hpropI). simpl. auto. Qed.
 
   Global Instance affine_heap_empty : Affine (ctx ∅).
@@ -247,16 +245,37 @@ Section hprop.
     constructor. MonPred.unseal. repeat red. intros. apply H.
   Qed.
 
+  Global Instance iPropBiPersistentForall : BiPersistentlyForall (monPredI biInd hpropI).
+  constructor. MonPred.unseal. repeat red. intros. eapply H.
+  Qed.
+
+  Global Instance iPropBiPositivei : BiPositive (monPredI biInd hpropI).
+  constructor. MonPred.unseal. repeat red. intros.
+  repeat red in H. destruct H. inversion H. subst. red in H0. inversion_star h P.
+  assert (h = ∅). set_solver. assert (h0 = ∅). set_solver. subst.
+  exists ∅, ∅. repeat split; auto.
+  Qed.
+
+
   Lemma instance_heap : forall (P : monPred biInd hpropI) (Q : Prop), (forall tmps, P () tmps -> Q) -> (P ⊢ ⌜Q⌝).
   Proof.
     MonPred.unseal. intros. split. repeat red. intros.
     eapply H. destruct i. eapply H0.
   Qed.
 
+  Lemma soundness_pure_2 h (Φ : Prop) : (⌜ Φ ⌝ : monPred biInd hpropI) () h -> Φ.
+  Proof. MonPred.unseal. auto. Qed.
+
   Lemma soundness_pure h (Φ : Prop) : (&& h ⊢ (⌜ Φ ⌝) : monPred biInd hpropI) -> Φ.
   Proof.
     MonPred.unseal=> -[H]. repeat red in H.
     pose (e := H () h). eapply e. reflexivity.
+  Qed.
+
+
+  Lemma pure_soundness (Φ : Prop) : (⊢ ⌜ Φ ⌝ : monPred biInd hpropI) -> Φ.
+  Proof.
+    intros. eapply (soundness_pure ∅). iIntros "_". iApply H.
   Qed.
 
   Definition iProp := monPred biInd hpropI.
@@ -313,7 +332,6 @@ Section hprop.
     + rewrite union_empty_l_L. reflexivity.
   Qed.
 
-
   Lemma heap_ctx_split_sing (h : gset positive) l : h ## ({[ l ]}) ->
                                              (⊢&& ({[ l ]} \u h) -∗ && h ∗ & l).
   Proof.
@@ -329,9 +347,6 @@ Notation "'\[]'" := (hempty) (at level 0).
 Notation "\[ P ]" := (hpure P) (at level 0, P at level 99, format "\[ P ]").
 
 Notation "H1 '\*' H2" := (hstar H1 H2) (at level 41, right associativity).
-
-Notation "\Top" := htop.
-
 
 Ltac inversion_star h P :=
   match goal with
