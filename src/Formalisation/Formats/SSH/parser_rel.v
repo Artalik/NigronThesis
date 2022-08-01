@@ -1,14 +1,10 @@
 From Formalisation Require Import SizeNat.
-From Formalisation Require Import Nom PHOAS RelNomPHOAS parser.
-
-
-
-
+From Formalisation Require Import Nom parser.
+From Raffinement Require Import PHOAS RelNomPHOAS.
 
 Inductive list_val :=
 | Nil : list_val
 | CONS : forall X, PHOAS.val X -> list_val -> list_val.
-
 
 Ltac list_sem_val f l :=
   match f with
@@ -23,7 +19,7 @@ Ltac list_val f :=
 
 Ltac build_prod ty vals :=
   match ty with
-  | prod ?l ?r =>
+  | Pair ?l ?r =>
       let l := build_prod l vals in
       match l with
       | @pair _ _ ?l ?vs =>
@@ -52,16 +48,16 @@ Ltac ret_match :=
   | |- @adequate _ ?p _ (@ret _ _ ?f) _ _ _ =>
       let l := list_sem_val f constr:(Nil) in
       let v := build p l in
-      eapply (ret_adequate _ v)
+      eapply (ret_adequate _ _ _ v)
   | |- @adequate _ ?p _ (@ret _ _ ?f) _ _ _ =>
       unfold p; ret_match
   end.
 
 Open Scope N_scope.
 
-Definition banner := (span * span)%type.
+Definition banner := Pair Span Span.
 
-Definition banner_rel (t : span) (b : SshBanner) (p : banner) :=
+Definition banner_rel (t : span) (b : SshBanner) (p : type_to_Type banner) :=
   protover b = p.1 /\ swver b = p.2.
 
 Definition ssh_parse_banner_rel :
@@ -81,9 +77,9 @@ Lemma ssh_parse_banner_adequate :
   forall data s, adequate banner_rel ssh_parse_banner (proj1_sig ssh_parse_banner_rel) data s.
 Proof. intros. destruct ssh_parse_banner_rel as [p I]. eapply I; eauto. Qed.
 
-Definition record_header := (nat32 * nat8 * nat8)%type.
+Definition record_header := Pair (Pair (NatN 32) (NatN 8)) (NatN 8).
 
-Definition record_header_rel s t (b : SshRecordHeader) (p : record_header):=
+Definition record_header_rel s t (b : SshRecordHeader) (p : type_to_Type record_header):=
   len t = len s - 6 /\ pkt_len b = p.1.1 /\ padding_len b = p.1.2 /\ msg_code b = MessageCode_from_u8 p.2.
 
 Definition ssh_parse_record_header_rel :
@@ -95,8 +91,9 @@ Definition ssh_parse_record_header_rel :
   instantiate (1 := (fun vy => EBin ELt (Const (ENat 1)) (EUna EVal (Var vy)))).
   eexists. split; repeat econstructor; eauto. simpl. subst. auto.
   step. eapply be_u8_adequate.
-  step. eapply be_u8_adequate. clean_up. subst. destruct H as [[P3 P1] P2].
-  eapply (ret_adequate _ (EBin EPair (EBin EPair (Var vres) (Var vres0)) (Var vres1)));
+  step. eapply be_u8_adequate.
+  be_spec_clean. subst. destruct H as [[P3 P1] P2]. subst.
+  eapply (ret_adequate _ _ _ (EBin EPair (EBin EPair (Var vres) (Var vres0)) (Var vres1)));
     repeat econstructor; eauto. lia.
 Defined.
 
@@ -104,7 +101,7 @@ Lemma ssh_parse_record_header_adequate :
   forall data s, adequate (record_header_rel s) ssh_parse_record_header (proj1_sig ssh_parse_record_header_rel) data s.
 Proof. destruct ssh_parse_record_header_rel. auto. Qed.
 
-Definition record_record_rel (t : span) (b : SshRecordHeader) (p : record_header):=
+Definition record_record_rel (t : span) (b : SshRecordHeader) (p : type_to_Type record_header):=
   pkt_len b = p.1.1 /\ padding_len b = p.1.2 /\ msg_code b = MessageCode_from_u8 p.2.
 
 Definition ssh_parse_record_rel :
@@ -117,8 +114,8 @@ Definition ssh_parse_record_rel :
   eexists. split; repeat econstructor; eauto. simpl. subst. eauto.
   step. eapply be_u8_adequate.
   step. eapply be_u8_adequate.
-  clean_up. destruct H as [[P3 P4] P2]. subst. repeat step. clean_up.
-  eapply (ret_adequate _ (EBin EPair (EBin EPair (Var vres) (Var vres0)) (Var vres1)));
+  be_spec_clean. destruct H as [[P3 P4] P2]. subst. repeat step. clean_up.
+  eapply (ret_adequate _ _ _ (EBin EPair (EBin EPair (Var vres) (Var vres0)) (Var vres1)));
     repeat econstructor.
 Defined.
 
@@ -137,12 +134,13 @@ Lemma parse_string_adequate :
   forall data s, adequate (fun _ => span_eq data) parse_string (proj1_sig parse_string_rel) data s.
 Proof. destruct parse_string_rel. auto. Qed.
 
-Definition packetkeyexchange : Type :=
-  ((span * span * span) * (span * span * span)) *
-    ((span * span) * (span * span * span)) *
-    (nat8 * nat32).
 
-Definition packetkeyexchange_rel (p : SshPacketKeyExchangeS span) (b : packetkeyexchange) :=
+Definition packet_key_exchange : type :=
+  Pair
+  (Pair (Pair (Pair (Pair Span Span) Span) (Pair (Pair Span Span) Span))
+     (Pair (Pair Span Span) (Pair (Pair Span Span) Span))) (Pair (NatN 8) (NatN 32)).
+
+Definition packetkeyexchange_rel (p : SshPacketKeyExchangeS span) (b : type_to_Type packet_key_exchange) :=
   cookie _ p = b.1.1.1.1.1 /\
     kex_algs _ p = b.1.1.1.1.2 /\
     server_host_key_algs _ p = b.1.1.1.2 /\

@@ -1,7 +1,11 @@
-From FreeMonad Require Import SizeNat Nom IpAddr radius_attr_rel PHOAS RelNomPHOAS radius.
+From Formalisation Require Import SizeNat Nom IpAddr radius_attr_rel radius.
+From Raffinement Require Import PHOAS RelNomPHOAS.
 
-Definition radius_data : Type := nat8 * nat8 * nat16 * span * option (VECTOR attribute).
-Definition radius_data_spec (rad : RadiusData) (r : radius_data) :=
+
+Definition radius_data : type :=
+  Pair (Pair (Pair (Pair (NatN 8) (NatN 8)) (NatN 16)) Span) (Option (Vector attribute)).
+
+Definition radius_data_spec (rad : RadiusData) (r : type_to_Type radius_data) :=
   code rad = mk_code r.1.1.1.1 /\
     identifier rad = r.1.1.1.2 /\
     length rad = r.1.1.2 /\
@@ -17,20 +21,21 @@ Definition parse_radius_data_rel :
   {code | forall data vs, adequate (fun _ => radius_data_spec) parse_radius_data code data vs}.
   eapply exist. intros. unfold parse_radius_data.
   repeat step.
-  eapply bind_adequate. eapply be_u8_adequate. intros. clean_up. subst.
-  eapply (ret_adequate _ (Var vres)); repeat econstructor; eauto.
+  eapply bind_adequate. eapply be_u8_adequate. intros. be_spec_clean. subst.
+  eapply (ret_adequate _ _ _ (Var vres)); repeat econstructor; eauto.
   instantiate (1 := fun _ x y => x = mk_code y). simpl. eauto.
   eapply be_u8_adequate.
   eapply be_u16_adequate.
   unfold sizeu16. step.
   eapply (cond_adequate (EBin ELt (Const (ENat 20)) (EUna EVal (Var vres1))));
-    repeat econstructor; eauto. repeat clean_up. subst. auto.
+    repeat econstructor; eauto; repeat clean_up; be_spec_clean; subst.
+  auto.
   intro. eapply map_parser_adequate. eapply consequence_adequate. step.
-  intros. repeat clean_up. auto.
+  intros. repeat clean_up. split; auto.
   intros. eapply many1_adequate.
   intros. eapply parse_radius_attribute_adequate.
-  simpl in *. repeat clean_up. subst.
-  eapply (ret_adequate _ (EBin EPair (EBin EPair (EBin EPair (EBin EPair (Var vres) (Var vres0)) (Var vres1)) (Var vres2)) (Var vres3)));
+  simpl in *. repeat clean_up. be_spec_clean. subst.
+  eapply (ret_adequate _ _ _ (EBin EPair (EBin EPair (EBin EPair (EBin EPair (Var vres) (Var vres0)) (Var vres1)) (Var vres2)) (Var vres3)));
     repeat econstructor; eauto.
   simpl. destruct r3; eauto. destruct (sem_val vres3); eauto.
 Defined.

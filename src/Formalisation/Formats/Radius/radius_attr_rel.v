@@ -1,85 +1,65 @@
-From FreeMonad Require Import SizeNat Nom IpAddr radius_attr PHOAS RelNomPHOAS.
+From Formalisation Require Import SizeNat Nom IpAddr radius_attr.
+From Raffinement Require Import PHOAS RelNomPHOAS.
 
-(* Definition attribute : Type := *)
-(*   span + span + (nat8 * span) + Ipv4 + nat32 + nat32 + *)
-(*     nat32 + Ipv4 + Ipv4 + nat32 + span + nat32 + nat32 + *)
-(*     (nat32 * span) + span + span + (nat8 * span). *)
 
-(* Fixpoint inls (n : nat) () *)
+Definition attribute : type :=
+Sum
+  (Sum (Sum (Sum (Sum Span Span) (Pair (NatN 8) Span)) (Sum (Sum (Unknown "ipv4") (NatN 32)) (NatN 32)))
+     (Sum (Sum (Sum (NatN 32) (Unknown "ipv4")) (Unknown "ipv4")) (Sum (Sum (NatN 32) Span) (Sum (NatN 32) (NatN 32)))))
+  (Sum (Sum (Pair (NatN 32) Span) Span) (Sum Span (Pair (NatN 8) Span))).
 
-Definition attribute : Type :=
-  ((span + span + (nat8 * span)) + (ipv4 + nat32 + nat32)) +
-    ((nat32 + ipv4 + ipv4) + ((nat32 + span) + (nat32 + nat32))) +
-    (((nat32 * span) + span) + (span + (nat8 * span))).
-
-(* Definition username (s : span) : attribute := inl (inl (inl (inl (inl s)))). *)
-(* Definition userpass (s : span) : attribute := inl (inl (inl (inl (inr s)))). *)
-(* Definition chappass (n : nat8) (s: span): attribute := inl (inl (inl (inr (n,s)))). *)
-(* Definition nasipadd (ip : Ipv4) : attribute := inl (inl (inr (inl (inl ip)))). *)
-(* Definition nasport (port : nat32) : attribute := inl (inl (inr (inl (inr port)))). *)
-(* Definition service (service : nat32) : attribute := inl (inl (inr (inr service))). *)
-(* Definition protocol (protocol : nat32) : attribute := inl (inr (inl (inl (inl protocol)))). *)
-(* Definition framedipadd (ip : Ipv4) : attribute := inl (inr (inl (inl (inr ip)))). *)
-(* Definition framedipmask (ip : Ipv4) : attribute := inl (inr (inl (inr ip))). *)
-(* Definition routing (fr : nat32) : attribute := inl (inr (inr (inl (inl fr)))). *)
-(* Definition filterid (s : span) : attribute := inl (inr (inr (inl (inr s)))). *)
-(* Definition framedMTU (n : nat32) : attribute := inl (inr (inr (inr (inl n)))). *)
-(* Definition called (s : span) : attribute := inr (inl (inr s)). *)
-(* Definition calling (s : span) : attribute := inr (inr (inl s)). *)
-(* Definition unknown (n : nat8) (s : span) : attribute := inr (inr (inr (n,s))). *)
-
-Definition username (s : VAL span) : @VAL val attribute :=
+Definition username (s : VAL Span) : @VAL val attribute :=
   EUna EInl (EUna EInl (EUna EInl (EUna EInl (EUna EInl s)))).
 
-Definition userpass (s : VAL span) : @VAL val attribute :=
+Definition userpass (s : VAL Span) : @VAL val attribute :=
   EUna EInl (EUna EInl (EUna EInl (EUna EInl (EUna EInr s)))).
 
-Definition chappass (n : VAL nat8) (s: VAL span): @VAL val attribute :=
+Definition chappass (n : VAL (NatN 8)) (s: VAL Span): @VAL val attribute :=
   EUna EInl (EUna EInl (EUna EInl (EUna EInr (EBin EPair n s)))).
 
-Definition nasipadd (ip : VAL ipv4) : @VAL val attribute :=
+Definition nasipadd (ip : VAL (Unknown "ipv4")) : @VAL val attribute :=
   EUna EInl (EUna EInl (EUna EInr (EUna EInl (EUna EInl ip)))).
 
-Definition nasport (port : VAL nat32) : @VAL val attribute :=
+Definition nasport (port : VAL (NatN 32)) : @VAL val attribute :=
   EUna EInl (EUna EInl (EUna EInr (EUna EInl (EUna EInr port)))).
 
-Definition service (service : VAL nat32) : @VAL val attribute :=
+Definition service (service : VAL (NatN 32)) : @VAL val attribute :=
   EUna EInl (EUna EInl (EUna EInr (EUna EInr service))).
 
-Definition protocol (protocol : VAL nat32) : @VAL val attribute :=
+Definition protocol (protocol : VAL (NatN 32)) : @VAL val attribute :=
   EUna EInl (EUna EInr (EUna EInl (EUna EInl (EUna EInl protocol)))).
 
-Definition framedipadd (ip : VAL ipv4) : @VAL val attribute :=
+Definition framedipadd (ip : VAL (Unknown "ipv4")) : @VAL val attribute :=
   EUna EInl (EUna EInr (EUna EInl (EUna EInl (EUna EInr ip)))).
 
-Definition framedipmask (ip : VAL ipv4) : @VAL val attribute :=
+Definition framedipmask (ip : VAL (Unknown "ipv4")) : @VAL val attribute :=
   EUna EInl (EUna EInr (EUna EInl (EUna EInr ip))).
 
-Definition routing (fr : VAL nat32) : @VAL val attribute :=
+Definition routing (fr : VAL (NatN 32)) : @VAL val attribute :=
   EUna EInl (EUna EInr (EUna EInr (EUna EInl (EUna EInl fr)))).
 
-Definition filterid (s : VAL span) : @VAL val attribute :=
+Definition filterid (s : VAL Span) : @VAL val attribute :=
   EUna EInl (EUna EInr (EUna EInr (EUna EInl (EUna EInr s)))).
 
-Definition framedMTU (n : VAL nat32) : @VAL val attribute :=
+Definition framedMTU (n : VAL (NatN 32)) : @VAL val attribute :=
   EUna EInl (EUna EInr (EUna EInr (EUna EInr (EUna EInl n)))).
 
-Definition compression (n : VAL nat32) : @VAL val attribute :=
+Definition compression (n : VAL (NatN 32)) : @VAL val attribute :=
   EUna EInl (EUna EInr (EUna EInr (EUna EInr (EUna EInr n)))).
 
-Definition vendor (n : VAL nat32) (s : VAL span) : @VAL val attribute :=
+Definition vendor (n : VAL (NatN 32)) (s : VAL Span) : @VAL val attribute :=
   EUna EInr (EUna EInl (EUna EInl (EBin EPair n s))).
 
-Definition called (s : VAL span) : @VAL val attribute :=
+Definition called (s : VAL Span) : @VAL val attribute :=
   EUna EInr (EUna EInl (EUna EInr s)).
 
-Definition calling (s : VAL span) : @VAL val attribute :=
+Definition calling (s : VAL Span) : @VAL val attribute :=
   EUna EInr (EUna EInr (EUna EInl s)).
 
-Definition unknown (n : VAL nat8) (s : VAL span) : @VAL val attribute :=
+Definition unknown (n : VAL (NatN 8)) (s : VAL Span) : @VAL val attribute :=
   EUna EInr (EUna EInr (EUna EInr (EBin EPair n s))).
 
-Inductive attribute_rel : RadiusAttribute -> attribute -> Prop :=
+Inductive attribute_rel : RadiusAttribute -> type_to_Type attribute -> Prop :=
 | SUserName : forall hs vs s v x,
     sem_VAL (username hs) v ->
     sem_val v = x ->
@@ -104,7 +84,7 @@ Inductive attribute_rel : RadiusAttribute -> attribute -> Prop :=
     sem_VAL (nasipadd hip) v ->
     sem_val v = x ->
     sem_VAL hip vip ->
-    ipv4_spec ip (sem_val vip) ->
+    (* ipv4_spec ip (sem_val vip) -> *)
     attribute_rel (NasIPAddress ip) x
 | SNP : forall hs vs s v x,
     sem_VAL (nasport hs) v ->
@@ -131,14 +111,14 @@ Inductive attribute_rel : RadiusAttribute -> attribute -> Prop :=
     sem_VAL (framedipadd hip) v ->
     sem_val v = x ->
     sem_VAL hip vip ->
-    ipv4_spec ip (sem_val vip) ->
+    (* ipv4_spec ip (sem_val vip) -> *)
     attribute_rel (FramedIPAddress ip) x
 | SFramedIPnetmask :
   forall hip vip ip v x,
     sem_VAL (framedipmask hip) v ->
     sem_val v = x ->
     sem_VAL hip vip ->
-    ipv4_spec ip (sem_val vip) ->
+    (* ipv4_spec ip (sem_val vip) -> *)
     attribute_rel (FramedIPNetmask ip) x
 | SRouting :
   forall hs vs s v x,
@@ -198,9 +178,9 @@ Inductive attribute_rel : RadiusAttribute -> attribute -> Prop :=
     sem_val vs = s ->
     sem_VAL hn vn ->
     sem_val vn = n ->
-    attribute_rel (Unknown n s) x.
+    attribute_rel (radius_attr.Unknown n s) x.
 
-Definition parse_attribute_content_rel (ht : VAL nat8) :
+Definition parse_attribute_content_rel (ht : VAL (NatN 8)) :
   {code | forall data s vt t,
       sem_VAL ht vt ->
       sem_val vt = t ->
@@ -209,96 +189,97 @@ Definition parse_attribute_content_rel (ht : VAL nat8) :
   eapply (natN_switch_adequate _ (EUna EVal ht)); repeat econstructor; eauto.
 
   (* 31 *)
-  eapply (LScons_adequate 31).
+  eapply (LScons_adequate _ _ 31).
   step. eapply rest_adequate. destruct H0 as [P0 [P1 P2]].
-  eapply (ret_adequate _ (calling (Var vres))); repeat econstructor; eauto.
+  eapply (ret_adequate _ _ _ (calling (Var vres))); repeat econstructor; eauto.
 
   (* 11 *)
-  eapply (LScons_adequate 11).
+  eapply (LScons_adequate _ _ 11).
   step. eapply rest_adequate. destruct H0 as [P0 [P1 P2]].
-  eapply (ret_adequate _ (filterid (Var vres))); repeat econstructor; eauto.
+  eapply (ret_adequate _ _ _ (filterid (Var vres))); repeat econstructor; eauto.
 
   (* 7 *)
-  eapply (LScons_adequate 7).
-  eapply bind_adequate. eapply be_u32_adequate. intros. clean_up.
-  eapply (ret_adequate _ (protocol (Var vres))); repeat econstructor; eauto.
+  eapply (LScons_adequate _ _ 7).
+  eapply bind_adequate. eapply be_u32_adequate. intros. be_spec_clean.
+  eapply (ret_adequate _ _ _ (protocol (Var vres))); repeat econstructor; eauto.
 
   (* 13 *)
-  eapply (LScons_adequate 13).
-  eapply bind_adequate. eapply be_u32_adequate. intros. clean_up.
-  eapply (ret_adequate _ (compression (Var vres))); repeat econstructor; eauto.
+  eapply (LScons_adequate _ _ 13).
+  eapply bind_adequate. eapply be_u32_adequate. intros. be_spec_clean.
+  eapply (ret_adequate _ _ _ (compression (Var vres))); repeat econstructor; eauto.
 
   (* 9 *)
-  eapply (LScons_adequate 9).
+  eapply (LScons_adequate _ _ 9).
   eapply map_parser_adequate. eapply consequence_adequate. unfold size4u. step.
-  intros. clean_up. auto. intros. step.
-  eapply get_ipv4_adequate. unfold ipv4_spec in H1. repeat clean_up.
-  eapply (ret_adequate _ (framedipmask (Var vres))); repeat econstructor; eauto.
+  intros. clean_up. split; auto. intros. step.
+  eapply get_ipv4_adequate.
+  eapply (ret_adequate _ _ _ (framedipmask (Var vres))); repeat econstructor; eauto.
 
   (* 5 *)
-  eapply (LScons_adequate 5).
-  eapply bind_adequate. eapply be_u32_adequate. intros. clean_up. subst.
-  eapply (ret_adequate _ (nasport (Var vres))); repeat econstructor; eauto.
+  eapply (LScons_adequate _ _ 5).
+  eapply bind_adequate. eapply be_u32_adequate. intros. be_spec_clean. subst.
+  eapply (ret_adequate _ _ _ (nasport (Var vres))); repeat econstructor; eauto.
 
     (* 3 *)
-  eapply (LScons_adequate 3).
+  eapply (LScons_adequate _ _ 3).
   repeat step. eapply be_u8_adequate.
-  eapply rest_adequate. repeat clean_up. destruct H2 as [P3 [P4 P2]]. subst.
-  eapply (ret_adequate _ (chappass (Var vres0) (Var vres1))); repeat econstructor; eauto.
+  eapply rest_adequate. be_spec_clean. destruct H2 as [P3 [P4 P2]]. subst.
+  eapply (ret_adequate _ _ _ (chappass (Var vres0) (Var vres1))); repeat econstructor; eauto.
 
   (* 30 *)
-  eapply (LScons_adequate 30).
+  eapply (LScons_adequate _ _ 30).
   repeat step. eapply rest_adequate. destruct H0 as [P0 [P1 P2]]. subst.
-  eapply (ret_adequate _ (called (Var vres))); repeat econstructor; eauto.
+  eapply (ret_adequate _ _ _ (called (Var vres))); repeat econstructor; eauto.
 
   (* 26 *)
-  eapply (LScons_adequate 26).
+  eapply (LScons_adequate _ _ 26).
   repeat step. eapply be_u32_adequate. eapply rest_adequate.
-  repeat clean_up. destruct H2 as [P2 [P3 P4]]. subst.
-  eapply (ret_adequate _ (vendor (Var vres0) (Var vres1))); repeat econstructor; eauto.
+  be_spec_clean. destruct H2 as [P2 [P3 P4]]. subst.
+  eapply (ret_adequate _ _ _ (vendor (Var vres0) (Var vres1))); repeat econstructor; eauto.
 
   (* 10 *)
-  eapply (LScons_adequate 10).
-  eapply bind_adequate. eapply be_u32_adequate. intros. repeat clean_up. subst.
-  eapply (ret_adequate _ (routing (Var vres))); repeat econstructor; eauto.
+  eapply (LScons_adequate _ _ 10).
+  eapply bind_adequate. eapply be_u32_adequate. intros. be_spec_clean. subst.
+  eapply (ret_adequate _ _ _ (routing (Var vres))); repeat econstructor; eauto.
 
   (* 6 *)
-  eapply (LScons_adequate 6).
-  eapply bind_adequate. eapply be_u32_adequate. intros. repeat clean_up. subst.
-  eapply (ret_adequate _ (service (Var vres))); repeat econstructor; eauto.
+  eapply (LScons_adequate _ _ 6).
+  eapply bind_adequate. eapply be_u32_adequate. intros. be_spec_clean. subst.
+  eapply (ret_adequate _ _ _ (service (Var vres))); repeat econstructor; eauto.
 
   (* 12 *)
-  eapply (LScons_adequate 12).
-  eapply bind_adequate. eapply be_u32_adequate. intros. repeat clean_up. subst.
-  eapply (ret_adequate _ (framedMTU (Var vres))); repeat econstructor; eauto.
+  eapply (LScons_adequate _ _ 12).
+  eapply bind_adequate. eapply be_u32_adequate. intros. be_spec_clean. subst.
+  eapply (ret_adequate _ _ _ (framedMTU (Var vres))); repeat econstructor; eauto.
 
   (* 8 *)
-  eapply (LScons_adequate 8).
+  eapply (LScons_adequate _ _ 8).
   eapply map_parser_adequate. eapply consequence_adequate. unfold size4u. step.
-  intros. clean_up. auto. intros.
-  step. eapply get_ipv4_adequate. unfold ipv4_spec in H1. repeat clean_up.
-  eapply (ret_adequate _ (framedipadd (Var vres))); repeat econstructor; eauto.
+  intros. clean_up. split; auto. intros.
+  step. eapply get_ipv4_adequate.
+  eapply (ret_adequate _ _ _ (framedipadd (Var vres))); repeat econstructor; eauto.
 
   (* 4 *)
-  eapply (LScons_adequate 4).
+  eapply (LScons_adequate _ _ 4).
   eapply map_parser_adequate. eapply consequence_adequate. unfold size4u. step.
-  intros. clean_up. auto. intros.
-  step. eapply get_ipv4_adequate. unfold ipv4_spec in H1. repeat clean_up.
-  eapply (ret_adequate _ (nasipadd (Var vres))); repeat econstructor; eauto.
+  intros. clean_up. split; auto. intros.
+  step. eapply get_ipv4_adequate.
+  eapply (ret_adequate _ _ _ (nasipadd (Var vres))); repeat econstructor; eauto.
 
   (* 2 *)
-  eapply (LScons_adequate 2).
+  eapply (LScons_adequate _ _ 2).
   step. eapply rest_adequate. destruct H0 as [P0 [P1 P2]].
-  eapply (ret_adequate _ (userpass (Var vres))); repeat econstructor; eauto.
+  eapply (ret_adequate _ _ _ (userpass (Var vres))); repeat econstructor; eauto.
 
   (* 1 *)
-  eapply (LScons_adequate 1).
+  eapply (LScons_adequate _ _ 1).
   step. eapply rest_adequate. destruct H0 as [P0 [P1 P2]].
-  eapply (ret_adequate _ (username (Var vres))); repeat econstructor; eauto.
+  eapply (ret_adequate _ _ _ (username (Var vres))); repeat econstructor; eauto.
 
   (* default *)
   eapply LSnil_adequate. intros elem elem_neq.
   destruct elem as [|elem]; try (exfalso; apply elem_neq; repeat constructor; done).
+
   Ltac solve_default ht :=
       step; [eapply rest_adequate |
           match goal with
@@ -307,14 +288,14 @@ Definition parse_attribute_content_rel (ht : VAL nat8) :
               let P1 := fresh "P" in
               let P2 := fresh "P" in
               destruct H as [P0 [P1 P2]]; subst;
-              eapply (ret_adequate _ (unknown ht (Var vres))); repeat econstructor; eauto
+              eapply (ret_adequate _ _ _ (unknown ht (Var vres))); repeat econstructor; eauto
           end].
-    solve_default ht.
-    repeat (destruct elem; try (exfalso; apply elem_neq; repeat constructor; done);
-            try solve_default ht).
+  solve_default ht.
+  repeat (destruct elem; try (exfalso; apply elem_neq; repeat constructor; done);
+          try solve_default ht).
 Defined.
 
-Lemma parse_attribute_content_adequate ht :
+Lemma parse_attribute_content_adequate (ht : VAL (NatN 8)) :
     forall data s vt t,
       sem_VAL ht vt ->
       sem_val vt = t ->
@@ -327,12 +308,12 @@ Definition parse_radius_attribute_rel :
   {code | forall data vs, adequate (fun _ => attribute_rel) parse_radius_attribute code data vs}.
   eapply exist. intros data vs. unfold parse_radius_attribute.
   repeat step. eapply be_u8_adequate. eapply verify_adequate.
-  2 : eapply be_u8_adequate. clean_up. intros vy x s [P2 P1]. subst.
+  2 : eapply be_u8_adequate. be_spec_clean. intros vy x s [P2 P1]. subst.
   instantiate (1 := fun vy => EBin ELe (Const (ENat 2)) (EUna EVal (Var vy))).
-  eexists. split; repeat econstructor; eauto. clean_up.
+  eexists. split; repeat econstructor; eauto. be_spec_clean.
   destruct H0 as [[P1 P3] P2]. subst.
   eapply map_parser_adequate. eapply consequence_adequate. step.
-  intros. repeat clean_up. auto.
+  intros. repeat clean_up. split; auto.
   intros. eapply (parse_attribute_content_adequate (Var vres)); repeat econstructor; eauto.
 Defined.
 
