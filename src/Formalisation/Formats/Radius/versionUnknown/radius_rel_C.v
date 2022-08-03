@@ -1,4 +1,4 @@
-From Formalisation Require Import SizeNat Nom IpAddr radius_attr_rel radius.
+From Formalisation Require Import SizeNat Nom IpAddr radius_attr_rel_C radius.
 From Raffinement Require Import PHOAS RelNomPHOAS.
 
 Definition parse_radius_data_rel :

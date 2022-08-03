@@ -50,6 +50,6 @@ src/Raffinement/RelNomPHOAS.v
 src/Formalisation/Formats/SSH/parser_rel.v
 src/Formalisation/Formats/Radius/radius_attr_rel.v
 src/Formalisation/Formats/Radius/radius_rel.v
-src/Formalisation/Formats/Radius/versionUnknown/radius_attr_rel.v
-src/Formalisation/Formats/Radius/versionUnknown/radius_rel.v
+src/Formalisation/Formats/Radius/versionUnknown/radius_attr_rel_C.v
+src/Formalisation/Formats/Radius/versionUnknown/radius_rel_C.v
 src/Formalisation/Formats/Ipsec/ikev2_parser_rel.v
