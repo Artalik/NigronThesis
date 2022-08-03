@@ -62,5 +62,5 @@ src/CoqNom/src/Formalisation/Formats/Radius/radius_rel.v
 src/CoqNom/src/Formalisation/Formats/Radius/versionUnknown/radius_attr_rel_C.v
 src/CoqNom/src/Formalisation/Formats/Radius/versionUnknown/radius_rel_C.v
 
--Q ./src/Extraction Extraction
-src/Extraction/Ocaml/Extraction/extraction.v
+-Q ./src/CoqNom/src/Extraction Extraction
+src/CoqNom/src/Extraction/Ocaml/Extraction/extraction.v
