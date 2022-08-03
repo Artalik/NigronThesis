@@ -91,8 +91,8 @@ Extract Constant Allocation.regalloc => "Regalloc.regalloc".
 Extract Constant Linearize.enumerate_aux => "Linearizeaux.enumerate_aux".
 
 (* SimplExpr *)
-Extract Constant MoSel.gensym.first_unused_ident => "Camlcoq.first_unused_ident".
-Extraction Inline MoSel.gensym.run.
+Extract Constant MoSel.first_unused_ident => "Camlcoq.first_unused_ident".
+Extraction Inline MoSel.run.
 
 (* Compopts *)
 Extract Constant Compopts.optim_for_size =>
