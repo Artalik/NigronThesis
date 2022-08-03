@@ -14,7 +14,7 @@
 
 Require Import FunInd.
 Require Import Coqlib (* Maps  *)Errors Integers.
-Require Import MoSel Locally.
+Require Import SepBasicCore SepSet MoSel Locally.
 Require Import AST Linking.
 Require Import Values Memory Events Globalenvs Smallstep.
 Require Import Ctypes Cop Csyntax Csem Cstrategy Clight.

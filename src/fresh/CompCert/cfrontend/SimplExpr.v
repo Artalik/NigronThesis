@@ -13,9 +13,7 @@
 (** Translation from Compcert C to Clight.
     Side effects are pulled out of Compcert C expressions. *)
 
-
-Require Import Coqlib MoSel (* Maps *) Integers Floats Values AST Memory Errors.
-Import gensym.
+Require Import Coqlib(* Maps *) Integers Floats Values AST Memory Errors  MoSel .
 Require Import Ctypes Cop Csyntax Clight.
 
 Definition bind2 {A B C: Type} (x: mon (A * B)) (f: A -> B -> mon C) : mon C :=
@@ -535,7 +533,7 @@ with transl_lblstmt (ls: Csyntax.labeled_statements) : mon labeled_statements :=
 (** Translation of a function *)
 Definition transl_fun (s: Csyntax.statement) : mon (statement * list (ident * type)) :=
   let! v := transl_stmt s in
-  let! tyl := trail () in
+  let! tyl := trail tt in
   ret (v,tyl).
 
 Definition transl_function (f: Csyntax.function) : res function :=

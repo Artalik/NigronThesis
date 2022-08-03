@@ -15,10 +15,8 @@
 Require Import Coqlib (* Maps  *)Errors Integers Floats.
 Require Import AST Linking Memory.
 Require Import Ctypes Cop Csyntax Clight SimplExpr.
-Require Import MoSel Locally.
+Require Import SepBasicCore SepSet MoSel Locally.
 Import Maps.PTree.
-Export weakestpre_gensym.
-Import adequacy.
 Section SPEC.
 
 Variable ce: composite_env.
@@ -316,47 +314,47 @@ Local Open Scope gensym_monad_scope.
 
   Ltac tac :=
     match goal with
-    | |- bi_emp_valid ({{ _ }} bind2 _ (fun _ _ => _) {{ _; _ }}) =>
+    | |- {{ _ }} bind2 _ (fun _ _ => _) {{ _; _ }} =>
       eapply bind_spec; intros; tac
-    | |- bi_emp_valid ({{ _ }} bind _ (fun _ => _) {{ _; _ }}) =>
+    | |- {{ _ }} bind _ (fun _ => _) {{ _; _ }} =>
       eapply bind_spec; [> tac | intro; tac]
-    | |- bi_emp_valid ({{ _ }} ret _ {{ _; ∃ _, _ }}) => eapply exists_spec; tac
-    | |- bi_emp_valid ({{ _ }} error _ {{ _; _ }}) => apply rule_error
-    | |- bi_emp_valid ({{ _ }} gensym _ {{ _; _ }}) => Frame; apply rule_gensym
-    | H : (forall _ _, bi_emp_valid ({{ emp }} transl_valof _ _ _ {{ _; _}}))
-      |- bi_emp_valid ({{ _ }} transl_valof _ _ _ {{ _; _ }}) =>
+    | |- {{ _ }} ret _ {{ _; ∃ _, _ }} => eapply exists_spec; tac
+    | |- {{ _ }} error _ {{ _; _ }} => apply rule_error
+    | |- {{ _ }} gensym _ {{ _; _ }} => Frame; apply rule_gensym
+    | H : (forall _ _, {{ emp }} transl_valof _ _ _ {{ _; _}})
+      |- {{ _ }} transl_valof _ _ _ {{ _; _ }} =>
         Frame; apply H; tac
-    | H : (forall _, bi_emp_valid ({{ emp }} is_bitfield_access _ _ {{ _; _}}))
-      |- bi_emp_valid ({{ _ }} is_bitfield_access _ _ {{ _; _ }}) =>
+    | H : (forall _, {{ emp }} is_bitfield_access _ _ {{ _; _}})
+      |- {{ _ }} is_bitfield_access _ _ {{ _; _ }} =>
         Frame; apply H; tac
-    | H : (forall _, bi_emp_valid ({{ emp }} transl_expr _ _ ?l {{ __; _}}))
-      |- bi_emp_valid ({{ _ }} transl_expr _ _ ?l {{ _; _ }}) =>
+    | H : (forall _, {{ emp }} transl_expr _ _ ?l {{ __; _}})
+      |- {{ _ }} transl_expr _ _ ?l {{ _; _ }} =>
         Frame; apply H; tac
-    | H : (forall _ _, bi_emp_valid ({{ emp }} transl_expr _ _ _ {{ _; _}}))
-      |- bi_emp_valid ({{ _ }} transl_expr _ _ _ {{ _; _ }}) =>
+    | H : (forall _ _, {{ emp }} transl_expr _ _ _ {{ _; _}})
+      |- {{ _ }} transl_expr _ _ _ {{ _; _ }} =>
       Frame; apply H; tac
-    | H :(forall _, bi_emp_valid ({{ emp }} transl_exprlist _ _ {{ _; _}}))
-      |- bi_emp_valid ({{ _ }} transl_exprlist _ _ {{ _; _ }}) =>
+    | H :(forall _, {{ emp }} transl_exprlist _ _ {{ _; _}})
+      |- {{ _ }} transl_exprlist _ _ {{ _; _ }} =>
       Frame; apply H; tac
-    | H : bi_emp_valid ({{ emp }} transl_exprlist _ ?l {{ _; _}})
-      |- bi_emp_valid ({{ _ }} transl_exprlist _ ?l {{ _; _ }}) =>
+    | H : {{ emp }} transl_exprlist _ ?l {{ _; _}}
+      |- {{ _ }} transl_exprlist _ ?l {{ _; _ }} =>
       Frame; apply H; tac
-    | |- bi_emp_valid ({{ _ }} match ?a with
-                              | _ => _
-                              end  {{ _; _ }}) =>
+    | |- {{ _ }} match ?a with
+          | _ => _
+          end  {{ _; _ }} =>
       destruct a eqn:?; tac
     | _ => idtac
     end.
 
   Ltac tac2 :=
     match goal with
-    | |- bi_emp_valid ({{ _ }} ret _  {{ _; _ }}) => iApply ret_spec
+    | |- {{ _ }} ret _  {{ _; _ }} => iApply ret_spec
     | _ => (progress tac); tac2
     | _ => idtac
     end.
 
   Lemma is_bitfield_access_meets_spec: forall l,
-      ⊢ {{ emp }} is_bitfield_access ce l {{ bf ; ⌜ tr_is_bitfield_access l bf ⌝ }}.
+      {{ emp }} is_bitfield_access ce l {{ bf ; ⌜ tr_is_bitfield_access l bf ⌝ }}.
   Proof.
     intro l. unfold is_bitfield_access. tac; simpl; auto.
     all : unfold is_bitfield_access_aux; destruct (ce!i0) as [co|] eqn:P; auto.
@@ -365,12 +363,12 @@ Local Open Scope gensym_monad_scope.
   Qed.
 
   Lemma transl_valof_meets_spec ty a :
-    ⊢{{ emp }} transl_valof ce ty a {{ r; tr_rvalof ty a r.1 r.2 }}.
+    {{ emp }} transl_valof ce ty a {{ r; tr_rvalof ty a r.1 r.2 }}.
   Proof.
     unfold transl_valof. unfold tr_rvalof.
     destruct (type_is_volatile ty).
     - tac2. Frame. eapply is_bitfield_access_meets_spec.
-      iIntros "[HA [$ _]]". iNorm.
+      iIntros "[HA [$ _]]". norm_all.
     - auto.
   Qed.
 
@@ -393,11 +391,11 @@ Local Open Scope gensym_monad_scope.
 
   Lemma transl_meets_spec :
     (forall r dst,
-        ⊢ {{ emp }}
+        {{ emp }}
           transl_expr ce dst r {{ res; dest_below dst -∗ ∀ le, tr_expr le dst r res.1 res.2 }})
     /\
     (forall rl,
-        ⊢{{ emp }} transl_exprlist ce rl {{ res; ∀ le, tr_exprlist le rl res.1 res.2 }}).
+        {{ emp }} transl_exprlist ce rl {{ res; ∀ le, tr_exprlist le rl res.1 res.2 }}).
   Proof.
 
     pose transl_valof_meets_spec.
@@ -496,8 +494,8 @@ Local Open Scope gensym_monad_scope.
 
   Lemma transl_expr_meets_spec:
     forall r dst,
-      ⊢ {{ emp }} transl_expr ce dst r
-        {{ res;  dest_below dst -∗ ⌜ ∀ ge e le m, tr_top ge e le m dst r res.1 res.2 ⌝ }}.
+      {{ emp }} transl_expr ce dst r
+      {{ res;  dest_below dst -∗ ⌜ ∀ ge e le m, tr_top ge e le m dst r res.1 res.2 ⌝ }}.
   Proof.
     intros. iApply (consequence _ _ _ _ _ (proj1 transl_meets_spec _ _)); eauto.
     iIntros "* HA HB". iDestruct ("HA" with "HB") as "HA". iApply (tr_top_spec with "HA").
@@ -510,7 +508,7 @@ Local Open Scope gensym_monad_scope.
 
 
   Lemma transl_expression_meets_spec: forall r,
-      ⊢ {{ emp }} transl_expression ce r {{ res; ⌜ tr_expression r res.1 res.2 ⌝ }}.
+      {{ emp }} transl_expression ce r {{ res; ⌜ tr_expression r res.1 res.2 ⌝ }}.
   Proof.
     intro. unfold transl_expression. epose transl_expr_meets_spec. tac2.
     iIntros; norm_all.
@@ -522,7 +520,7 @@ Local Open Scope gensym_monad_scope.
       tr_expr_stmt r (makeseq sl).
 
   Lemma transl_expr_stmt_meets_spec: forall r,
-      ⊢ {{ emp }} transl_expr_stmt ce r {{ res; ⌜ tr_expr_stmt r res ⌝}}.
+      {{ emp }} transl_expr_stmt ce r {{ res; ⌜ tr_expr_stmt r res ⌝}}.
   Proof.
     intro. unfold transl_expr_stmt. epose transl_expr_meets_spec. tac2.
     iIntros; norm_all. iPureIntro. econstructor. auto.
@@ -534,7 +532,7 @@ Local Open Scope gensym_monad_scope.
       tr_if r s1 s2 (makeseq (sl ++ makeif a s1 s2 :: nil)).
 
   Lemma transl_if_meets_spec: forall r s1 s2,
-      ⊢ {{ emp }} transl_if ce r s1 s2 {{ res; ⌜ tr_if r s1 s2 res ⌝ }}.
+      {{ emp }} transl_if ce r s1 s2 {{ res; ⌜ tr_if r s1 s2 res ⌝ }}.
   Proof.
     intros. unfold transl_if. epose transl_expr_meets_spec. tac2.
     iIntros; norm_all.
@@ -609,26 +607,26 @@ with tr_lblstmts: Csyntax.labeled_statements -> labeled_statements -> Prop :=
 
   Ltac tac3 :=
     match goal with
-    | H : forall _, bi_emp_valid ({{ emp }} transl_expression _ _ {{ _; _ }})
-      |- bi_emp_valid ({{ _ }} transl_expression _ _ {{ _; _ }}) =>
+    | H : forall _, {{ emp }} transl_expression _ _ {{ _; _ }}
+      |- {{ _ }} transl_expression _ _ {{ _; _ }} =>
       Frame; apply H; tac3
-    | H : forall _, bi_emp_valid ({{ emp }} transl_expr_stmt _ _ {{ _; _}})
-      |- bi_emp_valid ({{ _ }} transl_expr_stmt _ _ {{ _; _}}) =>
+    | H : forall _, {{ emp }} transl_expr_stmt _ _ {{ _; _}}
+      |- {{ _ }} transl_expr_stmt _ _ {{ _; _}} =>
       Frame; apply H; tac3
-    | H: forall _ _ _, bi_emp_valid ({{ emp }} transl_if _ _ _ _ {{ _; _ }})
-      |- bi_emp_valid ({{ _ }} transl_if _ _ _ _ {{ _; _ }}) =>
+    | H: forall _ _ _, {{ emp }} transl_if _ _ _ _ {{ _; _ }}
+      |- {{ _ }} transl_if _ _ _ _ {{ _; _ }} =>
       Frame; apply H; tac3
-    | H: bi_emp_valid ({{ emp }} transl_stmt _ ?s {{ _; _ }})
-      |- bi_emp_valid ({{ _ }} transl_stmt _ ?s {{ _; _ }}) =>
+    | H: {{ emp }} transl_stmt _ ?s {{ _; _ }}
+      |- {{ _ }} transl_stmt _ ?s {{ _; _ }} =>
       Frame; apply H; tac3
-    | H:(forall _, bi_emp_valid ({{ emp }} transl_stmt _ _ {{ _; _ }}))
-      |- bi_emp_valid ({{ _ }} transl_stmt _ ?s {{ _; _ }}) =>
+    | H:(forall _, {{ emp }} transl_stmt _ _ {{ _; _ }})
+      |- {{ _ }} transl_stmt _ ?s {{ _; _ }} =>
       Frame; apply H; tac3
-    | H: (⊢ {{ emp }} transl_lblstmt _ ?l {{ _; _ }})
-      |- (⊢ {{ _ }} transl_lblstmt _ ?l {{ _; _ }}) =>
+    | H: {{ emp }} transl_lblstmt _ ?l {{ _; _ }}
+      |- {{ _ }} transl_lblstmt _ ?l {{ _; _ }} =>
       Frame; apply H; tac3
-    | H: (forall _, ⊢ {{ emp }} transl_lblstmt _  _ {{ _; _ }})
-      |- (⊢ {{ _ }} transl_lblstmt _  _ {{ _; _ }}) =>
+    | H: (forall _, {{ emp }} transl_lblstmt _  _ {{ _; _ }})
+      |- {{ _ }} transl_lblstmt _  _ {{ _; _ }} =>
       Frame; apply H; tac3
     | _ => (progress tac); tac3
     | _ => (progress tac2); tac3
@@ -637,10 +635,10 @@ with tr_lblstmts: Csyntax.labeled_statements -> labeled_statements -> Prop :=
 
 
   Lemma transl_stmt_meets_spec : forall s,
-      ⊢ {{ emp }} transl_stmt ce s {{ res; ⌜ tr_stmt s res ⌝}}
+      {{ emp }} transl_stmt ce s {{ res; ⌜ tr_stmt s res ⌝}}
   with transl_lblstmt_meets_spec:
          forall s,
-           ⊢ {{ emp }} transl_lblstmt ce s {{ res; ⌜ tr_lblstmts s res ⌝ }}.
+           {{ emp }} transl_lblstmt ce s {{ res; ⌜ tr_lblstmts s res ⌝ }}.
   Proof.
     pose transl_expression_meets_spec.
     pose transl_if_meets_spec.
@@ -677,7 +675,7 @@ with tr_lblstmts: Csyntax.labeled_statements -> labeled_statements -> Prop :=
       tr_fun s (ts, l).
 
   Lemma transl_fun_meets_spec : forall s,
-      ⊢ {{ emp }} transl_fun ce s {{ res; ⌜ tr_fun s res ⌝}}.
+      {{ emp }} transl_fun ce s {{ res; ⌜ tr_fun s res ⌝}}.
   Proof.
     intro. unfold transl_fun. tac3. apply transl_stmt_meets_spec. Frame. eapply rule_trail.
     iIntros "[_ %]". eauto.

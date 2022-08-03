@@ -1,5 +1,4 @@
-Require Import MoSel.
-Import weakestpre_gensym.
+Require Import SepSet MoSel.
 Export Maps.PTree.
 
 Notation "a ! b" := (get b a) (at level 1).
