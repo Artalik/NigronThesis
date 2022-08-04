@@ -217,7 +217,7 @@ Fixpoint tr_expr (*[*)(le : temp_env)(*]*) (dst : destination) (*[*)(e : Csyntax
        tr_expr le For_val e2 sl3 a3  ∗
        ⌜ tr_is_bitfield_access a2 bf /\ sl = sl2 ++ sl3 ++ make_assign bf a2 a3 :: nil ⌝
      end
-
+(* =end= *)
     | Csyntax.Eassignop ope e1 e2 tyres ty =>
       match dst with
       | For_effects =>
