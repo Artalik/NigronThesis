@@ -43,7 +43,7 @@ Global Instance RadiusData_Foldable : Foldable RadiusDataS :=
 
 Definition RadiusData := RadiusDataS span.
 
-Definition sizeu16 : N := 2.
+Definition sizeu16 : N := 16.
 
 Definition parse_radius_data : NomG RadiusData :=
   let! code := map be_u8 mk_code  in
