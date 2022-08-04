@@ -211,13 +211,14 @@ Fixpoint tr_expr (*[*)(le : temp_env)(*]*) (dst : destination) (*[*)(e : Csyntax
                     make_assign bf a2 (Etempvar t (Csyntax.typeof e1)) ::
                     final dst (make_assign_value bf (Etempvar t (Csyntax.typeof e1))) /\
          a = make_assign_value bf (Etempvar t (Csyntax.typeof e1)) (*]*)⌝
+(* =end= *)
        | For_effects =>
        ∃ sl2 a2 sl3 a3 bf,
        tr_expr le For_val e1 sl2 a2  ∗
        tr_expr le For_val e2 sl3 a3  ∗
        ⌜ tr_is_bitfield_access a2 bf /\ sl = sl2 ++ sl3 ++ make_assign bf a2 a3 :: nil ⌝
      end
-(* =end= *)
+
     | Csyntax.Eassignop ope e1 e2 tyres ty =>
       match dst with
       | For_effects =>
