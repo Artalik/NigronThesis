@@ -1,4 +1,4 @@
-Require Import SepSet MoSel.
+Require Import SepSet SimplMonad.
 Export Maps.PTree.
 
 Notation "a ! b" := (get b a) (at level 1).

@@ -2,6 +2,7 @@ Require Import FunctionalExtensionality.
 Require Import Errors.
 Require Import SepSet.
 Require Import Ctypes.
+Require Export FreeMonad.
 
 Definition ident := positive.
 
@@ -14,63 +15,23 @@ Parameter first_unused_ident : unit -> ident.
 Definition initial_generator (x : unit) : generator :=
   mkgenerator (first_unused_ident x) nil.
 
+Inductive MON : Type -> Type :=
+| errorOp : Errors.errmsg -> forall {X}, MON X
+| gensymOp : type -> MON ident
+| trailOp : unit -> MON (list (ident * type)).
 
-Inductive mon (X : Type) : Type :=
-| ret : X -> mon X
-| errorOp : Errors.errmsg -> mon X
-| gensymOp : type -> (ident -> mon X) -> mon X
-| trailOp : unit -> (list (ident * type) -> mon X) -> mon X.
+Definition mon := Free MON.
 
-Arguments errorOp [X].
-Arguments gensymOp [X].
-Arguments trailOp [X].
-Arguments ret {_} x.
-
-
-Fixpoint bind {X Y} (m : mon X) (f : X -> mon Y) : mon Y :=
-  match m with
-  | ret x => f x
-  | errorOp e => errorOp e
-  | gensymOp t g => gensymOp t (fun x => bind (g x) f)
-  | trailOp _ g => trailOp tt (fun x => bind (g x) f)
-  end.
-
-Notation "'let!' x ':=' e1 'in' e2" := (bind e1 (fun x => e2)) (x name, at level 90).
-
-Notation "'ret!' v" := (ret v) (v name, at level 90).
-
-Definition error {X} (e : Errors.errmsg) : mon X := errorOp e.
-Definition gensym (t : type) : mon ident := gensymOp t ret.
-Definition trail (_ : unit): mon (list (ident * type)) := trailOp tt ret.
-
-Lemma lid : forall X Y (a : X) (f : X -> mon Y), bind (ret a) f = f a.
-Proof. auto. Qed.
-
-Lemma rid : forall X (m : mon X), bind m ret = m.
-Proof.
-  fix m 2.
-  destruct m0.
-  1 - 2 : reflexivity.
-  all : simpl; do 2 f_equal.
-  2 : destruct u; auto.
-  all : apply functional_extensionality; intro; apply m.
-Qed.
-
-Lemma ass_bind : forall X Y Z (m : mon X) f (g : Y -> mon Z),
-    bind (bind m f) g = bind m (fun x => bind (f x) g).
-Proof.
-  fix m 4.
-  destruct m0; intros.
-  1 - 2 : reflexivity.
-  all : simpl; do 2 f_equal; apply functional_extensionality; intro; apply m.
-Qed.
+Definition error {X} (e : Errors.errmsg) : mon X := syntax_effect (errorOp e).
+Definition gensym (t : type) : mon ident := syntax_effect (gensymOp t).
+Definition trail (_ : unit): mon (list (ident * type)) := syntax_effect (trailOp tt).
 
 Fixpoint wp {X} (e1 : mon X) (Q : X -> iProp) : iProp :=
   match e1 with
   | ret v => Q v
-  | errorOp e => True
-  | gensymOp _ f => ∀ l, & l -∗ wp (f l) Q
-  | trailOp _ f => ∀ l, wp (f l) Q
+  | op (errorOp e) _ => True
+  | op (gensymOp _) f => ∀ l, & l -∗ wp (f l) Q
+  | op (trailOp _) f => ∀ l, wp (f l) Q
   end.
 
 Notation "'{{' P } } e {{ v ; Q } }" := (P ⊢ wp e (fun v => Q))
@@ -83,11 +44,13 @@ Lemma wp_bind {X Y} (e : mon X) (f :  X → mon Y) (Q : Y -> iProp)  (Q' : X -> 
   wp e Q' ⊢ (∀ v,  Q' v -∗ wp (f v) Q ) -∗ wp (bind e f) Q %I.
 Proof.
   iIntros "HA HB". revert e. fix e 1.
-  destruct e0.
+  destruct e0 as [v | _ []].
   - iApply "HB". iApply "HA".
   - simpl. auto.
-  - simpl. iIntros (l) "HC". iDestruct ("HA" with "HC") as "HA". iPoseProof "HB" as "HB". apply e.
-  - simpl. iIntros (l). iDestruct ("HA" $! l) as "HA". iPoseProof "HB" as "HB". apply e.
+  - simpl. iIntros (l) "HC". iDestruct ("HA" with "HC") as "HA".
+    iPoseProof "HB" as "HB". apply e.
+  - simpl. iIntros (l). iDestruct ("HA" $! l) as "HA".
+    iPoseProof "HB" as "HB". apply e.
 Qed.
 
 Lemma wp_consequence : forall {X} (P Q : X -> iProp) (f : mon X),
@@ -95,7 +58,7 @@ Lemma wp_consequence : forall {X} (P Q : X -> iProp) (f : mon X),
       (∀ x, P x -∗ Q x) -∗
       wp f Q.
 Proof.
-  induction f; simpl; intros; auto.
+  induction f as [v | Y []]; simpl; intros; auto.
   - iIntros "HA HB". iApply ("HB" with "HA").
   - iIntros "HA * HB * HC". iApply (H with "[HA HC] HB"). iApply ("HA" with "HC").
   - iIntros "HA HB *". iApply (H with "HA HB").
@@ -166,8 +129,6 @@ Proof. auto. Qed.
 Lemma rule_trail  : {{ emp }} trail tt {{ _; emp  }}.
 Proof. auto. Qed.
 
-
-
 Definition inject_aux n :=
   List.map Pos.of_nat
     (seq (Pos.to_nat (first_unused_ident ()))
@@ -200,7 +161,7 @@ Proof.
   unfold inject_aux. rewrite PeanoNat.Nat.sub_diag. simpl. reflexivity.
 Qed.
 
-Definition inject n : (@gset MoSel.ident positive_eq_dec pos_countable) :=
+Definition inject n : (@gset ident positive_eq_dec pos_countable) :=
   list_to_set (inject_aux n).
 
 Lemma unused_map : inject (first_unused_ident ()) = ∅.
@@ -226,13 +187,13 @@ Qed.
 Fixpoint eval {X} (m : mon X) : generator -> res (generator * X) :=
   match m with
   | ret v => fun s => OK (s, v)
-  | errorOp e => fun s => Error e
-  | gensymOp ty f =>
+  | op (errorOp e) _ => fun s => Error e
+  | op (gensymOp ty) f =>
       fun s =>
         let h := gen_trail s in
         let n := gen_next s in
         eval (f n) (mkgenerator (Pos.succ n) ((n,ty) :: h))
-  | trailOp _ f =>
+  | op (trailOp _) f =>
       fun s =>
         let h := gen_trail s in
         eval (f h) s
@@ -255,11 +216,11 @@ Section Eval_Adequacy.
   Lemma adequacy_wp : forall m Q g_init g_res v,
       Pos.le (first_unused_ident tt) (gen_next g_init) ->
       (&& (inject (gen_next g_init)) ⊢ wp m Q) ->
-      eval m g_init = Errors.OK (g_res, v) ->
+      eval m g_init = OK (g_res, v) ->
       (Q v) () (inject (gen_next g_res)).
   Proof.
     fix ind 1.
-    destruct m; intros.
+    destruct m as [v| Y []]; intros.
     - inversion H1; subst. apply soundness. iApply H0.
     - inversion H1.
     - simpl in *. eapply ind.
@@ -274,7 +235,7 @@ Section Eval_Adequacy.
 
   Lemma adequacy_init : forall e Q g v,
       (⊢ wp e Q) ->
-      eval e (initial_generator tt) = Errors.OK (g, v) ->
+      eval e (initial_generator tt) = OK (g, v) ->
       (Q v) () (inject (gen_next g)).
   Proof.
     intros. eapply adequacy_wp; eauto. simpl. lia.
@@ -284,7 +245,7 @@ Section Eval_Adequacy.
   Lemma adequacy_core : forall e Q g_init v g_res H,
       Pos.le (first_unused_ident tt) (gen_next g_init) ->
       (&& (inject (gen_next g_init)) ⊢ H) -> ({{ H }} e {{ v; Q v }}) ->
-      eval e g_init = Errors.OK (g_res, v) ->
+      eval e g_init = OK (g_res, v) ->
       (Q v) () (inject (gen_next g_res)).
   Proof.
     intros. eapply adequacy_wp; eauto. iIntros "HA". iDestruct (H1 with "HA") as "HA".
@@ -293,7 +254,7 @@ Section Eval_Adequacy.
 
   Lemma adequacy_triple_init : forall e Q v g H,
       (⊢ H) -> ({{ H }} e {{ v; Q v }}) ->
-      eval e (initial_generator tt) = Errors.OK (g, v) ->
+      eval e (initial_generator tt) = OK (g, v) ->
       (Q v) () (inject (gen_next g)).
   Proof.
     intros. eapply adequacy_init; eauto. iApply H1; eauto.
@@ -304,7 +265,7 @@ End Eval_Adequacy.
 Lemma adequacy_wp_pure {X} : forall (e : mon X) (Q : X -> Prop) g_init v g_res,
     Pos.le (first_unused_ident tt) (gen_next g_init) ->
     (&& (inject (gen_next g_init)) ⊢ wp e (fun v =>  ⌜Q v⌝)) ->
-    eval e g_init = Errors.OK (g_res, v) ->
+    eval e g_init = OK (g_res, v) ->
     Q v.
 Proof.
   intros. apply (soundness_pure (inject (gen_next g_res))). iApply completeness.
@@ -314,7 +275,7 @@ Qed.
 Lemma adequacy_pure {X} : forall (e : mon X) (Q : X -> Prop) g_init v g_res H,
     Pos.le (first_unused_ident tt) (gen_next g_init) ->
     (&& (inject (gen_next g_init)) ⊢ H) -> ({{ H }} e {{ v; ⌜ Q v ⌝}}) ->
-    eval e g_init = Errors.OK (g_res, v) ->
+    eval e g_init = OK (g_res, v) ->
     Q v.
 Proof.
   intros. eapply adequacy_wp_pure; eauto. iIntros "HA". iDestruct (H1 with "HA") as "HA".

@@ -4,6 +4,10 @@
 src/lib/SepLogic/SepBasicCore.v
 src/lib/SepLogic/SepSet.v
 
+-Q ./src/lib/FM FreeMonad
+src/lib/FM/FreeMonad.v
+
+
 -R ./src/fresh/relabels/ Top
 src/fresh/relabels/tree.v
 src/fresh/relabels/example1.v

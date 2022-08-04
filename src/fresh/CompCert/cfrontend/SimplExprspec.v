@@ -15,13 +15,14 @@
 Require Import Coqlib (* Maps  *)Errors Integers Floats.
 Require Import AST Linking Memory.
 Require Import Ctypes Cop Csyntax Clight SimplExpr.
-Require Import SepBasicCore SepSet MoSel Locally.
+Require Import SepBasicCore SepSet SimplMonad Locally.
 Import Maps.PTree.
+
 Section SPEC.
 
 Variable ce: composite_env.
 
-Local Open Scope gensym_monad_scope.
+Local Open Scope free_monad_scope.
 
 (** * Relational specification of the translation. *)
 

@@ -7,13 +7,11 @@ Section WP.
 Variable X: Type.
 Implicit Type m: Free Fresh X.
 
-(* =wp= *)
 Fixpoint wp (m: Free Fresh X)(Q: X -> nat -> Prop): nat -> Prop :=
   match m with
   | ret v => fun n => Q v n
   | op (gensymOp _) k => fun n => wp (k n) Q (1+n)
   end.
-(* =end= *)
 
 End WP.
 
@@ -26,10 +24,8 @@ Implicit Type Q: X -> nat -> Prop.
 Implicit Type n: nat.
 Implicit Type v: X.
 
-(* =soundness= *)
 Lemma adequacy: forall m Q n n' v,
     wp m Q n -> eval m n = (v, n') -> Q v n'.
-(* =end= *)
 Proof.
   induction m; intros.
   - inversion H0; subst. apply H.
@@ -74,10 +70,7 @@ Proof.
   intros. simpl. split; reflexivity.
 Qed.
 
-
-(* =triple= *)
 Notation "{{ P }} m {{ Q }}" := (forall n, P n -> wp m Q n)
-(* =end= *)
     (at level 20, format "'[hv' {{  P  }}  '/  ' m '/'  {{ Q  }} ']'").
 
 Section Rules.
@@ -89,43 +82,35 @@ Implicit Type Q: X -> nat -> Prop.
 Implicit Type R: Y -> nat -> Prop.
 Implicit Type x: X.
 
-(* =rule_value= *)
 Lemma rule_value: forall Q v,
     (*-----------------------*)
     {{ Q v }} ret v {{ Q }}.
-(* =end= *)
 Proof. auto. Qed.
 
-(* =rule_composition= *)
 Lemma rule_composition: forall m f P Q R,
     {{ P }} m {{ Q }} ->
     (forall v, {{ Q v }} f v  {{ R }}) ->
     (*-------------------------------*)
     {{ P }} do x <- m; f x {{ R }}.
-(* =end= *)
 Proof.
   induction m; simpl; intros.
   - eapply H0; eapply H; auto.
   - destruct s. eapply H; eauto.
 Qed.
 
-(* =rule_fresh= *)
 Lemma rule_gensym: forall k,
     (*-------------------------------------------------------*)
     {{ fun n => n = k }} gensym tt {{fun v n' => v = k /\ n' = 1+k}}.
-(* =end= *)
 Proof.
   intros. simpl. repeat split; auto.
 Qed.
 
-(* =rule_consequence= *)
 Lemma rule_consequence: forall P P' Q Q' m,
     {{ P' }} m {{ Q' }} ->
     (forall n, P n -> P' n) ->
     (forall x n, Q' x n -> Q x n) ->
     (*-----------------------*)
     {{ P }} m {{ Q }}.
-(* =end= *)
 Proof.
   intros P P' Q Q' m.
   revert m P P' Q Q'.
@@ -186,12 +171,10 @@ Qed.
 Definition interval a b := seq a (1 + b - a).
 
 
-(* =label_spec= *)
 Lemma label_spec: forall t k,
     {{ fun n => n = k }}
       label t
     {{ fun ft n' => k < n' /\ flatten ft = interval k (n'-1) }}.
-(* =end= *)
 Proof.
   intros t k. eapply rule_consequence.
   - eapply label_spec_aux.

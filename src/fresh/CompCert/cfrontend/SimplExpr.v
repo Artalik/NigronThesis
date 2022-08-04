@@ -13,25 +13,13 @@
 (** Translation from Compcert C to Clight.
     Side effects are pulled out of Compcert C expressions. *)
 
-Require Import Coqlib(* Maps *) Integers Floats Values AST Memory Errors  MoSel .
+Require Import Coqlib(* Maps *) Integers Floats Values AST Memory Errors SimplMonad.
 Require Import Ctypes Cop Csyntax Clight.
-
-Definition bind2 {A B C: Type} (x: mon (A * B)) (f: A -> B -> mon C) : mon C :=
-  bind x (fun p => f (fst p) (snd p)).
-
 
 Local Open Scope string_scope.
 Local Open Scope list_scope.
 
 (** State and error monad for generating fresh identifiers. *)
-
-Notation "'do' X <- A ; B" := (bind A (fun X => B))
-   (at level 200, X name, A at level 100, B at level 200)
-   : gensym_monad_scope.
-Notation "'do' ( X , Y ) <- A ; B" := (bind2 A (fun X Y => B))
-   (at level 200, X name, Y name, A at level 100, B at level 200)
-   : gensym_monad_scope.
-
 Fixpoint makeseq_rec (s: statement) (l: list statement) : statement :=
   match l with
   | nil => s
@@ -42,8 +30,6 @@ Definition makeseq (l: list statement) : statement :=
   makeseq_rec Sskip l.
 
 Section SIMPL_EXPR.
-
-Local Open Scope gensym_monad_scope.
 
 Variable ce: composite_env.
 
@@ -159,6 +145,8 @@ Definition make_set (bf: bitfield) (id: ident) (l: expr) : statement :=
       Sbuiltin (Some id) (EF_vload chunk) (Tcons typtr Tnil) ((Eaddrof l typtr):: nil)
   end.
 
+Local Open Scope free_monad_scope.
+
 (** Translation of a "valof" operation.
   If the l-value accessed is of volatile type, we go through a temporary. *)
 
@@ -187,7 +175,8 @@ Definition make_assign (bf: bitfield) (l r: expr) : statement :=
     converted to the type of the left-hand side.
     For assignments to bitfields, an additional normalization to
     the width and signedness of the bitfield is required. *)
-Open Scope Z_scope.
+Local Open Scope Z_scope.
+
 Definition make_normalize (sz: intsize) (sg: signedness) (width: Z) (r: expr) :=
   let intconst (n: Z) := Econst_int (Int.repr n) type_int32s in
   if intsize_eq sz IBool || signedness_eq sg Unsigned then
@@ -373,7 +362,7 @@ Fixpoint transl_expr (dst: destination) (a: Csyntax.expr) : mon (list statement 
           ret (sl1 ++ sl2 ++ make_assign bf a1 a2 :: nil,
                dummy_expr)
       end
-  | Csyntax.Eassignop op l1 r2 tyres ty =>
+  | Csyntax.Eassignop ope l1 r2 tyres ty =>
       let ty1 := Csyntax.typeof l1 in
       do (sl1, a1) <- transl_expr For_val l1;
       do (sl2, a2) <- transl_expr For_val r2;
@@ -384,11 +373,11 @@ Fixpoint transl_expr (dst: destination) (a: Csyntax.expr) : mon (list statement 
           do t <- gensym ty1;
           ret (finish dst
                  (sl1 ++ sl2 ++ sl3 ++
-                  Sset t (Ecast (Ebinop op a3 a2 tyres) ty1) ::
+                  Sset t (Ecast (Ebinop ope a3 a2 tyres) ty1) ::
                   make_assign bf a1 (Etempvar t ty1) :: nil)
                  (make_assign_value bf (Etempvar t ty1)))
       | For_effects =>
-          ret (sl1 ++ sl2 ++ sl3 ++ make_assign bf a1 (Ebinop op a3 a2 tyres) :: nil,
+          ret (sl1 ++ sl2 ++ sl3 ++ make_assign bf a1 (Ebinop ope a3 a2 tyres) :: nil,
                dummy_expr)
       end
   | Csyntax.Epostincr id l1 ty =>
@@ -542,22 +531,24 @@ Definition transl_function (f: Csyntax.function) : res function :=
       Error msg
   | OK tbody =>
       OK (mkfunction
-              f.(Csyntax.fn_return)
-              f.(Csyntax.fn_callconv)
-              f.(Csyntax.fn_params)
-              f.(Csyntax.fn_vars)
-              (snd tbody)
-              (fst tbody))
+            f.(Csyntax.fn_return)
+            f.(Csyntax.fn_callconv)
+            f.(Csyntax.fn_params)
+            f.(Csyntax.fn_vars)
+            (snd tbody)
+            (fst tbody))
   end.
+
+Close Scope free_monad_scope.
 
 Local Open Scope error_monad_scope.
 
-Definition transl_fundef (fd: Csyntax.fundef) : res fundef :=
+Definition transl_fundef (fd: Csyntax.fundef) : Errors.res fundef :=
   match fd with
   | Internal f =>
-      do tf <- transl_function f; OK (Internal tf)
+      do tf <- transl_function f; Errors.OK (Internal tf)
   | External ef targs tres cc =>
-      OK (External ef targs tres cc)
+      Errors.OK (External ef targs tres cc)
   end.
 
 End SIMPL_EXPR.
