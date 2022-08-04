@@ -23,11 +23,13 @@ Section WP.
 
 Variable (X: Type).
 
+(* =wp= *)
 Fixpoint wp (m: Free Fresh X)(Q: X -> iProp): iProp :=
   match m with
   | ret v => Q v
   | op (gensymOp _) k => ∀ (v: nat), & v -∗ wp (k v) Q
   end.
+(* =end= *)
 
 End WP.
 
@@ -61,8 +63,9 @@ induction f as [v | Y [] k]; simpl; intros; auto.
   iApply (H with "HA HB").
 Qed.
 
-
+(* =triple= *)
 Notation "{{ P }} m {{ v ; Q }}" := (P ⊢ wp m (fun v => Q))
+(* =end= *)
                                       (at level 20,
                                         format "'[hv' {{  P  }}  '/  ' m  '/'  {{  v ;  Q  }} ']'").
 
@@ -87,6 +90,7 @@ Variable X: Type.
 Implicit Type P: iProp.
 Implicit Type Q: X -> iProp.
 
+(* =rule_consequence= *)
 Lemma rule_consequence: forall P P' Q Q' m,
 
   ({{ P' }} m {{ v; Q' v }}) ->
@@ -94,6 +98,7 @@ Lemma rule_consequence: forall P P' Q Q' m,
   (forall v, Q' v ⊢ Q v) ->
  (*-----------------------*)
   {{ P }} m {{ v; Q v }}.
+(* =end= *)
 Proof.
   intros. iIntros "HA". iDestruct (H0 with "HA") as "HA".
   iDestruct (H with "HA") as "HA". iApply (wp_consequence with "HA").
@@ -104,11 +109,13 @@ Qed.
 Lemma frame_bind : forall (P : iProp), ⊢ P -∗ emp ∗ P.
 Proof. iIntros "* $". Qed.
 
+(* =rule_frame= *)
 Lemma frame: forall P Q P' m,
 
   ({{ P }} m {{ v; Q v }}) ->
   (*----------------------------*)
   {{ P ∗ P' }} m {{ v; Q v ∗ P' }}.
+(* =end= *)
 Proof.
   intros. iIntros "[HA HC]". iApply (wp_consequence with "[HA]").
   iApply H; auto. iIntros; iFrame.
@@ -123,7 +130,9 @@ Proof.
   intro P. iIntros "HA". iApply (P with "[HA]"). iFrame.
 Qed.
 
+(* =rule_fresh= *)
 Lemma rule_gensym : {{ emp }} gensym tt {{ ident; & ident }}.
+(* =end= *)
 Proof. simpl.  iIntros "H" (v) "H2". iFrame. Qed.
 
 
@@ -173,9 +182,11 @@ Proof.
       iApply ("HA" with "HB").
 Qed.
 
+(* =adequacy= *)
 Lemma adequacy : forall {X} {m: Free Fresh X} {Q},
     {{ emp }} m {{ v; ⌜Q v⌝ }} ->
     Q (run m).
+(* =end= *)
 Proof.
 intros. unfold run.
 apply (soundness_pure (inject (eval m 0).2)).
@@ -205,10 +216,12 @@ Section Label_spec_aux.
 Variable X: Type.
 Implicit Type t: Tree X.
 
+(* =label_spec_aux= *)
 Lemma label_spec_aux : forall t,
     {{ emp }}
       label t
     {{ ft; ([∗ list] x ∈ flatten ft, & x) ∗ ⌜sameShape t ft⌝ }}.
+(* =end= *)
 Proof.
   induction t.
   - iBind. eapply rule_gensym. iRet. simpl; auto.
@@ -230,7 +243,9 @@ Proof.
 Qed.
 
 Lemma fold_nodup :
+(* =fold_nodup= *)
   forall idents, ⊢ ([∗ list] i ∈ idents, & (i: ident)) -∗ ⌜NoDup idents⌝.
+(* =end= *)
 Proof.
   induction idents; simpl; iIntros "HA".
   - iPureIntro. apply NoDup_nil_2.
@@ -245,8 +260,10 @@ Variable X: Type.
 Implicit Type t: Tree X.
 Implicit Type ft: Tree nat.
 
+(* =label_spec= *)
 Lemma label_spec: forall t,
     {{ emp }} label t {{ ft; ⌜NoDup (flatten ft) /\ sameShape t ft⌝ }}.
+(* =end= *)
 Proof.
 intros.
 iApply rule_consequence.
@@ -258,8 +275,10 @@ iApply rule_consequence.
   iSplit; auto.
 Qed.
 
+(* =relabel_spec= *)
 Lemma relabel_spec : forall t ft,
     relabel t = ft -> NoDup (flatten ft) /\ sameShape t ft.
+(* =end= *)
 Proof.
   intros. unfold relabel in H. subst.
   eapply (adequacy (label_spec _)).

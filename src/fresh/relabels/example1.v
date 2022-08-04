@@ -3,7 +3,9 @@ Require Import tree.
 
 Implicit Type X Y : Type.
 
+(* =state= *)
 Definition Fresh X := nat -> X * nat.
+(* =end= *)
 
 Section Monad.
   Variable X Y : Type.
@@ -11,12 +13,14 @@ Section Monad.
   Implicit Type m : Fresh X.
   Implicit Type f: X -> Fresh Y.
 
+(* =state_monad= *)
 Definition ret (x: X): Fresh X :=
   fun n => (x, n).
 Definition bind (m: Fresh X)(f: X -> Fresh Y): Fresh Y :=
   fun n => let (x, n') := m n in f x n'.
 Definition gensym (tt: unit): Fresh nat :=
   fun n => (n, 1+n).
+(* =end= *)
 
 End Monad.
 
@@ -26,6 +30,7 @@ Arguments bind [_][_] m f.
 Notation "'do' x '<-' e1 ';' e2" :=
   (bind e1 (fun x => e2)) (x name, at level 50).
 
+(* =label= *)
 Fixpoint label {X} (t: Tree X): Fresh (Tree nat) :=
   match t with
   | Leaf _ =>
@@ -36,6 +41,7 @@ Fixpoint label {X} (t: Tree X): Fresh (Tree nat) :=
     do r <- label r;
     ret (Node l r)
   end.
+(* =end= *)
 
 Definition interval a b := seq a (1 + b - a).
 
@@ -52,9 +58,11 @@ Implicit Type f: X -> Fresh Y.
 Implicit Type y: Y.
 Implicit Type n: nat.
 
+(* =bind_inversion= *)
 Remark bind_inversion: forall m f y n1 n3,
     (do x <- m; f x) n1 = (y, n3) ->
     exists v n2, m n1 = (v, n2) /\ f v n2 = (y, n3).
+(* =end= *)
 Proof.
   intros until n3. unfold bind. destruct (m n1). eauto.
 Qed.
@@ -87,8 +95,10 @@ Section LabelSpec.
 Variable X: Type.
 Implicit Type t: Tree X.
 
+(* =label_spec= *)
 Lemma label_spec : forall t n ft n',
     label t n = (ft, n') -> n < n' /\ flatten ft = interval n (n'-1).
+(* =end= *)
 Proof.
   induction t; intros.
   - apply bind_inversion in H as [t1' [n2 [Fresh Ret]]]. inversion Fresh. inversion Ret. subst.
@@ -116,9 +126,13 @@ Section Relabel.
 Variable X: Type.
 Implicit Type t: Tree X.
 
+(* =relabel= *)
 Definition relabel (t: Tree X): Tree nat := fst (label t 0).
+(* =end= *)
 
+(* =relabel_spec= *)
 Lemma relabel_spec : forall t ft, relabel t = ft -> NoDup (flatten ft).
+(* =end= *)
 Proof.
 intros.
 eapply NoDupTree.
