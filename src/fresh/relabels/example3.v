@@ -33,6 +33,8 @@ End WP.
 
 Arguments wp [_] m Q.
 
+Local Open Scope free_monad_scope.
+
 Lemma wp_bind {X Y} (e : Free Fresh X) (f :  X → Free Fresh Y) (Q : Y -> iProp) (Q' : X -> iProp) :
   wp e Q' ⊢
   (∀ v,  Q' v -∗ wp (f v) Q ) -∗

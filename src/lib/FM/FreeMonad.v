@@ -25,10 +25,10 @@ Declare Scope free_monad_scope.
 Notation "'ret!' v" := (ret v) (v name, at level 90) : free_monad_scope.
 
 Notation "'do' X <- A ; B" := (bind A (fun X => B))
-   (at level 200, X ident, A at level 100, B at level 200) : free_monad_scope.
+   (at level 200, X name, A at level 100, B at level 200) : free_monad_scope.
 
 Notation "'do' ( X , Y ) <- A ; B" := (bind2 A (fun X Y => B))
-   (at level 200, X ident, Y ident, A at level 100, B at level 200) : free_monad_scope.
+   (at level 200, X name, Y name, A at level 100, B at level 200) : free_monad_scope.
 
 Notation "'let!' x ':=' e1 'in' e2" :=
   (bind e1 (fun x => e2)) (x name, at level 50) : free_monad_scope.

@@ -7,6 +7,8 @@ Definition gensym (tt: unit): Free Fresh nat := syntax_effect (gensymOp tt).
 
 Require Import tree.
 
+Local Open Scope free_monad_scope.
+
 Fixpoint label {X} (t : Tree X) : Free Fresh (Tree nat):=
   match t with
   | Leaf _ =>

@@ -34,10 +34,12 @@ Qed.
 
 End Soundness.
 
-Axiom right_unit    : forall {X} (a : Free Fresh X), do v <- a; ret v = a.
-Axiom left_unit     : forall {X Y} (a : X) (f : X -> Free Fresh Y), do v <- ret a; f v = f a.
+Local Open Scope free_monad_scope.
+
+Axiom right_unit    : forall {X} (a : Free Fresh X), (do v <- a; ret v) = a.
+Axiom left_unit     : forall {X Y} (a : X) (f : X -> Free Fresh Y), (do v <- ret a; f v) = f a.
 Axiom associativity : forall {A B C} (m : Free Fresh A) (f : A -> Free Fresh B) (g : B -> Free Fresh C),
-       do v' <- (do v <- m; f v); g v' =
+       (do v' <- (do v <- m; f v); g v') =
        do v <- m; do v' <- f v; g v'.
 
 Lemma wp_bind : forall {X Y} Q (f : Free Fresh X) (g : X -> Free Fresh Y) n,
