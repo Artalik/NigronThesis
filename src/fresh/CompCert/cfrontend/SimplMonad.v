@@ -6,26 +6,32 @@ Require Export FreeMonad.
 
 Definition ident := positive.
 
+(* =generator= *)
 Record generator : Type := mkgenerator { gen_next : ident;
-                                         gen_trail: list (ident * type)
-                             }.
+                                         gen_trail: list (ident * type) }.
+(* =end= *)
 
 Parameter first_unused_ident : unit -> ident.
 
 Definition initial_generator (x : unit) : generator :=
   mkgenerator (first_unused_ident x) nil.
 
+(* =sig= *)
 Inductive MON : Type -> Type :=
 | errorOp : Errors.errmsg -> forall {X}, MON X
 | gensymOp : type -> MON ident
 | trailOp : unit -> MON (list (ident * type)).
+(* =end= *)
 
+(* =mon= *)
 Definition mon := Free MON.
+(* =end= *)
 
 Definition error {X} (e : Errors.errmsg) : mon X := syntax_effect (errorOp e).
 Definition gensym (t : type) : mon ident := syntax_effect (gensymOp t).
 Definition trail (_ : unit): mon (list (ident * type)) := syntax_effect (trailOp tt).
 
+(* =wp= *)
 Fixpoint wp {X} (e1 : mon X) (Q : X -> iProp) : iProp :=
   match e1 with
   | ret v => Q v
@@ -33,6 +39,7 @@ Fixpoint wp {X} (e1 : mon X) (Q : X -> iProp) : iProp :=
   | op (gensymOp _) f => ∀ l, & l -∗ wp (f l) Q
   | op (trailOp _) f => ∀ l, wp (f l) Q
   end.
+(* =end= *)
 
 Notation "'{{' P } } e {{ v ; Q } }" := (P ⊢ wp e (fun v => Q))
                                           (at level 20,
@@ -119,15 +126,28 @@ Qed.
 Ltac Frame := eapply intro_true_r; eapply frame.
 
 (** Effects rules *)
-
+(* =gensym_spec= *)
 Lemma rule_gensym t : {{ emp }} gensym t {{ l; & l }}.
 Proof. simpl; auto. Qed.
+(* =end= *)
 
-Lemma rule_error {X} P (Q : X -> iProp) e : {{ P }} error e {{ v; Q v }}.
+Section error_rule.
+
+  Variable X: Type.
+  Implicit Type P : iProp.
+  Implicit Type Q : X -> iProp.
+
+(* =error_spec= *)
+Lemma rule_error P Q e : {{ P }} error e {{ v; Q v }}.
 Proof. auto. Qed.
+(* =end= *)
 
+End error_rule.
+
+(* =trail_spec= *)
 Lemma rule_trail  : {{ emp }} trail tt {{ _; emp  }}.
 Proof. auto. Qed.
+(* =end= *)
 
 Definition inject_aux n :=
   List.map Pos.of_nat
@@ -184,6 +204,7 @@ Proof.
   constructor.
 Qed.
 
+(* =eval= *)
 Fixpoint eval {X} (m : mon X) : generator -> res (generator * X) :=
   match m with
   | ret v => fun s => OK (s, v)
@@ -198,13 +219,15 @@ Fixpoint eval {X} (m : mon X) : generator -> res (generator * X) :=
         let h := gen_trail s in
         eval (f h) s
   end.
+(* =end= *)
 
+(* =run= *)
 Definition run {X} (m: mon X): res X :=
   match eval m (initial_generator tt) with
   | OK (_, v) => OK v
   | Error e => Error e
   end.
-
+(* =end= *)
 
 Section Eval_Adequacy.
   Variable X: Type.
@@ -289,9 +312,11 @@ Section Adequacy.
   Implicit Type Q: X -> Prop.
   Implicit Type v: X.
 
-  Lemma adequacy: forall m Q v,
-      ({{ emp }} m {{ v; ⌜ Q v ⌝}}) ->
-      run m = OK v -> Q v.
+(* =adequacy= *)
+Lemma adequacy: forall m Q v,
+    ({{ emp }} m {{ v; ⌜ Q v ⌝}}) ->
+    run m = OK v -> Q v.
+(* =end= *)
   Proof.
     intros m.
     unfold run. intros.
