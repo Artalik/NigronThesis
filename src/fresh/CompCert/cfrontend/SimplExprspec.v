@@ -37,11 +37,13 @@ Local Open Scope free_monad_scope.
   matching the given temporary environment [le].
    *)
 
-  Definition dest_below (dst: destination) : iProp :=
-    match dst with
-    | For_set sd => & (sd_temp sd)
-    | _ => emp
-    end.
+(* =dest_below_iprop= *)
+Definition dest_below (dst: destination) : iProp :=
+  match dst with
+  | For_set sd => & (sd_temp sd)
+  | _ => emp
+  end.
+(* =end= *)
 
   Definition final (dst: destination) (a: expr) : list statement :=
     match dst with
@@ -73,8 +75,10 @@ Local Open Scope free_monad_scope.
     else
       ⌜ls =nil /\ e = e1⌝%I.
 
-  Fixpoint tr_expr (le : temp_env) (dst : destination) (e : Csyntax.expr)
-           (sl : list statement ) (a : expr) : iProp :=
+(* =tr_expr_iprop= *)
+Fixpoint tr_expr (*[*)(le : temp_env)(*]*) (dst : destination) (*[*)(e : Csyntax.expr)(*]*)
+         (*[*)(sl : list statement ) (a : expr) (*]*) : iProp :=
+(* =end= *)
     (<absorb>
        match e with
        | Csyntax.Evar id ty =>
@@ -193,19 +197,20 @@ Local Open Scope free_monad_scope.
       tr_expr le (For_set (SDcons ty ty t sd)) e3 sl4 a4) ∗
       ⌜ sl = sl2 ++ makeif a2 (makeseq sl3) (makeseq sl4) :: nil ⌝
      end
-    | Csyntax.Eassign e1 e2 ty =>
-      match dst with
-      | For_val | For_set _ =>
-          ∃ sl2 a2 sl3 a3 t bf,
-       tr_expr le For_val e1 sl2 a2  ∗
-       tr_expr le For_val e2 sl3 a3  ∗
+(* =assign_spec_iprop= *)
+| Csyntax.Eassign e1 e2 ty =>
+    match dst with
+    | For_val | For_set _ =>
+    ∃ (*[*)sl2 a2 sl3 a3 bf (*]*) t,
+       tr_expr (*[*)le For_val e1 sl2 a2 (*]*) ∗
+       tr_expr (*[*)le For_val e2 sl3 a3 (*]*) ∗
        & t ∗
        dest_below dst ∗
-       ⌜ tr_is_bitfield_access a2 bf /\
-         sl = sl2 ++ sl3 ++ Sset t (Ecast a3 (Csyntax.typeof e1)) ::
-                make_assign bf a2 (Etempvar t (Csyntax.typeof e1)) ::
-                final dst (make_assign_value bf (Etempvar t (Csyntax.typeof e1))) /\
-         a = make_assign_value bf (Etempvar t (Csyntax.typeof e1))⌝
+       ⌜ (*[*)tr_is_bitfield_access a2 bf /\
+             sl = sl2 ++ sl3 ++ Sset t (Ecast a3 (Csyntax.typeof e1)) ::
+                    make_assign bf a2 (Etempvar t (Csyntax.typeof e1)) ::
+                    final dst (make_assign_value bf (Etempvar t (Csyntax.typeof e1))) /\
+         a = make_assign_value bf (Etempvar t (Csyntax.typeof e1)) (*]*)⌝
        | For_effects =>
        ∃ sl2 a2 sl3 a3 bf,
        tr_expr le For_val e1 sl2 a2  ∗
@@ -390,10 +395,12 @@ Local Open Scope free_monad_scope.
     with exprlist_ind2 := Induction for Csyntax.exprlist Sort Prop.
   Combined Scheme tr_expr_exprlist from expr_ind2, exprlist_ind2.
 
-  Lemma transl_meets_spec :
-    (forall r dst,
-        {{ emp }}
-          transl_expr ce dst r {{ res; dest_below dst -∗ ∀ le, tr_expr le dst r res.1 res.2 }})
+(* =transl_meets_spec_iprop= *)
+Lemma transl_meets_spec :
+  (forall r dst,
+      {{ emp }} transl_expr (*[*)ce dst r (*]*)
+      {{ res; dest_below dst -∗ (*[*)∀ le, (*]*)tr_expr (*[*)le (*]*)dst (*[*)r res.1 res.2 (*]*) }})
+(* =end= *)
     /\
     (forall rl,
         {{ emp }} transl_exprlist ce rl {{ res; ∀ le, tr_exprlist le rl res.1 res.2 }}).
@@ -472,14 +479,18 @@ Local Open Scope free_monad_scope.
     Variable le: temp_env.
     Variable m: mem.
 
-    Inductive tr_top: destination -> Csyntax.expr -> list statement -> expr ->  Prop :=
-  | tr_top_val_val: forall v ty a,
+(* =tr_top= *)
+Inductive tr_top: (*[*)destination -> Csyntax.expr -> list statement -> expr -> (*]*) Prop :=
+(* =end= *)
+
+| tr_top_val_val: forall v ty a,
       typeof a = ty -> eval_expr ge e le m a v ->
       tr_top For_val (Csyntax.Eval v ty) nil a
-  | tr_top_base: forall dst r sl a tmp,
-      tr_expr le dst r sl a () tmp ->
-      tr_top dst r sl a.
-
+(* =tr_top_base= *)
+| tr_top_base: forall (*[*)dst r sl a(*]*) tmp,
+    tr_expr (*[*)le dst r sl a ()(*]*) tmp ->
+    tr_top (*[*)dst r sl a(*]*).
+(* =end= *)
   End TR_TOP.
 
 
@@ -634,10 +645,11 @@ with tr_lblstmts: Csyntax.labeled_statements -> labeled_statements -> Prop :=
     | _ => idtac
     end.
 
-
-  Lemma transl_stmt_meets_spec : forall s,
-      {{ emp }} transl_stmt ce s {{ res; ⌜ tr_stmt s res ⌝}}
-  with transl_lblstmt_meets_spec:
+(* =transl_stmt_meets_spec= *)
+Lemma transl_stmt_meets_spec : forall s,
+    {{ emp }} transl_stmt ce s {{ res; ⌜ tr_stmt s res ⌝}}
+(* =end= *)
+with transl_lblstmt_meets_spec:
          forall s,
            {{ emp }} transl_lblstmt ce s {{ res; ⌜ tr_lblstmts s res ⌝ }}.
   Proof.
