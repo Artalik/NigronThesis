@@ -314,7 +314,7 @@ Section Adequacy.
 
 (* =adequacy= *)
 Lemma adequacy: forall m Q v,
-    ({{ emp }} m {{ v; ⌜ Q v ⌝}}) ->
+    {{ emp }} m {{ v; ⌜ Q v ⌝}} ->
     run m = OK v -> Q v.
 (* =end= *)
   Proof.
