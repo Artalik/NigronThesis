@@ -55,3 +55,6 @@ src/Formalisation/Formats/Radius/versionUnknown/radius_rel_C.v
 
 -Q ./src/Extraction Extraction
 src/Extraction/Ocaml/Extraction/extraction.v
+
+-I ./src/examples/ 
+src/examples/parser.v
