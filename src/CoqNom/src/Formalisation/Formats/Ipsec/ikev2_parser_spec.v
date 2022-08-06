@@ -66,7 +66,7 @@ Proof.
   intro. unfold parse_ikev2_payload_sa.
   WpTac.
   - eapply parse_ikev2_proposal_rule.
-  - unfold all_disjointMSL, all_disjointSL. unfold list_span_M.
+  - unfold all_disjointMSL, all_disjointSL.
     iIntros (v) "[HA _]".
     iDestruct (big_sepL_absorb_out with "HA") as ">HA".
     iDestruct (big_sepL_double with "HA") as "HA". simpl. unfold foldMap_propo.
@@ -298,8 +298,7 @@ Proof.
   Frame. eapply parse_ikev2_payload_list_rule.
   iIntros. iNorm. iDestruct (big_sepL_absorb_out with "HD") as ">HA".
   iModIntro. unfold all_disjointMSL, all_disjointSL.
-  iDestruct (big_sepL_double with "HA") as "HA".
-  unfold list_span_M. simpl. iClear "HF". unfold foldr_comp. simpl.
+  iDestruct (big_sepL_double with "HA") as "HA". simpl.
   unfold foldr_payload. simpl.
   erewrite foldr_ext.
   iApply "HA". 2-3 : eauto. intros b a. simpl. unfold foldr_content.
