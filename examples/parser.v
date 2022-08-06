@@ -267,4 +267,4 @@ Definition test := [0;0;0;5;1;0;1;2;15].
 
 Compute (decode decode_payload_SSH test).
 
-Definition Bit := bool.
+Reset Decodeur.
