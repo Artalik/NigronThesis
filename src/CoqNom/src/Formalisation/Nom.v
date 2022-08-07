@@ -173,6 +173,7 @@ Definition many {X} (e : X -> NomG X) (base : X): NomG X :=
 
 End NomG_syntax.
 
+Definition NomB := @NomG nat8.
 
 Notation "'let!' x ':=' e1 'in' e2" :=
   (bind e1 (fun x => e2)) (x name, at level 50).
