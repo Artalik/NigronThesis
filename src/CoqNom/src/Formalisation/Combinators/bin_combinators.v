@@ -20,6 +20,37 @@ Definition be_u64 : NomB nat64 :=
   let! v1 := be_u32 in
   ret (natp_to_nat2p v0 v1).
 
+Definition be_u128: NomB nat128:=
+  let! v0 := be_u64 in
+  let! v1 := be_u64 in
+  ret (natp_to_nat2p v0 v1).
+
+
+Definition le_u8 : NomB nat8 :=
+  let! s := take 1 in
+  read s 0.
+
+
+Definition le_u16 : NomB nat16 :=
+  let! v0 := le_u8 in
+  let! v1 := le_u8 in
+  ret (natp_to_nat2p v1 v0).
+
+Definition le_u32 : NomB nat32 :=
+  let! v0 := le_u16 in
+  let! v1 := le_u16 in
+  ret (natp_to_nat2p v1 v0).
+
+Definition le_u64 : NomB nat64 :=
+  let! v0 := le_u32 in
+  let! v1 := le_u32 in
+  ret (natp_to_nat2p v1 v0).
+
+Definition le_u128: NomB nat128:=
+  let! v0 := le_u64 in
+  let! v1 := le_u64 in
+  ret (natp_to_nat2p v1 v0).
+
 Definition get_ipv4 : NomB Ipv4 :=
   let! a := be_u8 in
   let! b := be_u8 in
