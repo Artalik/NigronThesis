@@ -22,7 +22,7 @@ Definition bind2 {SIG} {A B C: Type} (x: Free SIG (A * B)) (f: A -> B -> Free SI
 
 Declare Scope free_monad_scope.
 
-Notation "'ret!' v" := (ret v) (v name, at level 90) : free_monad_scope.
+Notation "'ret!' v" := (ret v) (at level 50) : free_monad_scope.
 
 Notation "'do' X <- A ; B" := (bind A (fun X => B))
    (at level 200, X name, A at level 100, B at level 200) : free_monad_scope.
