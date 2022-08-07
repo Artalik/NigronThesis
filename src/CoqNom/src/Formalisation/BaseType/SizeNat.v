@@ -2,7 +2,7 @@ From stdpp Require Import numbers.
 From Formalisation Require Import Axioms.
 Open Scope N_scope.
 
-Record natN (len : N) : Set := mk_natN { val : N ; len_correct : val < N.pow 2 len}.
+Record natN (len : N) : Set := mk_natN { val : N ; len_correct : val < 2 ^ len}.
 
 Arguments val [len].
 
@@ -28,7 +28,7 @@ Notation "'_32' n" := (mk_natN 32 n _) (at level 30).
 Notation "'_64' n" := (mk_natN 64 n _) (at level 30).
 Notation "'_128' n" := (mk_natN 128 n _) (at level 30).
 
-Lemma mult_pow : forall p (n m : natN p), val n * N.pow 2 p + val m < N.pow 2 (2 * p).
+Lemma mult_pow : forall p (n m : natN p), val n * 2 ^ p + val m < 2 ^ (2 * p).
 Proof.
   intros. destruct n as [n Pn], m as [m Pm]. simpl. eapply N.le_lt_trans.
   - instantiate (1 := ((2 ^ (2 * p)) - 1)). simpl.
@@ -47,8 +47,9 @@ Proof.
       rewrite H. apply N.pow_le_mono_r; lia.
 Qed.
 
+
 Program Definition natp_to_nat2p {p} (n : natN p) (m : natN p) : natN (2 * p) :=
-  mk_natN (2 * p) ((val n) * (N.pow 2 p) + val m) _.
+  mk_natN (2 * p) ((val n) * (2 ^ p) + val m) _.
 Next Obligation. intros. apply mult_pow. Qed.
 
 Notation "n ↑ m" := (natp_to_nat2p n m)(at level 50).

@@ -1,6 +1,6 @@
 open BinPos
 open PHOAS
-open Compiler (* <- Ajouté manuellement *)
+open Compiler (* <- Ajouté mutuellement *)
 
 (** val equiv_parse_radius_data_rel : 'a1 coq_PHOAS **)
 
@@ -41,8 +41,9 @@ let equiv_parse_radius_data_rel =
     (Pos.mul ((fun p->2*p) ((fun p->2*p) ((fun p->2*p) 1))) 1)), v5)), (Var ((NatN
     (Pos.mul ((fun p->2*p) ((fun p->2*p) ((fun p->2*p) 1))) 1)), v7)))))))))), (Unknown
     "radius_data"), (fun v5 -> LetIn (Span, (LetIn (Nat, Length, Span, (fun v7 -> IfThenElse
-    ((EBin (Nat, Nat, Bool, ELe, (Const (Nat, (ENat ((fun p->2*p) 1)))), (Var (Nat, v7)))),
-    Span, (Take (Const (Nat, (ENat ((fun p->2*p) 1))))), (Fail Span))))), (Unknown
+    ((EBin (Nat, Nat, Bool, ELe, (Const (Nat, (ENat ((fun p->2*p) ((fun p->2*p) ((fun p->2*p)
+    ((fun p->2*p) 1))))))), (Var (Nat, v7)))), Span, (Take (Const (Nat, (ENat ((fun p->2*p)
+    ((fun p->2*p) ((fun p->2*p) ((fun p->2*p) 1)))))))), (Fail Span))))), (Unknown
     "radius_data"), (fun v7 -> LetIn ((Option (Vector (Unknown "radius_attribute"))),
     (IfThenElse ((EBin (Nat, Nat, Bool, ELt, (Const (Nat, (ENat ((fun p->2*p) ((fun p->2*p)
     ((fun p->1+2*p) ((fun p->2*p) 1))))))), (EUna ((NatN

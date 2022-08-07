@@ -114,17 +114,16 @@ Proof.
     + eapply H0.
 Qed.
 
-
-Definition list_span_M `{Foldable M} (m : M span) : list span :=
+Definition M_to_list `{Foldable M} {X} (m : M X) : list X :=
   Foldable.foldr _ _ (fun a b => a :: b) [] m.
 
-Definition all_disjointSL l := [∗ list] v ∈ l, IsFresh v.
+Definition all_disjointSL (l : list span) := [∗ list] v ∈ l, IsFresh v.
 
-Definition all_disjointMSL `{Foldable M} (m : M span) :=
-  all_disjointSL (list_span_M m).
+Definition all_disjointMSL `{Foldable M} (m : M span) : iProp :=
+  all_disjointSL (M_to_list m).
 
-Definition all_disjointM {M} `{Foldable M} (m : M span) :=
-  all_disjoint (list_span_M m).
+Definition all_disjointM {M} `{Foldable M} (m : M span) : Prop :=
+  all_disjoint (M_to_list m).
 
 Lemma all_disjoint_SL_to_Prop : forall l, <absorb> all_disjointSL l ⊢ ⌜ all_disjoint l ⌝.
 Proof.
@@ -138,6 +137,15 @@ Proof.
   iDestruct (IsFresh_spec with "HB HA") as "%". iPureIntro. apply H.
 Qed.
 
-Theorem all_disjointM_SL_to_Prop : forall M m `{Foldable M},
+Lemma all_disjoint_spec : forall l, all_disjointSL l ⊢ ⌜ all_disjoint l ⌝.
+Proof.
+  iIntros. iApply all_disjoint_SL_to_Prop. auto.
+Qed.
+
+Theorem all_disjointM_SL_to_Prop : forall `{Foldable M} m,
     <absorb> all_disjointMSL m ⊢ ⌜ all_disjointM m ⌝.
+Proof. iIntros "* HA". iApply (all_disjoint_SL_to_Prop with "HA"). Qed.
+
+Theorem all_disjointM_spec : forall `{Foldable M} m,
+    all_disjointSL (M_to_list m) ⊢ ⌜ all_disjoint (M_to_list m) ⌝.
 Proof. iIntros "* HA". iApply (all_disjoint_SL_to_Prop with "HA"). Qed.
