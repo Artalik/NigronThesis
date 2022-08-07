@@ -25,6 +25,7 @@ src/Formalisation/Combinators/combinator.v
 src/Formalisation/Combinators/multi.v
 src/Formalisation/Combinators/sequence.v
 src/Formalisation/Combinators/bin_combinators.v
+src/Formalisation/Combinators/bytes.v
 src/Formalisation/ZeroCopy/disjoint.v
 src/Formalisation/ZeroCopy/IsFresh.v
 src/Formalisation/ZeroCopy/ProgramLogic.v
