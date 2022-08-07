@@ -7,29 +7,90 @@ From Classes Require Export Foldable.
 
 Open Scope N_scope.
 
+Module signature.
+
+  From FreeMonad Require Import FreeMonad.
+
+(* =atom= *)
+Context {atom : Type}.
+(* =end= *)
+
+(* =signature= *)
+Inductive NOM : Type -> Type :=
+| FAIL : forall X, NOM X
+| LENGTH : NOM N
+| READ : span -> N -> NOM atom
+| TAKE : N -> NOM span
+| ALT : forall X, Free NOM X -> Free NOM X -> NOM X
+| LOCAL : option span -> forall X, Free NOM X -> NOM X
+| REPEAT : option N -> forall X, (X -> Free NOM X) -> X -> NOM X.
+(* =end= *)
+
+Definition NomG := Free NOM.
+
+Global Arguments FAIL {X}.
+Global Arguments ALT [X].
+Global Arguments LOCAL _ [X].
+Global Arguments REPEAT _ [X].
+
+Definition fail {X} : NomG X := syntax_effect FAIL.
+
+Definition length : NomG N := syntax_effect LENGTH.
+
+Definition take (n : N) : NomG span := syntax_effect (TAKE n).
+
+Definition read (s : span) (pos : N): NomG atom := syntax_effect (READ s pos).
+
+Definition alt {X} (c1 : NomG X) (c2 : NomG X) : NomG X := syntax_effect (ALT c1 c2).
+
+(* =local= *)
+Definition local (s : option span) {X} (e : NomG X) : NomG X :=
+  syntax_effect (LOCAL s e).
+
+Definition scope (s : span) {X} (e : NomG X) := local (Some s) e.
+
+Definition peek {X} (e : NomG X) : NomG X := local None e.
+(* =end= *)
+
+(* =repeat= *)
+Definition repeat (n : option N) {X} (e : X -> NomG X) (base : X): NomG X :=
+  syntax_effect (REPEAT n e base).
+
+Definition repeat_n (n : N) {X} (e : X -> NomG X) (base : X): NomG X :=
+  repeat (Some n) e base.
+
+Definition many {X} (e : X -> NomG X) (base : X): NomG X :=
+  repeat None e base.
+(* =end= *)
+
+End signature.
+
 Section NomG_syntax.
 
-  Context {atom : Type}.
+Context {atom : Type}.
 
-  Inductive NOM : Type -> Type :=
-  | FAIL : forall X, NOM X
-  | LENGTH : NOM N
-  | READ : span -> N -> NOM atom
-  | TAKE : N -> NOM span
-  | ALT : forall X, NomG X -> NomG X -> NOM X
-  | LOCAL : option span -> forall X, NomG X -> NOM X
-  | REPEAT : option N -> forall X, (X -> NomG X) -> X -> NOM X
+Inductive NOM : Type -> Type :=
+| FAIL : forall X, NOM X
+| LENGTH : NOM N
+| READ : span -> N -> NOM atom
+| TAKE : N -> NOM span
+| ALT : forall X, NomG X -> NomG X -> NOM X
+| LOCAL : option span -> forall X, NomG X -> NOM X
+| REPEAT : option N -> forall X, (X -> NomG X) -> X -> NOM X
 
-  with NomG : Type -> Type :=
-  | ret : forall X, X -> NomG X
-  | op : forall Y, NOM Y -> forall X, (Y -> NomG X) -> NomG X.
 
-  Global Arguments FAIL {X}.
-  Global Arguments ALT [X].
-  Global Arguments LOCAL _ [X].
-  Global Arguments REPEAT _ [X].
+(* =NomG= *)
+with NomG : Type -> Type :=
+| ret : forall X, X -> NomG X
+| op : forall Y, NOM Y -> forall X, (Y -> NomG X) -> NomG X.
+(* =end= *)
 
-  Global Arguments ret {X}.
+Global Arguments FAIL {X}.
+Global Arguments ALT [X].
+Global Arguments LOCAL _ [X].
+Global Arguments REPEAT _ [X].
+
+Global Arguments ret {X}.
   Global Arguments op [Y] _ [X].
 
   Fixpoint bind {X Y} (m : NomG X) (f : X -> NomG Y) : NomG Y :=
@@ -50,14 +111,22 @@ Section NomG_syntax.
 
   Definition alt {X} (c1 : NomG X) (c2 : NomG X) : NomG X := algeff (ALT c1 c2).
 
-  Definition local (s : option span) {X} (e : NomG X) : NomG X := algeff (LOCAL s e).
+Definition local (s : option span) {X} (e : NomG X) : NomG X :=
+  algeff (LOCAL s e).
 
-  Definition scope (s : span) {X} (e : NomG X) : NomG X := local (Some s) e.
+Definition scope (s : span) {X} (e : NomG X) := local (Some s) e.
 
-  Definition peek {X} (e : NomG X) : NomG X := local None e.
+Definition peek {X} (e : NomG X) : NomG X := local None e.
 
-  Definition repeat (n : option N) {X} (e : X -> NomG X) (base : X): NomG X :=
-    algeff (REPEAT n e base).
+Definition repeat (n : option N) {X} (e : X -> NomG X) (base : X): NomG X :=
+  algeff (REPEAT n e base).
+
+Definition repeat_n (n : N) {X} (e : X -> NomG X) (base : X): NomG X :=
+  repeat (Some n) e base.
+
+Definition many {X} (e : X -> NomG X) (base : X): NomG X :=
+  repeat None e base.
+
 
   (* Induction *)
 
