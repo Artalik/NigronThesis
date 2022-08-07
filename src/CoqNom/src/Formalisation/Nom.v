@@ -5,6 +5,28 @@ From Formalisation Require Export SizeNat IpAddr Vector Span.
 From SepLogic Require Export SepBasicCore SepSet.
 From Classes Require Export Foldable.
 
+
+Module signature.
+
+  From FreeMonad Require Import FreeMonad.
+
+(* =atom= *)
+Context {atom : Type}.
+(* =end= *)
+
+(* =signature= *)
+Inductive NOM : Type -> Type :=
+| FAIL : forall X, NOM X
+| LENGTH : NOM N
+| READ : span -> N -> NOM atom
+| TAKE : N -> NOM span
+| ALT : forall X, Free NOM X -> Free NOM X -> NOM X
+| LOCAL : option span -> forall X, Free NOM X -> NOM X
+| REPEAT : option N -> forall X, (X -> Free NOM X) -> X -> NOM X.
+(* =end= *)
+
+End signature.
+
 Open Scope N_scope.
 
 Module signature.
