@@ -139,6 +139,15 @@ Section multi.
                       ret (add b v)) (add vec v))
       (ret vec).
 
+  Definition fill {X Y} (v: VECTOR X) (e : NomG Y) : NomG (VECTOR Y) :=
+    let size := Vector.size (`v) in
+    repeat_compt (Some size)
+      (fun n vec =>
+         let! v := e in
+         ret (set vec n v))
+      (make Y size).
+
+
 End multi.
 
 Close Scope N_scope.
