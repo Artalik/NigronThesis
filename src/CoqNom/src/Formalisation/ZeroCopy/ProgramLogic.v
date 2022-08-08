@@ -5,19 +5,39 @@ Section wp.
 
   Context {atom : Type}.
 
-  Fixpoint wp {X} (m: @NomG atom X) (Q : X -> iProp) : iProp :=
-    match m in (NomG T) return ((T -> iProp) -> iProp) with
-    | ret v => fun Q => Q v
-    | op FAIL _ => fun _ => True
-    | op (LOCAL None _) c | op (READ _ _) c | op LENGTH c => fun Q => ∀ v, wp (c v) Q
-    | op (TAKE n) c => fun Q => ∀ v, IsFresh v -∗ wp (c v) Q
-    | op (ALT c1 c2) c => fun Q => wp c1 (fun v => wp (c v) Q) ∧ wp c2 (fun v => wp (c v) Q)
-    | op (LOCAL (Some range) e) c =>
-        fun Q => IsFresh range ∗ wp e (fun v => wp (c v) Q)
-    | op (REPEAT _ e b) c =>
-        fun Q => ∃ Q', Q' b ∗ (<pers> ∀ res, Q' res -∗ wp (e res) Q') ∗
-                      (∀ res, Q' res -∗ wp (c res) Q)
-    end Q.
+Fail
+(* =wp= *)
+Fixpoint wp {X} (m: @NomG atom X) (Q : X -> iProp) : iProp :=
+  match m with
+  | ret v => Q v
+  | op FAIL _ => True
+  | op (LOCAL None _) c | op (READ _ _) c | op LENGTH c => ∀ v, wp (c v) Q
+  | op (TAKE n) c => ∀ v, IsFresh v -∗ wp (c v) Q
+  | op (ALT c1 c2) c => wp c1 (fun v => wp (c v) Q) ∧ wp c2 (fun v => wp (c v) Q)
+  | op (LOCAL (Some range) e) c =>
+      IsFresh range ∗ wp e (fun v => wp (c v) Q)
+  | op (REPEAT _ e b) c => ∃ Q',
+    Q' b ∗
+      (<pers> ∀ res, Q' res -∗ wp (e res) Q') ∗
+      (∀ res, Q' res -∗ wp (c res) Q)
+  end.
+(* =end= *)
+
+Fixpoint wp {X} (m: @NomG atom X) (Q : X -> iProp) : iProp :=
+  match m in (NomG T) return ((T -> iProp) -> iProp) with
+  | ret v => fun Q => Q v
+  | op FAIL _ => fun _ => True
+  | op (LOCAL None _) c | op (READ _ _) c | op LENGTH c => fun Q => ∀ v, wp (c v) Q
+  | op (TAKE n) c => fun Q => ∀ v, IsFresh v -∗ wp (c v) Q
+  | op (ALT c1 c2) c => fun Q => wp c1 (fun v => wp (c v) Q) ∧ wp c2 (fun v => wp (c v) Q)
+  | op (LOCAL (Some range) e) c =>
+      fun Q => IsFresh range ∗ wp e (fun v => wp (c v) Q)
+  | op (REPEAT _ e b) c =>
+      fun Q => ∃ Q',
+          Q' b ∗
+            (<pers> ∀ res, Q' res -∗ wp (e res) Q') ∗
+            (∀ res, Q' res -∗ wp (c res) Q)
+  end Q.
 
   Lemma wp_consequence : forall {X} (e : NomG X) (P Q : X -> iProp),
       ⊢ wp e P -∗
