@@ -1,11 +1,10 @@
 From Formalisation Require Import String Span.
-From Formalisation Require Import (* Axioms *) Nom (* ProgramLogic adequacy *) Monotone FuelMono.
+From Formalisation Require Import Nom Monotone FuelMono.
 
-From Formalisation Require Import combinator multi sequence bin_combinators.
+From Formalisation Require Import combinator multi sequence bin_combinators bytes.
 From Formalisation Require Import ProgramLogic adequacy.
 From Raffinement Require Import PHOAS.
 
-(* From Equations Require Import Equations. *)
 Open Scope N_scope.
 
 Definition span_data_wf (data : list nat8) (s : span) :=
@@ -287,10 +286,10 @@ Proof.
   - next_step H4. next_step H2.
   - next_step H4. next_step H2.
   - eapply ADEE in H5 as [fuel RUN].
-    exists fuel. simpl. unfold run_peek. unfold_MonSem. rewrite RUN. reflexivity. auto.
+    exists fuel. simpl. unfold_MonSem. rewrite RUN. reflexivity. auto.
   - eapply ADEE in H5 as [x [Rr [fuel RUN]]].
     eexists. repeat split; eauto.
-    exists fuel. simpl. unfold run_peek. unfold_MonSem. rewrite RUN. reflexivity. auto.
+    exists fuel. simpl. unfold_MonSem. rewrite RUN. reflexivity. auto.
 Qed.
 
 Lemma scope_adequate data s : forall (erange : VAL Span) range X Y R (e : NomG X) (h : PHOASV Y) vr,
@@ -303,11 +302,11 @@ Proof.
   intros erange range X Y R e h vr ADEE VALR EQr WFR WF res SEM. next_step SEM.
   - next_step H4. next_step H7. VAL_unif. subst. simpl in *.
     eapply ADEE in H5 as [fuel RUN]. exists fuel.
-    simpl. unfold run_scope. unfold_MonSem. rewrite RUN. reflexivity. eauto.
+    simpl. unfold_MonSem. rewrite RUN. reflexivity. eauto.
   - next_step H4. next_step H7. VAL_unif. subst. simpl in *.
     eapply ADEE in H5 as [x [Rx [fuel RUN]]]. exists x.
     repeat split; auto. exists fuel.
-    unfold run_scope. unfold_MonSem. rewrite RUN. reflexivity. eauto.
+    unfold_MonSem. rewrite RUN. reflexivity. eauto.
   - next_step H4. next_step H7.
   - next_step H4. next_step H7.
 Qed.
