@@ -11,15 +11,18 @@ Fixpoint wp {X} (m: @NomG atom X) (Q : X -> iProp) : iProp :=
   match m with
   | ret v => Q v
   | op FAIL _ => True
-  | op (LOCAL None _) c | op (READ _ _) c | op LENGTH c => ∀ v, wp (c v) Q
-  | op (TAKE n) c => ∀ v, IsFresh v -∗ wp (c v) Q
-  | op (ALT c1 c2) c => wp c1 (fun v => wp (c v) Q) ∧ wp c2 (fun v => wp (c v) Q)
-  | op (LOCAL (Some range) e) c =>
-      IsFresh range ∗ wp e (fun v => wp (c v) Q)
-  | op (REPEAT _ e b) c => ∃ Q',
+  | op (LOCAL None _) k | op (READ _ _) k | op LENGTH k =>
+    ∀ v, wp (k v) Q
+  | op (TAKE n) k =>
+    ∀ v, IsFresh v -∗ wp (k v) Q
+  | op (ALT e1 e2) k =>
+    wp e1 (fun v => wp (k v) Q) ∧ wp e2 (fun v => wp (k v) Q)
+  | op (LOCAL (Some range) e) k =>
+    IsFresh range ∗ wp e (fun v => wp (k v) Q)
+  | op (REPEAT _ e b) k => ∃ Q',
     Q' b ∗
-      (<pers> ∀ res, Q' res -∗ wp (e res) Q') ∗
-      (∀ res, Q' res -∗ wp (c res) Q)
+    (<pers> ∀ res, Q' res -∗ wp (e res) Q') ∗
+    (∀ res, Q' res -∗ wp (k res) Q)
   end.
 (* =end= *)
 
@@ -27,16 +30,16 @@ Fixpoint wp {X} (m: @NomG atom X) (Q : X -> iProp) : iProp :=
   match m in (NomG T) return ((T -> iProp) -> iProp) with
   | ret v => fun Q => Q v
   | op FAIL _ => fun _ => True
-  | op (LOCAL None _) c | op (READ _ _) c | op LENGTH c => fun Q => ∀ v, wp (c v) Q
-  | op (TAKE n) c => fun Q => ∀ v, IsFresh v -∗ wp (c v) Q
-  | op (ALT c1 c2) c => fun Q => wp c1 (fun v => wp (c v) Q) ∧ wp c2 (fun v => wp (c v) Q)
-  | op (LOCAL (Some range) e) c =>
-      fun Q => IsFresh range ∗ wp e (fun v => wp (c v) Q)
-  | op (REPEAT _ e b) c =>
+  | op (LOCAL None _) k | op (READ _ _) k | op LENGTH k => fun Q => ∀ v, wp (k v) Q
+  | op (TAKE n) k => fun Q => ∀ v, IsFresh v -∗ wp (k v) Q
+  | op (ALT e1 e2) k => fun Q => wp e1 (fun v => wp (k v) Q) ∧ wp e2 (fun v => wp (k v) Q)
+  | op (LOCAL (Some range) e) k =>
+      fun Q => IsFresh range ∗ wp e (fun v => wp (k v) Q)
+  | op (REPEAT _ e b) k =>
       fun Q => ∃ Q',
           Q' b ∗
             (<pers> ∀ res, Q' res -∗ wp (e res) Q') ∗
-            (∀ res, Q' res -∗ wp (c res) Q)
+            (∀ res, Q' res -∗ wp (k res) Q)
   end Q.
 
   Lemma wp_consequence : forall {X} (e : NomG X) (P Q : X -> iProp),
@@ -170,51 +173,71 @@ Fixpoint wp {X} (m: @NomG atom X) (Q : X -> iProp) : iProp :=
       (⊢ H -∗ Q v) -> {{ H }} ret v {{ v'; Q v' }}.
   Proof. intros; simpl; auto. Qed.
 
-  Lemma fail_rule : forall X H Q,
-      {{ H }} (fail : NomG X) {{ v; Q v }}.
-  Proof. simpl; auto. Qed.
+Section rules.
 
-  Lemma length_rule :
-    {{ emp }} length  {{ _; emp }}.
-  Proof. simpl; auto. Qed.
+  Variable X: Type.
+  Implicit Type P : iProp.
+  Implicit Type Q : X -> iProp.
+  Implicit Type e : @NomG atom X.
 
-  Lemma read_rule : forall s res,
-      {{ emp }} read s res {{ _; emp }}.
-  Proof. simpl; auto. Qed.
+(* =fail_rule= *)
+Lemma fail_rule P Q : {{ P }} fail {{ v; Q v }}.
+(* =end= *)
+Proof. simpl; auto. Qed.
 
-  Lemma take_rule : forall n,
-      {{ emp }} take n {{ v; IsFresh v }}.
-  Proof. simpl; auto. Qed.
+(* =length_rule= *)
+Lemma length_rule : {{ emp }} length  {{ _; emp }}.
+(* =end= *)
+Proof. simpl; auto. Qed.
 
-  Lemma alt_rule : forall X e1 e2 H (Q : X -> iProp),
-      {{ H }} e1 {{ v; Q v }} ->
-      {{ H }} e2 {{ v; Q v }} ->
-      {{ H }} alt e1 e2 {{ v; Q v }}.
-  Proof.
-    iIntros (X e1 e2 H Q He1 He2) "HA"; simpl; iNorm.
-    iSplit.
-    - iApply (He1 with "HA").
-    - iApply (He2 with "HA").
-  Qed.
+(* =read_rule= *)
+Lemma read_rule s res : {{ emp }} read s res {{ _; emp }}.
+(* =end= *)
+Proof. simpl; auto. Qed.
 
-  Lemma peek_rule : forall X (e : NomG X),
-      {{ emp }} peek e {{ _; emp }}.
-  Proof. simpl. auto. Qed.
+(* =take_rule= *)
+Lemma take_rule n : {{ emp }} take n {{ v; IsFresh v }}.
+(* =end= *)
+Proof. simpl; auto. Qed.
 
-  Lemma scope_rule : forall X e (Q : X -> iProp) s H,
-      {{ H }} e {{ v; Q v }} ->
-      {{ IsFresh s ∗ H }} scope s e {{ v; Q v }}.
-  Proof.
-    intros. iIntros "[HA HB]". simpl. iFrame. iApply (H0 with "HB").
-  Qed.
+(* =alt_rule= *)
+Lemma alt_rule e1 e2 P Q :
+  {{ P }}     e1    {{ v; Q v }} ->
+  {{ P }}     e2    {{ v; Q v }} ->
+  {{ P }} alt e1 e2 {{ v; Q v }}.
+(* =end= *)
+Proof.
+  iIntros (He1 He2) "HA"; simpl; iNorm.
+  iSplit.
+  - iApply (He1 with "HA").
+  - iApply (He2 with "HA").
+Qed.
 
-  Lemma repeat_rule : forall X e (Q : X -> iProp),
-      (forall res, {{ Q res }} e res {{ v ; Q v }}) ->
-      forall n b, {{ Q b }} repeat n e b {{ v ; Q v }}.
-  Proof.
-    iIntros (X e Q Hrec n b) "HA". simpl. iExists Q. iSplitL; auto.
-    iSplitL; auto. iModIntro. iIntros (res) "HA *". iApply Hrec. iApply "HA".
-  Qed.
+(* =peek_rule= *)
+Lemma peek_rule e : {{ emp }} peek e {{ _; emp }}.
+(* =end= *)
+Proof. simpl. auto. Qed.
+
+(* =scope_rule= *)
+Lemma scope_rule e s P Q :
+  {{        P      }}     e     {{ v; Q v }} ->
+  {{ IsFresh s ∗ P }} scope s e {{ v; Q v }}.
+(* =end= *)
+Proof.
+  iIntros (T) "[HA HB]". simpl. iFrame. iApply (T with "HB").
+Qed.
+
+(* =repeat_rule= *)
+Lemma repeat_rule (e : X -> NomG X) Q :
+  (forall res, {{ Q res }}     e res    {{ v ; Q v }}) ->
+   forall n b, {{  Q b  }} repeat n e b {{ v ; Q v }}.
+(* =end= *)
+Proof.
+  iIntros (Hrec n b) "HA". simpl. iExists Q. iSplitL; auto.
+  iSplitL; auto. iModIntro. iIntros (res) "HA *". iApply Hrec. iApply "HA".
+Qed.
+
+End rules.
 
 End wp.
 
