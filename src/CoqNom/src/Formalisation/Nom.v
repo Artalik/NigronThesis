@@ -288,8 +288,70 @@ Definition run_local (run : forall {X}, NomG X -> data -> MonSem X) {X}
   run_ret v.
 (* =end= *)
 
-(* =run= *)
 Fixpoint run (fuel : nat) {X} (m : NomG X) (data : data) {struct m} : MonSem X :=
+  match m with
+  | ret v => run_ret v
+  | op o c =>
+      let* v := run_op fuel o data in
+      run fuel (c v) data
+  end
+
+with run_op (fuel : nat) {X} (m : NOM X) (data : data) : MonSem X :=
+  match m with
+  | FAIL  => run_fail
+  | LENGTH => run_length
+  | READ range pos => run_read range pos data
+  | TAKE n => run_take n
+  | ALT c1 c2 => run_alt (@run fuel) c1 c2 data
+  | LOCAL o e => run_local (@run fuel) o e data
+  | @REPEAT _ (Some n) T e b =>
+      (fix sem_repeat_some (n : nat) (x : T) : MonSem T :=
+         match n with
+         | O => run_ret x
+         | S n =>
+             let* v := run fuel (e x) data in
+             sem_repeat_some n v
+         end) (N.to_nat n) b
+  | @REPEAT _ None T e b =>
+    (fix sem_repeat_none (n : nat) (x : T) : MonSem T :=
+       match n with
+       | O => fun _ => NoFuel
+       | S n =>
+           run_try_with
+             (let* v := run fuel (e x) data in
+              sem_repeat_none n v)
+             (run_ret x)
+       end) fuel b
+  end.
+
+End NomG_sem.
+
+Notation "'let*' x ':=' e1 'in' e2" :=
+  (run_bind e1 (fun x => e2)) (x name, at level 50).
+
+
+(* =run_repeat_n= *)
+Fail Equations run_repeat_n {atom} {run : forall X, @NomG atom X -> list atom -> MonSem X}
+  (n : N) {X} (e : X -> @NomG atom X) (b : X) (d: list atom) : MonSem X :=
+  run_repeat_n 0 e b d := run_ret b;
+  run_repeat_n n e b d :=
+    let* v := run _ (e b) d in
+    run_repeat_n (N.pred n) e v d.
+(* =end= *)
+
+(* =many= *)
+Fail Equations run_many {atom} {run : forall X, @NomG atom X -> list atom -> MonSem X}
+  (fuel : N) {X} (e : X -> @NomG atom X) (b : X) (d: list atom) : MonSem X :=
+  run_many 0 e b d := fun _ => NoFuel;
+  run_many fuel e b d :=
+    run_try_with
+      (let* v := run _ (e b) d in
+       run_many (N.pred fuel) e v d)
+      (run_ret b).
+(* =end= *)
+
+(* =run= *)
+Fail Fixpoint run (fuel : nat) {X} (m : NomG X) (data : data) {struct m} : MonSem X :=
   match m with
   | ret v => run_ret v
   | op o c =>
@@ -308,27 +370,11 @@ with run_op (fuel : nat) {X} (m : NOM X) (data : data) : MonSem X :=
   | ALT c1 c2 => run_alt (@run fuel) c1 c2 data
   | LOCAL o e => run_local (@run fuel) o e data
   | @REPEAT _ (Some n) T e b =>
-      (fix sem_repeat_some (n : nat) (x : T) : MonSem T :=
-         match n with
-         | O => run_ret x
-         | S n =>
-             let* v := run fuel (e x) data in
-             sem_repeat_some n v
-         end) (N.to_nat n) b
+      @run_repeat_n (@run fuel) n T e b data
   | @REPEAT _ None T e b =>
-      (fix sem_repeat_none (n : nat) (x : T) : MonSem T :=
-         match n with
-         | O => fun _ => NoFuel
-         | S n =>
-             run_try_with
-               (let* v := run fuel (e x) data in
-                sem_repeat_none n v)
-               (run_ret x)
-         end) fuel b
-       end.
+      @run_many (@run fuel) fuel T e b data
+  end.
 (* =end= *)
-
-End NomG_sem.
 
 Ltac unfold_MonSem := unfold run_alt, run_local, run_length, run_bind, run_try_with, run_ret, run_get, run_set, run_fail in *.
 
@@ -344,8 +390,6 @@ Compute (run 1000 (peek (take 2)) ([_8 5; _8 6; _8 115; _8 116;
                                     _8 0; _8 1; _8 0; _8 2;
                                     _8 0; _8 5; _8 0; _8 6;
                                     _8 0]) (mk_span 0 13)).
-Notation "'let*' x ':=' e1 'in' e2" :=
-  (run_bind e1 (fun x => e2)) (x name, at level 50).
 
 Section equations.
 
