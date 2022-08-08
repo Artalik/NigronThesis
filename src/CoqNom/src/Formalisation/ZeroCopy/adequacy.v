@@ -245,12 +245,12 @@ Section adequacy.
 
   Lemma scope_soundness : forall X range (c : NomG X) data fuel,
       Sound (run fuel c data) c ->
-      Sound (run_scope (@run atom fuel) range c data) (Nom.scope range c).
+      Sound (run_local (@run atom fuel) (Some range) c data) (Nom.scope range c).
   Proof.
     intros X range c data fuel [mono_c sound_c].
     constructor. apply scope_mono. auto.
     simpl. intros s res v Q RUN. iIntros "[HB wp] _".
-    unfold run_scope in RUN. unfold_MonSem.
+    unfold run_local in RUN. unfold_MonSem.
     destruct (run fuel c data range) as [[sres1 res1] | |] eqn:Pc;
       inversion RUN. subst.
     iDestruct (IsFresh_injectSL with "HB") as "HB".
@@ -261,7 +261,7 @@ Section adequacy.
 
   Lemma peek_soundness : forall X (c : NomG X) data fuel,
       Sound (run fuel c data) c ->
-      Sound (run_peek (@run atom fuel) c data) (Nom.peek c).
+      Sound (run_local (@run atom fuel) None c data) (Nom.peek c).
   Proof.
     intros X c data fuel [mono_c sound_c].
     constructor. apply peek_mono. auto.

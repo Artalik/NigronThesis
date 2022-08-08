@@ -38,6 +38,7 @@ src/CoqNom/src/Formalisation/Combinators/combinator.v
 src/CoqNom/src/Formalisation/Combinators/multi.v
 src/CoqNom/src/Formalisation/Combinators/sequence.v
 src/CoqNom/src/Formalisation/Combinators/bin_combinators.v
+src/CoqNom/src/Formalisation/Combinators/bytes.v
 src/CoqNom/src/Formalisation/ZeroCopy/disjoint.v
 src/CoqNom/src/Formalisation/ZeroCopy/IsFresh.v
 src/CoqNom/src/Formalisation/ZeroCopy/ProgramLogic.v

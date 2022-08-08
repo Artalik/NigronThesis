@@ -72,11 +72,10 @@ Section mono.
     eapply try_with_mono; auto.
   Defined.
 
-
   Instance scope_mono : forall X range (e : NomG X) data (run : forall X, NomG X -> list atom -> MonSem X),
-      Monotone (run X e data) -> Monotone (Nom.run_scope run range e data).
+      Monotone (run X e data) -> Monotone (Nom.run_local run (Some range) e data).
   Proof.
-    intros X range e data run mono_run. unfold run_scope.
+    intros X range e data run mono_run. unfold run_local.
     unfold_MonSem. constructor. intros.
     destruct (run X e data range) as [[s_res res]| |]; inversion_clear H.
     split; lia.
@@ -84,9 +83,9 @@ Section mono.
 
   Instance peek_mono : forall X (e : NomG X) data
                          (run : forall X, NomG X -> list atom -> MonSem X),
-      Monotone (run X e data) -> Monotone (Nom.run_peek run e data).
+      Monotone (run X e data) -> Monotone (Nom.run_local run None e data).
   Proof.
-    intros X e data run mono_run. unfold run_peek.
+    intros X e data run mono_run. unfold run_local.
     constructor. intros. unfold_MonSem.
     destruct (run X e data s) as [[s_res res]| |] eqn:?; inversion_clear H.
     split; lia.
@@ -136,57 +135,6 @@ Section mono.
       intros. eapply ret_mono.
   Qed.
 
-  (* Lemma run_repeat_Some_monotone : *)
-  (*   forall c (run :(∀ X : Type, NomG X → list atom → span → Result (span * X))%type) *)
-  (*     X e b s l sres v (run_mono : forall base, Monotone (run X (e base) l)), *)
-  (*     @run_repeat_Some _ run c X e b l s = Res (sres, v) -> *)
-  (*     (pos s <= pos sres)%N /\ (pos sres + len sres <= pos s + len s)%N. *)
-  (* Proof. *)
-  (*   intros c run0 X e s l arr P. eapply FunctionalElimination_run_repeat_Some. *)
-  (*   - intros run1 X0 e0 p l0 sres v run1_mono HRes. *)
-  (*     inversion HRes. split; auto. *)
-  (*   - intros. destruct (run X0 (e0 base) data p) as [res0| | ]eqn:Hrun1. destruct res0. *)
-  (*     + edestruct (run_mono). eapply monotone0 in Hrun1 as [P0 P1]. *)
-  (*       eapply H in H0 as [P2 P3]. *)
-  (*       * split; lia. *)
-  (*       * eapply (s0,x). *)
-  (*       * intros. eapply run_mono. *)
-  (*     + inversion H0. *)
-  (*     + inversion H0. *)
-  (* Qed. *)
-
-  (* Lemma run_repeat_None_mono : *)
-  (*   forall X rep b data *)
-  (*     (run_mono : forall (e : X -> NomG_sem X) b, Monotone (run_sem (e b) data)), *)
-  (*     Monotone (@run_repeat_None atom X rep b data). *)
-  (* Proof. *)
-  (*   induction rep; simpl; intros. *)
-  (*   - constructor. intros. inversion H. *)
-  (*   - eapply try_with_mono. eapply bind_mono. eapply run_mono. *)
-  (*     intro. eapply IHrep. intros. eapply run_mono. *)
-  (*     eapply ret_mono. *)
-  (* Qed. *)
-
-  (* Lemma run_repeat_None_monotone : *)
-  (*   forall fuel (run :(∀ X : Type, NomG X → list atom → span → Result (span * X))%type) *)
-  (*     X b e s l sres v *)
-  (*     (run_mono : forall b, Monotone (run X (e b) l)), *)
-  (*     @run_repeat_None _ run fuel X e b l s = Res (sres, v) -> *)
-  (*     (pos s <= pos sres)%N /\ (pos sres + len sres <= pos s + len s)%N. *)
-  (* Proof. *)
-  (*   intros fuel run0 X b e s l. eapply FunctionalElimination_run_repeat_None. *)
-  (*   - intros run1 fuel0 X0 e0 b0 p a IH s0 v run1_mono HRes. *)
-  (*     destruct (run1 X0 (e0 b0) p a) as [res0| | ] eqn:IH_run1. *)
-  (*     + destruct res0. destruct (Nat.eq_dec fuel0 0). inversion HRes. *)
-  (*       eapply IH in HRes as [P0 P1]. *)
-  (*       * eapply run1_mono in IH_run1 as [P2 P3]. lia. *)
-  (*       * eapply (s0,x). *)
-  (*       * exact n. *)
-  (*       * intros. econstructor. intros s2 sres x0 Hrun. eapply run1_mono. exact Hrun. *)
-  (*     + inversion HRes. split; lia. *)
-  (*     + inversion HRes. *)
-  (* Qed. *)
-
   Instance read_mono : forall s n a, @Monotone atom (Nom.run_read s n a).
   Proof. intros. constructor. intros. eapply run_read_eq_span in H. subst. split; lia. Defined.
 
@@ -200,22 +148,6 @@ Section mono.
     rewrite unfold_repeat_n. all : reflexivity.
   Qed.
 
-  (* Lemma run_repeat_None_mono : forall fuel0 X (c : X -> @NomG atom X) b data, *)
-  (*     (forall x, Monotone (run (c x) data)) -> *)
-  (*     Monotone (run_repeat_None *)
-  (*                 (REPEAT_to_sem fuel0 c) b data). *)
-  (* Proof. *)
-  (*   induction fuel0 using N.peano_ind; simpl; intros. *)
-  (*   - rewrite REPEAT_to_sem_equation_1. simpl. *)
-  (*     constructor. intros. inversion H0. *)
-  (*   - rewrite <- N.succ_pos_spec. erewrite REPEAT_to_sem_equation_2. *)
-  (*     rewrite N.succ_pos_spec. rewrite N.pred_succ. *)
-  (*     constructor. intros s sres x. *)
-  (*     rewrite repeat_None_REPEATS. intros. *)
-  (*     eapply try_with_mono. 3 : eapply H0. 2 : eapply ret_mono. *)
-  (*     eapply bind_mono. eapply H. intro. eapply IHfuel0. *)
-  (*     eapply H. *)
-  (* Qed. *)
   Lemma test : forall fuel0 fuel1 X v c data,
     (forall (res : X) (fuel : nat) (data : list atom), Monotone (run fuel (c res) data)) ->
       Monotone ((fix sem_repeat_none (n : nat) (x0 : X) {struct n} : MonSem X :=

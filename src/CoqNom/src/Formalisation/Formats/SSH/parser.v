@@ -1,5 +1,5 @@
 From Formalisation Require Import SizeNat String.
-From Formalisation Require Import Nom bin_combinators combinator multi.
+From Formalisation Require Import Nom bin_combinators combinator multi bytes.
 
 Open Scope N_scope.
 
