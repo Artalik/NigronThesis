@@ -91,36 +91,6 @@ Section mono.
     split; lia.
   Defined.
 
-  (* Fixpoint in_rep {X} (rep : @REP atom X): list (X -> NomG_sem X) := *)
-  (*   match rep with *)
-  (*   | REPEAT0 => [] *)
-  (*   | REPEATS e rep => e :: in_rep rep *)
-  (*   end. *)
-
-  (* Lemma run_repeat_Some_monotone : *)
-  (*   forall X rep b data s sres v *)
-  (*     (run_mono : forall (e : X -> NomG_sem X) base, Monotone (run_sem (e base) data)), *)
-  (*     @run_repeat_Some atom X rep b data s = Res (sres, v) -> *)
-  (*     (pos s <= pos sres)%N /\ (pos sres + len sres <= pos s + len s)%N. *)
-  (* Proof. *)
-  (*   induction rep; simpl; intros. *)
-  (*   - inversion H. split; auto. *)
-  (*   - eapply bind_mono. 3: eapply H. eapply run_mono. *)
-  (*     intros. constructor. intros. eapply IHrep. eapply run_mono. eauto. *)
-  (* Qed. *)
-
-
-  (* Lemma run_repeat_Some_mono : *)
-  (*   forall X rep b data *)
-  (*     (run_mono : forall (e : X -> NomG_sem X) base, Monotone (run_sem (e base) data)), *)
-  (*     Monotone (@run_repeat_Some atom X rep b data). *)
-  (* Proof. *)
-  (*   induction rep; simpl; intros. *)
-  (*   - eapply ret_mono. *)
-  (*   - eapply bind_mono. eapply run_mono. intro. eapply IHrep. intros. *)
-  (*     eapply run_mono. *)
-  (* Qed. *)
-
   Lemma run_repeat_Some_monotone :
     forall n fuel X e b data (run_mono : forall fuel base, Monotone (run fuel (e base) data)),
       Monotone ((@run) atom fuel X (Nom.repeat (Some n) e b) data).
@@ -148,7 +118,7 @@ Section mono.
     rewrite run_bind_monsem. simpl. reflexivity.
   Qed.
 
-  Lemma test : forall fuel0 fuel1 X v c data,
+  Lemma mono_repeat_none_aux : forall fuel0 fuel1 X v c data,
     (forall (res : X) (fuel : nat) (data : list atom), Monotone (run fuel (c res) data)) ->
       Monotone ((fix sem_repeat_none (n : nat) (x0 : X) {struct n} : MonSem X :=
                    match n with
@@ -169,8 +139,8 @@ Section mono.
       (∀ (res : X) (fuel : nat) (data : list atom), Monotone (run fuel (c res) data)) ->
       Monotone (run fuel (Nom.repeat None c b) data).
   Proof.
-    intros. simpl. constructor. intro. rewrite ret_neutral_right. eapply test.
-    eapply H.
+    intros. simpl. constructor. intro. rewrite ret_neutral_right.
+    eapply mono_repeat_none_aux. eapply H.
   Qed.
 
   Lemma run_monotone : forall X e fuel data,
