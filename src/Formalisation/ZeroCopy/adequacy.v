@@ -101,25 +101,6 @@ Section adequacy.
     iApply ("wp" with "[HA]"). iApply (inject_IsFresh with "HA"); reflexivity.
   Qed.
 
-  (* Lemma alt_soundness : forall run X (c1 c2 : NomG X) data, *)
-  (*     Sound (run X c1 data) c1 -> *)
-  (*     Sound (run X c2 data) c2 -> *)
-  (*     Sound (run_alt c1 c2 data) (Nom.alt c1 c2). *)
-  (* Proof. *)
-  (*   intros run X c1 c2 data [mono_c1 sound_c1] [mono_c2 sound_c2]. *)
-  (*   constructor. apply alt_mono; auto. *)
-  (*   simpl. intros s res v Q RUN. iIntros "wp HA". iNorm. *)
-  (*   unfold run_alt in RUN. unfold_MonSem. *)
-  (*   destruct (run X c1 data s) as [[sres1 res1] | |] eqn:Pc1. *)
-  (*   - inversion RUN. subst. iDestruct "wp" as "[wp _]". *)
-  (*     iDestruct (sound_c1 with "wp") as "HB"; eauto. *)
-  (*     iApply ("HB" with "HA"). *)
-  (*   - iDestruct "wp" as "[_ wp]". *)
-  (*     iDestruct (sound_c2 with "wp") as "HB"; eauto. *)
-  (*     iApply ("HB" with "HA"). *)
-  (*   - inversion RUN. *)
-  (* Qed. *)
-
   Lemma run_incl : forall X (run : forall {X}, NomG X -> list atom -> MonSem X)
                      (e : NomG X) (a : list atom) s1 s2 v start,
       Monotone (run e a) ->
@@ -142,86 +123,6 @@ Section adequacy.
     apply disjoint_sym in P1. rewrite difference_disjoint_L. 2 : exact P1.
     iFrame.
   Qed.
-
-  (* Lemma run_repeat_Some_soundness : *)
-  (*   forall (run : forall X, NomG X -> list atom -> MonSem X) X (e : X -> NomG X) data, *)
-  (*     (forall res, Sound (run X (e res) data) (e res)) -> *)
-  (*     forall n b, *)
-  (*       Sound (@run_repeat_Some atom run n X e b data) (Nom.repeat (Some n) e b). *)
-  (* Proof. *)
-  (*   intros run X e data sound_e n b. *)
-  (*   constructor. constructor. intros. eapply run_repeat_Some_monotone; eauto. eapply sound_e. *)
-  (*   simpl. intros s sres v Q RUN. *)
-  (*   revert n b s sres RUN. destruct n using N.peano_ind; intros. *)
-  (*   - iIntros "HA HD". iDestruct "HA" as (Q') "[HA [#HB HC]]". *)
-  (*     rewrite run_repeat_Some_equation_1 in RUN. inversion_clear RUN. *)
-  (*     iClear "HD". iApply ("HC" with "HA"). *)
-  (*   - iIntros "HA HD". iDestruct "HA" as (Q') "[HA [#HB HC]]". *)
-  (*     rewrite <- N.succ_pos_spec in RUN. rewrite run_repeat_Some_equation_2 in RUN. *)
-  (*     rewrite N.succ_pos_spec in RUN. rewrite N.pred_succ in RUN. *)
-  (*     destruct run as [[sres1 res1]| |] eqn:Pe. *)
-  (*     destruct (sound_e b) as [mono_e1 sound_e1]. *)
-  (*     pose Pe as grow. eapply sound_e in grow as [P0 _]. unfold injectSL. *)
-  (*     pose RUN as grow. eapply run_repeat_Some_monotone in grow as [P1 _]. *)
-  (*     rewrite (inject_union (pos sres1)). 2-3 : lia. *)
-  (*     iDestruct (big_sepS_union with "HD") as "[HD HE]". eapply inject_disjoint. *)
-  (*     iDestruct ("HB" with "HA") as "HA". *)
-  (*     iDestruct (sound_e1 with "[HA] HD") as ">HA". eapply Pe. *)
-  (*     iApply (wp_consequence with "HA"). iIntros (v0) "HA". iApply "HA". *)
-  (*     iApply (IHn with "[HA HC] HE"). eapply RUN. *)
-  (*     iExists Q'. iFrame. iSplitL; auto. *)
-  (*     intros. eapply sound_e. *)
-  (*     all : inversion RUN. *)
-  (* Qed. *)
-
-  (* Lemma run_repeat_None_soundness : *)
-  (*   forall (run : forall X, NomG X -> list atom -> MonSem X) fuel X (e : X -> NomG X) data, *)
-  (*     (forall res, Sound (run X (e res) data) (e res)) -> *)
-  (*     forall b, *)
-  (*       Sound (@run_repeat_None atom run fuel X e b data) (Nom.repeat None e b). *)
-  (* Proof. *)
-  (*   intros run fuel X e data sound_e b. *)
-  (*   constructor. constructor. intros. eapply run_repeat_None_monotone; eauto. eapply sound_e. *)
-  (*   simpl. intros s sres v Q RUN. *)
-  (*   revert fuel b s sres RUN. induction fuel; intros. *)
-  (*   - iIntros "HA HD". iDestruct "HA" as (Q') "[HA [#HB HC]]". *)
-  (*     rewrite run_repeat_None_equation_1 in RUN. *)
-  (*     destruct (run X (e b) data s) as [[sres0 res0]| |] eqn:P0. *)
-  (*     destruct (Nat.eq_dec 0 0). inversion RUN. exfalso. apply n. reflexivity. *)
-  (*     inversion_clear RUN. iClear "HD". iApply ("HC" with "HA"). *)
-  (*     inversion RUN. *)
-  (*   - iIntros "HA HD". iDestruct "HA" as (Q') "[HA [#HB HC]]". *)
-  (*     rewrite run_repeat_None_equation_1 in RUN. *)
-  (*     destruct (run X (e b) data s) as [[sres0 res0]| |] eqn:P0. *)
-  (*     destruct (Nat.eq_dec (S fuel) 0). inversion RUN. *)
-  (*     rewrite <- pred_of_minus in RUN. rewrite Nat.pred_succ in RUN. *)
-  (*     pose P0 as grow. eapply sound_e in grow as [Pgrow _]. *)
-  (*     pose RUN as grow. eapply run_repeat_None_monotone in grow as [PgrowRep _]. *)
-  (*     unfold injectSL. rewrite (inject_union (pos sres0)). 2-3 : lia. *)
-  (*     iDestruct (big_sepS_union with "HD") as "[HD HE]". eapply inject_disjoint. *)
-  (*     destruct (sound_e b) as [_ sound_e1]. *)
-  (*     iDestruct (sound_e1 with "[HA] HD") as ">HA". eapply P0. *)
-  (*     iDestruct ("HB" with "HA") as "HA". iApply (wp_consequence with "HA"). *)
-  (*     iIntros (v0) "HA". iApply "HA". *)
-  (*     iApply (IHfuel with "[HA HC] HE"); eauto. *)
-  (*     iExists Q'. iFrame. iSplitL; auto. *)
-  (*     intros. eapply sound_e. *)
-  (*     inversion_clear RUN. iClear "HD". iApply ("HC" with "HA"). *)
-  (*     inversion RUN. *)
-  (* Qed. *)
-
-  (* Lemma repeat_soundness : *)
-  (*   forall (run : forall X, NomG X -> list atom -> MonSem X) fuel X (e : X -> NomG X) data, *)
-  (*     (forall res, Sound (run X (e res) data) (e res)) -> *)
-  (*     forall o b, *)
-  (*       Sound (@run_repeat atom run fuel o X e b data) (Nom.repeat o e b). *)
-  (* Proof. *)
-  (*   destruct o; intros. *)
-  (*   - edestruct run_repeat_Some_soundness. eapply H. *)
-  (*     constructor. eapply mono0. eapply sound0. *)
-  (*   - edestruct run_repeat_None_soundness. eapply H. *)
-  (*     constructor. eapply mono0. eapply sound0. *)
-  (* Qed. *)
 
 
   Lemma alt_soundness : forall X (c1 c2 : NomG X) data fuel,
@@ -267,28 +168,6 @@ Section adequacy.
     constructor. apply peek_mono. auto.
     simpl. intros s res v Q RUN. iIntros "HB _". iApply "HB".
   Qed.
-
-  (* Lemma run_repeat_None_sound : forall fuel0 fuel1 X (c : X -> NomG X) b data, *)
-  (*     (forall fuel x, Sound (run_sem (NomG_to_sem fuel (c x)) data) (c x)) -> *)
-  (*     Sound (run_repeat_None *)
-  (*                 (REPEAT_to_sem fuel0 (fun x => NomG_to_sem fuel1 (c x))) b data). *)
-  (* Proof. *)
-  (*   induction fuel0 using N.peano_ind; simpl; intros. *)
-  (*   - rewrite REPEAT_to_sem_equation_1. simpl. *)
-  (*     constructor. intros. inversion H0. *)
-  (*   - rewrite <- N.succ_pos_spec. erewrite REPEAT_to_sem_equation_2. *)
-  (*     rewrite N.succ_pos_spec. rewrite N.pred_succ. *)
-  (*     constructor. intros s sres x. *)
-  (*     assert (run_repeat_None (REPEATS c (REPEAT_to_sem fuel0 c)) b data s = *)
-  (*            run_try_with *)
-  (*              (run_bind (run_sem (c b) data) *)
-  (*                 (fun v => run_repeat_None (REPEAT_to_sem fuel0 c) v data)) *)
-  (*              (Nom.run_ret b) s) by f_equal. *)
-  (*     rewrite H0. intros. *)
-  (*     eapply try_with_mono. 3 : eapply H1. 2 : eapply ret_mono. *)
-  (*     eapply bind_mono. eapply H. intro. eapply IHfuel0. *)
-  (*     eapply H. *)
-  (* Qed. *)
 
   Lemma no_NoRes : forall fuel0 X (c : X -> NomG X) x s0 fuel data,
                      (fix sem_repeat_none (n : nat) (x : X) {struct n} : MonSem X :=
@@ -344,7 +223,7 @@ Section adequacy.
     induction fuel0; simpl; intros.
     - constructor. constructor; intros. inversion H0. intros. inversion H0.
     - constructor. eapply try_with_mono. 2 : eapply ret_mono.
-      eapply bind_mono. eapply H. intro. eapply Monotone.test.
+      eapply bind_mono. eapply H. intro. eapply mono_repeat_none_aux.
       intros. eapply H.
       simpl. intros. unfold_MonSem.
       destruct (run fuel (c b) data s) eqn:?. destruct x.
@@ -390,7 +269,8 @@ Section adequacy.
       Sound (run fuel0 (Nom.repeat None c b) data) (Nom.repeat None c b).
   Proof.
     simpl. intros. constructor.
-    - eapply bind_mono. eapply Monotone.test. intros. eapply run_mono. intro. eapply ret_mono.
+    - eapply bind_mono. eapply mono_repeat_none_aux.
+      intros. eapply run_mono. intro. eapply ret_mono.
     - simpl. intros. eapply repeat_none_soundness. eapply H.
       unfold_MonSem.
       destruct ((fix sem_repeat_none (n : nat) (x : X) {struct n} : MonSem X :=
