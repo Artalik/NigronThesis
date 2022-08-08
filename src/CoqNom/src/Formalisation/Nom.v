@@ -276,16 +276,16 @@ Definition run_alt (run : forall {X}, NomG X -> data -> MonSem X) {X}
 (* =end= *)
 
 (* =run_local= *)
-Definition run_local (run : forall {X}, NomG X -> list atom -> MonSem X) {X}
-    (range : option span) (e : @NomG atom X)  (data : list atom) : MonSem X :=
-    let* save := run_get in
-    let* _ := match range with
-              | Some range => run_set range
-              | None => run_ret tt
-              end in
-    let* v := run e data in
-    let* _ := run_set save in
-    run_ret v.
+Definition run_local (run : forall {X}, NomG X -> data -> MonSem X) {X}
+  (range : option span) (e : @NomG atom X)  (data : data) : MonSem X :=
+  let* save := run_get in
+  let* _ := match range with
+            | Some range => run_set range
+            | None => run_ret tt
+            end in
+  let* v := run e data in
+  let* _ := run_set save in
+  run_ret v.
 (* =end= *)
 
 (* =run= *)
