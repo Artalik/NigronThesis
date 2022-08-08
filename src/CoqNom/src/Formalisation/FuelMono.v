@@ -149,7 +149,7 @@ Section fuel_mono.
     - rewrite run_bind_monsem. rewrite run_bind_monsem in H1.
       unfold_MonSem. simpl in *.
       rewrite ret_neutral_right. rewrite ret_neutral_right in H1.
-      unfold run_scope in *. unfold_MonSem.
+      unfold run_local in *. unfold_MonSem.
       destruct (run fuele c s0 s) eqn:?. destruct x.
       + erewrite H; eauto. simpl.
         erewrite H0; eauto. intro. subst. contradiction.
@@ -158,7 +158,7 @@ Section fuel_mono.
     - rewrite run_bind_monsem. rewrite run_bind_monsem in H1.
       unfold_MonSem. simpl in *.
       rewrite ret_neutral_right. rewrite ret_neutral_right in H1.
-      unfold run_peek in *. unfold_MonSem.
+      unfold run_local in *. unfold_MonSem.
       destruct (run fuele c s a) eqn:?. destruct x.
       + erewrite H; eauto. simpl.
         erewrite H0; eauto. intro. subst. contradiction.
