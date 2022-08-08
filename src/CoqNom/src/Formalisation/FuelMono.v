@@ -1,4 +1,4 @@
-From Formalisation Require Import Nom EquationalTheory.
+From Formalisation Require Import Nom.
 
 Section fuel_mono.
 
@@ -114,8 +114,7 @@ Section fuel_mono.
                    run fuele e s a = res → res ≠ NoFuel → (fuele ≤ fuel)%nat → run fuel e s a = res));
       intros.
     - rewrite run_ret_eq. rewrite run_ret_eq in H. auto.
-    - rewrite fail_absorb_left in H. rewrite fail_absorb_left.
-      rewrite <- H. reflexivity.
+    - repeat rewrite run_bind_monsem. rewrite <- H. reflexivity.
     - rewrite <- H0. repeat rewrite run_bind_monsem.
       unfold_MonSem. simpl. erewrite H; eauto.
       intro. apply H1. rewrite <- H0.

@@ -144,8 +144,8 @@ Section mono.
                   let! v := Nom.repeat (Some n) c v in
                   k v) data s.
   Proof.
-    intros. rewrite bind_assoc. eapply bind_eq; intros.
-    rewrite unfold_repeat_n. all : reflexivity.
+    intros. simpl. rewrite N2Nat.inj_succ. rewrite Nom.bind_assoc.
+    rewrite run_bind_monsem. simpl. reflexivity.
   Qed.
 
   Lemma test : forall fuel0 fuel1 X v c data,
