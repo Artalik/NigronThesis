@@ -333,6 +333,10 @@ Definition parse_ikev2_message : NomB IkeV2Message :=
     let! msg := map_parser (take (len - 28)) (parse_ikev2_payload_list (next_payload hdr)) in
     ret (mk_message _ hdr msg).
 
+
+Definition parse_ikev2 : nat -> list nat8 -> option IkeV2Message :=
+  parse parse_ikev2_message.
+
 #[tactic="NSize"] Equations IKEV2_INIT_REQ : list nat8 :=
   IKEV2_INIT_REQ :=
   [

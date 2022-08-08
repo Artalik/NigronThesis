@@ -33,7 +33,7 @@ Lemma adequacy_pure_PHOAS {X Y} :
 Proof.
   unfold adequate. intros e h R data s ADE WF vv sres SEM Q P TRIPLE R_OK.
   eapply ADE in SEM as [r [Rr [fuel RUN]]].
-  eapply R_OK; eauto. eapply adequacy_pure; eauto. auto.
+  eapply R_OK; eauto. eapply adequacy_pure_run; eauto. auto.
 Qed.
 
 Lemma adequacy_pure_PHOAS_disjoint `{Foldable X} `{Foldable (fun s=> type_to_Type (Y s))}:

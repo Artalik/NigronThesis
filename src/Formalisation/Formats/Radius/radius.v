@@ -56,3 +56,7 @@ Definition parse_radius_data : NomG RadiusData :=
              (take (val length - 20))
              (many1 parse_radius_attribute)) in
   ret (mk_radiusdata _ code identifier length authenticator attributes).
+
+
+Definition parse_radius : nat -> list nat8 -> option RadiusData :=
+  parse parse_radius_data.

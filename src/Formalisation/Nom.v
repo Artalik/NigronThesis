@@ -233,6 +233,17 @@ Section NomG_sem.
                 end) fuel b
          end.
 
+  Equations lengthN (l: list atom) : N :=
+    lengthN nil := 0;
+    lengthN (_ :: t) := N.succ (lengthN t).
+
+  Definition parse {X} (m : NomG X) (nb_iter_max : nat) data : option X :=
+    let len := lengthN data in
+    match run nb_iter_max m data (mk_span 0 len) with
+    | Res (_, v) => Some v
+    | _ => None
+    end.
+
 End NomG_sem.
 
 Ltac unfold_MonSem := unfold run_alt, run_local, run_length, run_bind, run_try_with, run_ret, run_get, run_set, run_fail in *.

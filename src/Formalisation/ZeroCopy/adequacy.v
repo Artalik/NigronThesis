@@ -419,7 +419,7 @@ Section adequacy.
   Qed.
 
 
-  Corollary adequacy_pure : forall X e (Q : X -> Prop) fuel,
+  Corollary adequacy_pure_run : forall X e (Q : X -> Prop) fuel,
       {{ emp }} e {{ v; ⌜Q v⌝ }} ->
       forall (a : list atom) (v : X) s' s,
         run fuel e a s = Res (s', v) ->
@@ -428,6 +428,19 @@ Section adequacy.
     intros. eapply SepSet.soundness_pure.
     iIntros "HA". iApply soundness_pure; eauto.
     iSplitR; auto. iApply lemma_final; eauto.
+  Qed.
+
+  Corollary adequacy_pure : forall X e (Q : X -> Prop) fuel,
+      {{ emp }} e {{ v; ⌜Q v⌝ }} ->
+      forall (a : list atom) (v : X),
+        parse e fuel a = Some v ->
+        Q v.
+  Proof.
+    unfold parse. intros X e Q fuel TRIPLE a x RUN.
+    destruct (run fuel e) as [[t v]| |]eqn:?.
+    - injection RUN. intro. subst. eapply adequacy_pure_run; eauto.
+    - inversion RUN.
+    - inversion RUN.
   Qed.
 
 End adequacy.

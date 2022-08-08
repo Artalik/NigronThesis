@@ -26,25 +26,11 @@ Proof.
   iApply (all_disjointM_SL_to_Prop with "HA").
 Qed.
 
-
-Definition parse_radius (nb_attrib_max : nat) (data: list nat8) : option RadiusData :=
-  let len := List.length data in
-  match run nb_attrib_max parse_radius_data data (mk_span 0 (N.of_nat len)) with
-  | Res (s,v) => Some v
-  | NoRes => None
-  | NoFuel => None
-  end.
-
 Lemma parse_radius_specification : forall nb_attrib_max data res,
     parse_radius nb_attrib_max data = Some res -> all_disjointM res.
 Proof.
-  unfold parse_radius. intros nb_attrib_max data res RUN.
-  destruct (run nb_attrib_max parse_radius_data data
-                {| pos := 0; len := N.of_nat (base.length data) |})
-    as [[s_res result] | | ] eqn:P.
-  inversion RUN. subst.
+  intros nb_attrib_max data res PARSE.
   eapply adequacy_pure.
   eapply parse_radius_data_spec_pure.
-  eapply P.
-  all : inversion RUN.
+  eapply PARSE.
 Qed.
