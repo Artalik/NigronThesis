@@ -190,6 +190,10 @@ Section NomG_sem.
 
   (* Run *)
 
+(* =data= *)
+Definition data := list atom.
+(* =end= *)
+
 (* =Result= *)
 Inductive Result X :=
 | Res (x :X)
@@ -246,17 +250,18 @@ Definition run_take (n : N) : MonSem span :=
 (* =end= *)
 
 (* =lookup= *)
-Equations lookupN {X} (l : list X) (n : N) (s : span): Result (span * X) by wf (N.to_nat n) lt :=
+Equations lookupN (l : data) (n : N) (s : span): Result (span * atom) by wf (N.to_nat n) lt :=
   lookupN [] n s := NoRes;
   lookupN (h :: t) 0 s := Res (s,h);
   lookupN (h :: t) pos s := lookupN t (N.pred pos) s.
+(* =end= *)
 Next Obligation.
   intros. unfold pos. lia.
 Defined.
-(* =end= *)
+
 
 (* =run_read= *)
-Definition run_read (arg1 : span) (arg2 : N) (a : list atom) : MonSem atom :=
+Definition run_read (arg1 : span) (arg2 : N) (a : data) : MonSem atom :=
   if arg2 <? len arg1
   then
     lookupN a (pos arg1 + arg2)
@@ -265,14 +270,14 @@ Definition run_read (arg1 : span) (arg2 : N) (a : list atom) : MonSem atom :=
 (* =end= *)
 
 (* =run_alt= *)
-Definition run_alt (run : forall {X}, NomG X -> list atom -> MonSem X) {X}
-  (e1 e2 : @NomG atom X) (data : list atom) : MonSem X :=
+Definition run_alt (run : forall {X}, NomG X -> data -> MonSem X) {X}
+  (e1 e2 : @NomG atom X) (data : data) : MonSem X :=
   run_try_with (run e1 data) (run e2 data).
 (* =end= *)
 
 (* =run_scope= *)
-Definition run_scope (run : forall {X}, NomG X -> list atom -> MonSem X) {X}
-  (range : span) (e : @NomG atom X)  (data : list atom) : MonSem X :=
+Definition run_scope (run : forall {X}, NomG X -> data -> MonSem X) {X}
+  (range : span) (e : @NomG atom X)  (data : data) : MonSem X :=
   let* save := run_get in
   let* _ := run_set range in
   let* v := run e data in
@@ -281,8 +286,8 @@ Definition run_scope (run : forall {X}, NomG X -> list atom -> MonSem X) {X}
 (* =end= *)
 
 (* =run_peek= *)
-Definition run_peek (run : forall {X}, NomG X -> list atom -> MonSem X) {X}
-  (e : @NomG atom X) (data : list atom) : MonSem X :=
+Definition run_peek (run : forall {X}, NomG X -> data -> MonSem X) {X}
+  (e : @NomG atom X) (data : data) : MonSem X :=
   let* save := run_get in
   let* v := run e data in
   let* _ := run_set save in
@@ -290,7 +295,7 @@ Definition run_peek (run : forall {X}, NomG X -> list atom -> MonSem X) {X}
 (* =end= *)
 
 (* =run= *)
-Fixpoint run (fuel : nat) {X} (m : NomG X) (data : list atom) {struct m} : MonSem X :=
+Fixpoint run (fuel : nat) {X} (m : NomG X) (data : data) {struct m} : MonSem X :=
   match m with
   | ret v => run_ret v
   | op o c =>
@@ -300,7 +305,7 @@ Fixpoint run (fuel : nat) {X} (m : NomG X) (data : list atom) {struct m} : MonSe
 (* =end= *)
 
 (* =run_op= *)
-with run_op (fuel : nat) {X} (m : NOM X) (data :list atom) : MonSem X :=
+with run_op (fuel : nat) {X} (m : NOM X) (data : data) : MonSem X :=
   match m with
   | FAIL  => run_fail
   | LENGTH => run_length
