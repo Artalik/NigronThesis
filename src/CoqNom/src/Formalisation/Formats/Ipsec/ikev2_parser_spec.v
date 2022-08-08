@@ -319,21 +319,13 @@ Proof.
   - iIntros (v) ">HA". iApply (all_disjointM_SL_to_Prop with "HA").
 Qed.
 
-Definition parse_ikev2 nb_iter_max  (a: list nat8) : option IkeV2Message :=
-  match run nb_iter_max parse_ikev2_message a (mk_span 0 (N.of_nat (List.length a))) with
-  | Res (s,v) => Some v
-  | _ => Datatypes.None
-  end.
-
 Lemma parse_ikev2_specification : forall nb_iter_max a data,
     parse_ikev2 nb_iter_max a = Some data -> all_disjointM data.
 Proof.
-  unfold parse_ikev2. intros nb_iter_max a data EQ.
-  destruct run as [[s v]| | ] eqn:P.
-  inversion EQ. subst.
+  intros nb_iter_max a data EQ.
   eapply adequacy_pure.
   eapply parse_ikev2_message_rule_pure.
-  eapply P. all : inversion EQ.
+  eapply EQ.
 Qed.
 
 Close Scope N_scope.
