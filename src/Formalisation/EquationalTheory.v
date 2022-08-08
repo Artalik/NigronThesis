@@ -300,13 +300,13 @@ Section laws.
     local o (read s n : NomG atom) ⩵ read s n.
   Proof.
     destruct o; unfold run; intros; simpl; repeat rewrite ret_neutral_right.
-    + unfold run_scope. simpl. unfold run_read. unfold_MonSem.
+    + unfold run_local. simpl. unfold run_read. unfold_MonSem.
       destruct (n <? len s); try reflexivity.
       destruct (lookupN data (pos s + n)) as [[a b] | |] eqn:?.
       erewrite lookupN_indep_state_res; eauto.
       erewrite lookupN_indep_state_NoRes; eauto.
       exfalso. eapply lookupN_NoFuel. eauto.
-    + unfold run_peek. simpl. unfold run_read. unfold_MonSem.
+    + unfold run_local. simpl. unfold run_read. unfold_MonSem.
       destruct (n <? len s); try reflexivity.
       destruct (lookupN data (pos s + n)) as [[a b] | |] eqn:?; try reflexivity.
       erewrite <- lookupN_indep_state_res; eauto.
@@ -316,7 +316,7 @@ Section laws.
     local o (local (Some s2) e) ⩵ scope s2 e.
   Proof.
     intros; simpl. repeat rewrite ret_neutral_right.
-    destruct o; unfold run_scope, run_peek; simpl; unfold run_scope; unfold_MonSem;
+    destruct o; unfold run_local; simpl; unfold run_local; unfold_MonSem;
     destruct (run fuel e data s2) as [[a b]| |]; reflexivity.
   Qed.
 
@@ -324,7 +324,7 @@ Section laws.
     local o (local None e) ⩵ local o e.
   Proof.
     intros; simpl. repeat rewrite ret_neutral_right.
-    destruct o; unfold run_scope, run_peek; simpl; unfold run_peek; unfold_MonSem.
+    destruct o; unfold run_local; simpl; unfold_MonSem.
     destruct (run fuel e data s0) as [[a b]| |]; reflexivity.
     destruct (run fuel e data s) as [[a b]| |]; reflexivity.
   Qed.
@@ -333,12 +333,12 @@ Section laws.
      local o (alt e1 e2) ⩵ alt (local o e1) (local o e2).
   Proof.
     destruct o; intros; simpl.
-    + repeat rewrite ret_neutral_right. unfold run_scope, run_alt.
-      simpl. unfold run_alt, run_scope. unfold_MonSem.
+    + repeat rewrite ret_neutral_right. unfold run_local, run_alt.
+      simpl. unfold run_alt, run_local. unfold_MonSem.
       destruct (run fuel e1 data s) as [[a b]| |]; try reflexivity.
       destruct (run fuel e2 data s) as [[a b]| |]; try reflexivity.
-    + repeat rewrite ret_neutral_right. unfold run_peek, run_alt.
-      simpl. unfold run_alt, run_peek. unfold_MonSem.
+    + repeat rewrite ret_neutral_right. unfold run_local, run_alt.
+      simpl. unfold run_alt, run_local. unfold_MonSem.
       destruct (run fuel e1 data s) as [[a b]| |]; try reflexivity.
       destruct (run fuel e2 data s) as [[a b]| |]; try reflexivity.
   Qed.

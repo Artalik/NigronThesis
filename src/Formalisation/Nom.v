@@ -187,21 +187,16 @@ Section NomG_sem.
     (e1 e2 : @NomG atom X) (data : list atom) : MonSem X :=
     run_try_with (run e1 data) (run e2 data).
 
-  Definition run_scope (run : forall {X}, NomG X -> list atom -> MonSem X) {X}
-    (range : span) (e : @NomG atom X)  (data : list atom) : MonSem X :=
+  Definition run_local (run : forall {X}, NomG X -> list atom -> MonSem X) {X}
+    (range : option span) (e : @NomG atom X)  (data : list atom) : MonSem X :=
     let* save := run_get in
-    let* _ := run_set range in
+    let* _ := match range with
+              | Some range => run_set range
+              | None => run_ret tt
+              end in
     let* v := run e data in
     let* _ := run_set save in
     run_ret v.
-
-  Definition run_peek (run : forall {X}, NomG X -> list atom -> MonSem X) {X}
-    (e : @NomG atom X) (data : list atom) : MonSem X :=
-    let* save := run_get in
-    let* v := run e data in
-    let* _ := run_set save in
-    run_ret v.
-
 
   Fixpoint run (fuel : nat) {X} (m : NomG X) (data : list atom) {struct m} : MonSem X :=
     match m with
@@ -217,8 +212,7 @@ Section NomG_sem.
          | READ range pos => run_read range pos data
          | TAKE n => run_take n
          | ALT c1 c2 => run_alt (@run fuel) c1 c2 data
-         | LOCAL (Some range) e => run_scope (@run fuel) range e data
-         | LOCAL None e => run_peek (@run fuel) e data
+         | LOCAL o e => run_local (@run fuel) o e data
          | @REPEAT _ (Some n) T e b =>
              (fix sem_repeat_some (n : nat) (x : T) : MonSem T :=
                 match n with
@@ -241,7 +235,7 @@ Section NomG_sem.
 
 End NomG_sem.
 
-Ltac unfold_MonSem := unfold run_alt, run_scope, run_length, run_peek, run_bind, run_try_with, run_ret, run_get, run_set, run_fail in *.
+Ltac unfold_MonSem := unfold run_alt, run_local, run_length, run_bind, run_try_with, run_ret, run_get, run_set, run_fail in *.
 
 (* Expected : NoRes *)
 Lemma test1 : run 1000 (let! v := alt (ret 0) (ret 1) in
