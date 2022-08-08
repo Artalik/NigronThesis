@@ -329,9 +329,9 @@ End NomG_sem.
 Notation "'let*' x ':=' e1 'in' e2" :=
   (run_bind e1 (fun x => e2)) (x name, at level 50).
 
-
+Fail
 (* =run_repeat_n= *)
-Fail Equations run_repeat_n {atom} {run : forall X, @NomG atom X -> list atom -> MonSem X}
+Equations run_repeat_n {atom} {run : forall X, @NomG atom X -> list atom -> MonSem X}
   (n : N) {X} (e : X -> @NomG atom X) (b : X) (d: list atom) : MonSem X :=
   run_repeat_n 0 e b d := run_ret b;
   run_repeat_n n e b d :=
@@ -339,8 +339,9 @@ Fail Equations run_repeat_n {atom} {run : forall X, @NomG atom X -> list atom ->
     run_repeat_n (N.pred n) e v d.
 (* =end= *)
 
-(* =many= *)
-Fail Equations run_many {atom} {run : forall X, @NomG atom X -> list atom -> MonSem X}
+Fail
+(* =run_many= *)
+Equations run_many {atom} {run : forall X, @NomG atom X -> list atom -> MonSem X}
   (fuel : N) {X} (e : X -> @NomG atom X) (b : X) (d: list atom) : MonSem X :=
   run_many 0 e b d := fun _ => NoFuel;
   run_many fuel e b d :=
@@ -350,8 +351,9 @@ Fail Equations run_many {atom} {run : forall X, @NomG atom X -> list atom -> Mon
       (run_ret b).
 (* =end= *)
 
+Fail
 (* =run= *)
-Fail Fixpoint run (fuel : nat) {X} (m : NomG X) (data : data) {struct m} : MonSem X :=
+Fixpoint run (fuel : nat) {X} (m : NomG X) (data : data) {struct m} : MonSem X :=
   match m with
   | ret v => run_ret v
   | op o c =>
