@@ -378,12 +378,14 @@ with run_op (fuel : nat) {X} (m : NOM X) (data : data) : MonSem X :=
     lengthN nil := 0;
     lengthN (_ :: t) := N.succ (lengthN t).
 
-  Definition parse {X} (m : NomG X) (nb_iter_max : nat) data : option X :=
-    let len := lengthN data in
-    match run nb_iter_max m data (mk_span 0 len) with
-    | Res (_, v) => Some v
-    | _ => None
-    end.
+(* =parse= *)
+Definition parse {X} (m : NomG X) (nb_iter_max : nat) data : option X :=
+  let len := lengthN data in
+  match run nb_iter_max m data (mk_span 0 len) with
+  | Res (_, v) => Some v
+  | _ => None
+  end.
+(* =end= *)
 
 End NomG_sem.
 
