@@ -324,14 +324,10 @@ with run_op (fuel : nat) {X} (m : NOM X) (data : data) : MonSem X :=
        end) fuel b
   end.
 
-End NomG_sem.
-
-Notation "'let*' x ':=' e1 'in' e2" :=
-  (run_bind e1 (fun x => e2)) (x name, at level 50).
 
 Fail
 (* =run_repeat_n= *)
-Equations run_repeat_n {atom} {run : forall X, @NomG atom X -> list atom -> MonSem X}
+Equations run_repeat_n {run : forall X, @NomG atom X -> list atom -> MonSem X}
   (n : N) {X} (e : X -> @NomG atom X) (b : X) (d: list atom) : MonSem X :=
   run_repeat_n 0 e b d := run_ret b;
   run_repeat_n n e b d :=
@@ -341,7 +337,7 @@ Equations run_repeat_n {atom} {run : forall X, @NomG atom X -> list atom -> MonS
 
 Fail
 (* =run_many= *)
-Equations run_many {atom} {run : forall X, @NomG atom X -> list atom -> MonSem X}
+Equations run_many {run : forall X, @NomG atom X -> list atom -> MonSem X}
   (fuel : N) {X} (e : X -> @NomG atom X) (b : X) (d: list atom) : MonSem X :=
   run_many 0 e b d := fun _ => NoFuel;
   run_many fuel e b d :=
@@ -377,6 +373,12 @@ with run_op (fuel : nat) {X} (m : NOM X) (data : data) : MonSem X :=
       @run_many (@run fuel) fuel T e b data
   end.
 (* =end= *)
+
+End NomG_sem.
+
+Notation "'let*' x ':=' e1 'in' e2" :=
+  (run_bind e1 (fun x => e2)) (x name, at level 50).
+
 
 Ltac unfold_MonSem := unfold run_alt, run_local, run_length, run_bind, run_try_with, run_ret, run_get, run_set, run_fail in *.
 
