@@ -190,123 +190,145 @@ Section NomG_sem.
 
   (* Run *)
 
-  Inductive Result X :=
-  | Res (x :X)
-  | NoRes
-  | NoFuel.
+(* =Result= *)
+Inductive Result X :=
+| Res (x :X)
+| NoRes
+| NoFuel.
+(* =end= *)
 
-  Global Arguments Res {X}.
-  Global Arguments NoRes {X}.
-  Global Arguments NoFuel {X}.
+Global Arguments Res {X}.
+Global Arguments NoRes {X}.
+Global Arguments NoFuel {X}.
 
-  Definition MonSem X := span -> Result (span * X).
+(* =MonSem= *)
+Definition MonSem X := span -> Result (span * X).
 
-  Definition run_ret {X} (x : X) : MonSem X := fun s => Res (s, x).
+Definition run_ret {X} (x : X) : MonSem X := fun s => Res (s, x).
 
-  Definition run_bind {X} (e : MonSem X) {Y} (f : X -> MonSem Y) : MonSem Y :=
-    fun s =>
-      match e s with
-      | NoRes => NoRes
-      | NoFuel => NoFuel
-      | Res (s, x) => f x s
-      end.
+Definition run_bind {X} (e : MonSem X) {Y} (f : X -> MonSem Y) : MonSem Y :=
+  fun s =>
+    match e s with
+    | NoRes => NoRes
+    | NoFuel => NoFuel
+    | Res (s, x) => f x s
+    end.
 
-  Notation "'let*' x ':=' e1 'in' e2" :=
-    (run_bind e1 (fun x => e2)) (x name, at level 50).
+Notation "'let*' x ':=' e1 'in' e2" :=
+  (run_bind e1 (fun x => e2)) (x name, at level 50).
 
-  Definition run_fail {X} : MonSem X := fun _ => NoRes.
-  Definition run_try_with {X} (e : MonSem X) (f: MonSem X): MonSem X :=
-    fun s =>
-      match e s with
-      | NoFuel => NoFuel
-      | NoRes => f s
-      | Res (s,v) => Res (s,v)
-      end.
-  Definition run_get : MonSem span := fun s => Res (s,s).
-  Definition run_set (s : span) : MonSem unit := fun _ => Res (s,tt).
+Definition run_fail {X} : MonSem X := fun _ => NoRes.
+Definition run_try_with {X} (e : MonSem X) (f: MonSem X): MonSem X :=
+  fun s =>
+    match e s with
+    | NoFuel => NoFuel
+    | NoRes => f s
+    | Res (s,v) => Res (s,v)
+    end.
+Definition run_get : MonSem span := fun s => Res (s,s).
+Definition run_set (s : span) : MonSem unit := fun _ => Res (s,tt).
+(* =end= *)
 
-  Definition run_length :=
-    let* s := run_get in
-    run_ret (len s).
+(* =run_length= *)
+Definition run_length :=
+  let* s := run_get in
+  run_ret (len s).
+(* =end= *)
 
-  Definition run_take (n : N) : MonSem span :=
-    let* s := run_get in
-    if n <=? len s then
-      let* _ := run_set (mk_span (pos s + n) (len s - n)) in
-      run_ret (mk_span (pos s) n)
-    else
-      run_fail.
+(* =run_take= *)
+Definition run_take (n : N) : MonSem span :=
+  let* s := run_get in
+  if n <=? len s then
+    let* _ := run_set (mk_span (pos s + n) (len s - n)) in
+    run_ret (mk_span (pos s) n)
+  else
+    run_fail.
+(* =end= *)
 
-  Equations lookupN {X} (l : list X) (n : N) (s : span): Result (span * X) by wf (N.to_nat n) lt :=
-    lookupN [] n s := NoRes;
-    lookupN (h :: t) 0 s := Res (s,h);
-    lookupN (h :: t) pos s := lookupN t (N.pred pos) s.
-  Next Obligation.
-    intros. unfold pos. lia.
-  Defined.
+(* =lookup= *)
+Equations lookupN {X} (l : list X) (n : N) (s : span): Result (span * X) by wf (N.to_nat n) lt :=
+  lookupN [] n s := NoRes;
+  lookupN (h :: t) 0 s := Res (s,h);
+  lookupN (h :: t) pos s := lookupN t (N.pred pos) s.
+Next Obligation.
+  intros. unfold pos. lia.
+Defined.
+(* =end= *)
 
-  Definition run_read (arg1 : span) (arg2 : N) (a : list atom) : MonSem atom :=
-    if arg2 <? len arg1
-    then
-      lookupN a (pos arg1 + arg2)
-    else
-      run_fail.
+(* =run_read= *)
+Definition run_read (arg1 : span) (arg2 : N) (a : list atom) : MonSem atom :=
+  if arg2 <? len arg1
+  then
+    lookupN a (pos arg1 + arg2)
+  else
+    run_fail.
+(* =end= *)
 
-  Definition run_alt (run : forall {X}, NomG X -> list atom -> MonSem X) {X}
-    (e1 e2 : @NomG atom X) (data : list atom) : MonSem X :=
-    run_try_with (run e1 data) (run e2 data).
+(* =run_alt= *)
+Definition run_alt (run : forall {X}, NomG X -> list atom -> MonSem X) {X}
+  (e1 e2 : @NomG atom X) (data : list atom) : MonSem X :=
+  run_try_with (run e1 data) (run e2 data).
+(* =end= *)
 
-  Definition run_scope (run : forall {X}, NomG X -> list atom -> MonSem X) {X}
-    (range : span) (e : @NomG atom X)  (data : list atom) : MonSem X :=
-    let* save := run_get in
-    let* _ := run_set range in
-    let* v := run e data in
-    let* _ := run_set save in
-    run_ret v.
+(* =run_scope= *)
+Definition run_scope (run : forall {X}, NomG X -> list atom -> MonSem X) {X}
+  (range : span) (e : @NomG atom X)  (data : list atom) : MonSem X :=
+  let* save := run_get in
+  let* _ := run_set range in
+  let* v := run e data in
+  let* _ := run_set save in
+  run_ret v.
+(* =end= *)
 
-  Definition run_peek (run : forall {X}, NomG X -> list atom -> MonSem X) {X}
-    (e : @NomG atom X) (data : list atom) : MonSem X :=
-    let* save := run_get in
-    let* v := run e data in
-    let* _ := run_set save in
-    run_ret v.
+(* =run_peek= *)
+Definition run_peek (run : forall {X}, NomG X -> list atom -> MonSem X) {X}
+  (e : @NomG atom X) (data : list atom) : MonSem X :=
+  let* save := run_get in
+  let* v := run e data in
+  let* _ := run_set save in
+  run_ret v.
+(* =end= *)
 
+(* =run= *)
+Fixpoint run (fuel : nat) {X} (m : NomG X) (data : list atom) {struct m} : MonSem X :=
+  match m with
+  | ret v => run_ret v
+  | op o c =>
+      let* v := run_op fuel o data in
+      run fuel (c v) data
+  end
+(* =end= *)
 
-  Fixpoint run (fuel : nat) {X} (m : NomG X) (data : list atom) {struct m} : MonSem X :=
-    match m with
-    | ret v => run_ret v
-    | op o c =>
-        let* v := run_op fuel o data in
-        run fuel (c v) data
-    end
-  with run_op (fuel : nat) {X} (m : NOM X) (data :list atom) : MonSem X :=
-         match m with
-         | FAIL  => run_fail
-         | LENGTH => run_length
-         | READ range pos => run_read range pos data
-         | TAKE n => run_take n
-         | ALT c1 c2 => run_alt (@run fuel) c1 c2 data
-         | LOCAL (Some range) e => run_scope (@run fuel) range e data
-         | LOCAL None e => run_peek (@run fuel) e data
-         | @REPEAT _ (Some n) T e b =>
-             (fix sem_repeat_some (n : nat) (x : T) : MonSem T :=
-                match n with
-                | O => run_ret x
-                | S n =>
-                    let* v := run fuel (e x) data in
-                    sem_repeat_some n v
-                end) (N.to_nat n) b
-         | @REPEAT _ None T e b =>
-             (fix sem_repeat_none (n : nat) (x : T) : MonSem T :=
-                match n with
-                | O => fun _ => NoFuel
-                | S n =>
-                    run_try_with
-                      (let* v := run fuel (e x) data in
-                       sem_repeat_none n v)
-                      (run_ret x)
-                end) fuel b
-         end.
+(* =run_op= *)
+with run_op (fuel : nat) {X} (m : NOM X) (data :list atom) : MonSem X :=
+  match m with
+  | FAIL  => run_fail
+  | LENGTH => run_length
+  | READ range pos => run_read range pos data
+  | TAKE n => run_take n
+  | ALT c1 c2 => run_alt (@run fuel) c1 c2 data
+  | LOCAL (Some range) e => run_scope (@run fuel) range e data
+  | LOCAL None e => run_peek (@run fuel) e data
+  | @REPEAT _ (Some n) T e b =>
+      (fix sem_repeat_some (n : nat) (x : T) : MonSem T :=
+         match n with
+         | O => run_ret x
+         | S n =>
+             let* v := run fuel (e x) data in
+             sem_repeat_some n v
+         end) (N.to_nat n) b
+  | @REPEAT _ None T e b =>
+      (fix sem_repeat_none (n : nat) (x : T) : MonSem T :=
+         match n with
+         | O => fun _ => NoFuel
+         | S n =>
+             run_try_with
+               (let* v := run fuel (e x) data in
+                sem_repeat_none n v)
+               (run_ret x)
+         end) fuel b
+       end.
+(* =end= *)
 
 End NomG_sem.
 
