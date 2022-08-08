@@ -1,6 +1,11 @@
-From Formalisation Require Import Nom.
+From Formalisation Require Import Nom FuelMono.
 
-Notation "e ⩵ e'" := (forall fuel data s, run fuel e data s = run fuel e' data s) (at level 95).
+Notation "e ⩵ e'" := (forall fuel data s res1 res2,
+                         run fuel e data s = res1 ->
+                         run fuel e' data s = res2 ->
+                         res1 <> NoFuel ->
+                         res2 <> NoFuel ->
+                         res1 = res2) (at level 95).
 
 Section laws.
 
@@ -8,34 +13,15 @@ Section laws.
 
   Local Definition NomG := @NomG atom.
 
-  Ltac Rewrite H :=
-    let fuel := fresh "fuel" in
-    let data := fresh "data" in
-    let s := fresh "s" in
-    intros fuel data s; erewrite H; revert fuel data s.
-
-  Ltac Rewrite2 H :=
-    let fuel := fresh "fuel" in
-    let data := fresh "data" in
-    let s := fresh "s" in
-    intros fuel data s; erewrite <- H; revert fuel data s.
-
-  Ltac Beta :=
-    let fuel := fresh "fuel" in
-    let data := fresh "data" in
-    let s := fresh "s" in
-    intros fuel data s; revert fuel data s.
-
   (* Monad laws *)
   Lemma ret_id X (v: X) Y (f : X -> NomG Y) :
       let! v := ret v in f v ⩵ f v.
-  Proof. reflexivity. Qed.
+  Proof. intros. rewrite -H0 H //. Qed.
 
   Lemma id_ret X (e: NomG X):
     let! v := e in ret v ⩵ e.
   Proof.
-    Rewrite (@run_bind_monsem atom).
-    intros. unfold_MonSem. destruct run; auto. destruct x. reflexivity.
+    intros. rewrite -H0 -H (@run_bind_monsem atom) ret_neutral_right //.
   Qed.
 
   Lemma bind_assoc : forall X Y Z (e : NomG X) f (g : Y -> NomG Z),
@@ -47,40 +33,49 @@ Section laws.
         f v in
       g v'.
   Proof.
-    intros. repeat rewrite run_bind_monsem. unfold_MonSem.
+    intros. rewrite -H0 -H. repeat rewrite run_bind_monsem. unfold_MonSem.
     rewrite run_bind_monsem. unfold_MonSem. destruct (run fuel e data s); auto.
-    destruct x. rewrite run_bind_monsem. reflexivity.
+    destruct x. repeat rewrite run_bind_monsem. unfold_MonSem.
+    reflexivity.
   Qed.
 
 
   (* Error Laws *)
   Lemma fail_absorb_left X Y (f : X -> NomG Y) :
     let! v := fail in f v ⩵ fail.
-  Proof. reflexivity. Qed.
+  Proof. intros. rewrite -H0 -H //. Qed.
 
   Lemma id_fail X (e : NomG X) :
     alt fail e ⩵ e.
   Proof.
-    intros. unfold run. simpl. rewrite ret_neutral_right.
-    unfold run_alt. unfold_MonSem. simpl. reflexivity.
+    intros. rewrite -H0 -H. unfold run. simpl. rewrite ret_neutral_right. reflexivity.
   Qed.
 
   Lemma fail_id X (e : NomG X) :
     alt e fail ⩵ e.
   Proof.
-    intros. simpl. rewrite ret_neutral_right.
+    intros. rewrite -H0 -H. simpl. rewrite ret_neutral_right.
     unfold run_alt. unfold_MonSem. simpl. rewrite ret_neutral_right.
-    unfold_MonSem. destruct run as [[a b]| |]; auto.
+    unfold_MonSem. destruct (run fuel e) as [[a b]| |]; auto.
   Qed.
 
   Lemma alt_assoc X (e m k : NomG X) :
     alt e (alt m k) ⩵ alt (alt e m) k.
   Proof.
-    intros. simpl. unfold run_alt. simpl. unfold run_alt. unfold_MonSem.
+    intros. rewrite -H0 -H. simpl. unfold run_alt. simpl. unfold run_alt. unfold_MonSem.
     destruct (run fuel e data s) as [[e0 e1] | |];
       destruct (run fuel m data s) as [[m0 m1] | |];
       destruct (run fuel k data s) as [[k0 k1] | |]; auto.
   Qed.
+
+  Lemma alt_ret {X} (e : NomG X) v:
+    alt (ret v) e ⩵ ret v.
+  Proof. intros. rewrite -H0 -H //. Qed.
+
+  Lemma alt_length (e : NomG N) :
+    alt length e ⩵ length.
+  Proof. intros. rewrite -H0 -H //. Qed.
+
 
   (* Length laws *)
 
@@ -90,7 +85,7 @@ Section laws.
     k len len0) ⩵
       let! len := length in
       k len len.
-  Proof. reflexivity. Qed.
+  Proof. intros. rewrite -H0 -H //. Qed.
 
   Lemma read_read X s n (k : atom -> atom -> NomG X) :
     (let! v := read s n in
@@ -99,15 +94,11 @@ Section laws.
       let! v := read s n in
       k v v.
   Proof.
-    intros. simpl. unfold run_read. unfold_MonSem.
+    intros. rewrite -H0 -H. simpl. unfold run_read. unfold_MonSem.
     destruct (n <? len s); auto.
     destruct (lookupN data (pos s + n) s0) as [[v0 v1]| |]eqn:?; auto.
     eapply lookupN_eq_span in Heqr as P0. subst. rewrite Heqr. reflexivity.
   Qed.
-
-  Lemma absorb_length (e : NomG N) :
-    alt length e ⩵ length.
-  Proof. reflexivity. Qed.
 
   Lemma read_commutatif X s t n m (k : atom -> atom -> NomG X) :
     (let! v := read s n in
@@ -117,7 +108,7 @@ Section laws.
        let! v := read s n in
        k v v0).
   Proof.
-    intros. simpl. unfold run_read. unfold_MonSem.
+    intros. rewrite -H0 -H. simpl. unfold run_read. unfold_MonSem.
     destruct (n <? len s); auto.
     destruct (lookupN data (pos s + n) s0) as [[v0 v1]| |]eqn:?; auto.
     destruct (m <? len t); auto.
@@ -145,7 +136,7 @@ Section laws.
        let! v := read s n in
        k v len).
   Proof.
-    intros. simpl.
+    intros. rewrite -H0 -H. simpl.
     unfold run_read, run_length. unfold_MonSem.
     destruct (n <? len s); auto.
     destruct (lookupN data (pos s + n) s0) as [[v0 v1]| |]eqn:?; auto.
@@ -160,7 +151,7 @@ Section laws.
        let! v := read s n in
        k v r).
   Proof.
-    intros. simpl. unfold run_read, run_take. unfold_MonSem.
+    intros. rewrite -H0 -H. simpl. unfold run_read, run_take. unfold_MonSem.
     destruct (n <? len s); auto.
     destruct (lookupN data (pos s + n) s0) as [[v0 v1]| |]eqn:?; auto.
     eapply lookupN_eq_span in Heqr as P0. subst.
@@ -172,28 +163,6 @@ Section laws.
     destruct (m <=? len s0) eqn:?; reflexivity.
   Qed.
 
-  Lemma test m s n :
-    (let! r := take m in
-     let! v := read s n in
-     ret v : NomG atom) ⩵
-      (let! v := read s n in
-       let! r := take m in
-       ret v).
-  Proof. Rewrite read_take_commutatif. reflexivity. Qed.
-
-
-  Lemma test2 m s n :
-    (let! r := take m in
-     let! v := read s n in
-     let! _ := read s n in
-     ret v : NomG atom) ⩵
-      (let! v := read s n in
-       let! r := take m in
-       let! _ := read s n in
-       ret v).
-  Proof. Rewrite read_take_commutatif. reflexivity. Qed.
-
-
   (* take-length laws *)
 
   Lemma length_take_comm_add n X (k : N -> span -> NomG X) :
@@ -204,7 +173,7 @@ Section laws.
       let! len := length in
       k (len + n) s.
   Proof.
-    intros. simpl. unfold run_length, run_take. unfold_MonSem.
+    intros. rewrite -H0 -H. simpl. unfold run_length, run_take. unfold_MonSem.
     destruct (n <=? len s0) eqn:?; auto. simpl. rewrite N.sub_add. reflexivity.
     eapply N.leb_le. auto.
   Qed.
@@ -217,88 +186,24 @@ Section laws.
       let! s := take n in
       k (len - n) s.
   Proof.
-    intros. simpl. unfold run_length, run_take. unfold_MonSem.
+    intros. rewrite -H0 -H. simpl. unfold run_length, run_take. unfold_MonSem.
     destruct (n <=? len s0) eqn:?; auto.
   Qed.
 
-  Lemma bind_eq : forall X Y (e e': NomG X) (k k' : X -> NomG Y),
-        e ⩵ e' ->
-        (forall v, k v ⩵ k' v) ->
-        let! v := e in k v ⩵ let! v := e' in k' v.
-  Proof.
-    intros. repeat rewrite run_bind_monsem.
-    unfold_MonSem. rewrite H. destruct run as [[a b]| | ]; try reflexivity.
-    rewrite H0. reflexivity.
-  Qed.
-
-  Lemma bind_eq_2 : forall X Y (e : NomG X) (k k' k'': X -> NomG Y),
-      (forall v, k v ⩵ k'' v) ->
-      (let! v := e in k'' v ⩵ let! v := e in k' v) ->
-      let! v := e in k v ⩵ let! v := e in k' v.
-  Proof.
-    intros.
-    pose (H0 fuel data s).
-    repeat erewrite run_bind_monsem in e0.
-    unfold_MonSem.
-    destruct run as [[a b]| |] eqn:?; repeat erewrite run_bind_monsem;
-      unfold_MonSem; rewrite Heqm; try reflexivity.
-    rewrite H. rewrite e0. reflexivity.
-  Qed.
-
-  Lemma refl X (e : NomG X) : e ⩵ e. Proof. reflexivity. Qed.
-
-  Ltac Step :=
-    eapply bind_eq; [ reflexivity| intro].
-
-  Ltac Intern :=
-    eapply bind_eq_2; [ intro | idtac ].
-
-  Lemma length_take_length n X (k : N -> span -> N -> NomG X) :
-    (let! len := length in
-     let! s := take n in
-     let! len0 := length in
-     k len s len0) ⩵
-      let! len := length in
-      let! s := take n in
-      k len s (len - n).
-  Proof.
-    Rewrite length_take_comm_add.
-    Rewrite length_take_comm_add.
-    Step. Rewrite length_length.
-    Step. rewrite N.add_sub. reflexivity.
-  Qed.
-
-  Lemma length_take_0 X (k : N -> span -> N -> NomG X) :
-    (let! len := length in
-    let! s := take len in
-    let! len0 := length in
-    k len s len0) ⩵
-      let! len := length in
-      let! s := take len in
-      k len s 0.
-  Proof.
-    Intern. Rewrite length_take_comm_sub. reflexivity.
-    cbv beta. Rewrite length_length.
-    Step. Step. rewrite N.sub_diag. reflexivity.
-  Qed.
-
-  (* Laws Scope *)
+  (* Local Laws *)
 
   Lemma local_ret X v o :
     local o (ret v : NomG X) ⩵ ret v.
-  Proof. destruct o; reflexivity. Qed.
+  Proof. destruct o; intros; rewrite -H0 -H //. Qed.
 
   Lemma local_fail X o :
     local o (fail: NomG X) ⩵ fail.
-  Proof. destruct o; reflexivity. Qed.
-
-  Lemma local_length :
-    local None (length: NomG N) ⩵ length.
-  Proof. reflexivity. Qed.
+  Proof. destruct o; intros; rewrite -H0 -H //. Qed.
 
   Lemma local_read o s n:
     local o (read s n : NomG atom) ⩵ read s n.
   Proof.
+    intros. rewrite -H0 -H.
     destruct o; unfold run; intros; simpl; repeat rewrite ret_neutral_right.
     + unfold run_local. simpl. unfold run_read. unfold_MonSem.
       destruct (n <? len s); try reflexivity.
@@ -312,10 +217,15 @@ Section laws.
       erewrite <- lookupN_indep_state_res; eauto.
   Qed.
 
+  Lemma peek_length :
+    local None (length: NomG N) ⩵ length.
+  Proof. intros. rewrite -H0 -H //. Qed.
+
+
   Lemma local_scope X (e : NomG X) o s2:
     local o (local (Some s2) e) ⩵ scope s2 e.
   Proof.
-    intros; simpl. repeat rewrite ret_neutral_right.
+    intros. rewrite -H0 -H. simpl. repeat rewrite ret_neutral_right.
     destruct o; unfold run_local; simpl; unfold run_local; unfold_MonSem;
     destruct (run fuel e data s2) as [[a b]| |]; reflexivity.
   Qed.
@@ -323,7 +233,7 @@ Section laws.
   Lemma local_peek X (e : NomG X) o:
     local o (local None e) ⩵ local o e.
   Proof.
-    intros; simpl. repeat rewrite ret_neutral_right.
+    intros. rewrite -H0 -H. simpl. repeat rewrite ret_neutral_right.
     destruct o; unfold run_local; simpl; unfold_MonSem.
     destruct (run fuel e data s0) as [[a b]| |]; reflexivity.
     destruct (run fuel e data s) as [[a b]| |]; reflexivity.
@@ -332,7 +242,7 @@ Section laws.
   Lemma local_alt_distrib X o (e1 e2 : NomG X):
      local o (alt e1 e2) ⩵ alt (local o e1) (local o e2).
   Proof.
-    destruct o; intros; simpl.
+    destruct o; intros; rewrite -H0 -H; simpl.
     + repeat rewrite ret_neutral_right. unfold run_local, run_alt.
       simpl. unfold run_alt, run_local. unfold_MonSem.
       destruct (run fuel e1 data s) as [[a b]| |]; try reflexivity.
@@ -345,31 +255,78 @@ Section laws.
 
   Lemma repeat_0 X (e: X -> NomG X) v:
       repeat (Some 0) e v ⩵ ret v.
-  Proof. reflexivity. Qed.
+  Proof. intros. rewrite -H0 -H //. Qed.
 
   Lemma repeat_n_ret n X v :
       repeat (Some n) (ret : X -> NomG X) v ⩵ ret v.
   Proof.
     induction n using N.peano_ind.
-    - Rewrite repeat_0. reflexivity.
-    - unfold run. intros. simpl. unfold_MonSem.
-      rewrite N2Nat.inj_succ. simpl in IHn.
-      unfold_MonSem. rewrite IHn; auto.
+    - eapply repeat_0.
+    - intros. simpl in *. unfold_MonSem.
+      rewrite N2Nat.inj_succ in H.
+      eapply IHn; eauto.
   Qed.
 
   Lemma unfold_repeat_n n X (e : X -> NomG X) b :
     repeat (Some (N.succ n)) e b ⩵
       let! v := e b in repeat (Some n) e v.
   Proof.
-    intros. rewrite run_bind_monsem. simpl.
+    intros. rewrite -H0 -H. rewrite run_bind_monsem. simpl.
     rewrite N2Nat.inj_succ. rewrite ret_neutral_right. eapply run_bind_eq. reflexivity.
     intros. rewrite ret_neutral_right. reflexivity.
   Qed.
 
   (* Laws not respected *)
 
-  (* Lemma repeat_fail X v : repeat None (fun _ => fail : NomG X) v ⩵ ret v. *)
+  Lemma repeat_fail_ret X v : repeat None (fun _ => fail : NomG X) v ⩵ ret v.
+  Proof.
+    intros. rewrite -H0 -H. simpl. destruct fuel.
+    - simpl in *. unfold_MonSem. subst. contradiction.
+    - simpl in *. unfold_MonSem. reflexivity.
+  Qed.
 
-  (* Lemma repeat_fail X (e : X -> NomG X ) b : *)
-  (*   repeat None e b ⩵ alt (let! v := e b in repeat None e v) (ret b). *)
+  Lemma repeat_step X (e : X -> NomG X ) b :
+    repeat None e b ⩵ alt (let! v := e b in repeat None e v) (ret b).
+  Proof.
+    intros. rewrite -H0 -H. simpl.
+    destruct fuel; simpl in *.
+    - unfold_MonSem. subst. contradiction.
+    - unfold_MonSem. repeat rewrite run_bind_monsem.
+      unfold_MonSem. rewrite run_bind_monsem in H0.
+      unfold_MonSem.
+      destruct (run (S fuel) (e b) data s) as [[x v]| |].
+      + simpl in *. unfold_MonSem.
+        destruct ((fix sem_repeat_none (n : nat) (x : X) {struct n} : MonSem X :=
+             match n with
+             | 0%nat => λ _ : span, NoFuel
+             | S n0 =>
+                 λ s : span,
+                   match
+                     match run (S fuel) (e x) data s with
+                     | Res (s0, x1) => sem_repeat_none n0 x1 s0
+                     | NoRes => NoRes
+                     | NoFuel => NoFuel
+                     end
+                   with
+                   | Res (s0, v) => Res (s0, v)
+                   | NoRes => Res (s, x)
+                   | NoFuel => NoFuel
+                   end
+             end) fuel v x) as [[s0 v0] | | ] eqn:? ; simpl in *.
+        * destruct (run (S fuel) (e v) data x) as [[s1 v1] | |] eqn:?; simpl in *.
+          -- eapply (repeat_none_fuel_mono fuel (S fuel)) in Heqr.
+             unfold_MonSem. erewrite Heqr0 in Heqr. rewrite Heqr. reflexivity.
+             intros. eapply run_fuel_mono; eauto. lia. lia. auto.
+          -- eapply (repeat_none_fuel_mono fuel (S fuel)) in Heqr.
+             unfold_MonSem. erewrite Heqr0 in Heqr. rewrite Heqr. reflexivity.
+             intros. eapply run_fuel_mono; eauto. lia. lia. auto.
+          -- subst. contradiction.
+        * eapply (repeat_none_fuel_mono fuel (S fuel)) in Heqr.
+          unfold_MonSem. erewrite Heqr in H0. rewrite Heqr. reflexivity.
+          intros. eapply run_fuel_mono; eauto. lia. lia. auto.
+        * subst. contradiction.
+      + reflexivity.
+      + reflexivity.
+  Qed.
+
 End laws.
