@@ -13,7 +13,6 @@ From Examples Require Import example2.
 Open Scope N_scope.
 
 Definition octet := N.
-
 Definition data := list octet.
 
 Inductive DECODE : Type -> Type :=
@@ -185,6 +184,7 @@ Proof.
   eauto.
 Qed.
 
+(* =decode_packet_SSH= *)
 Definition decode_packet_SSH : Decodeur packet_SSH :=
   let! packet_length := decode_u32 in
   let! padding_length := decode_next in
@@ -196,6 +196,7 @@ Definition decode_packet_SSH : Decodeur packet_SSH :=
     ret (mk_ssh packet_length padding_length payload mac)
   else
     fail.
+(* =end= *)
 
 Close Scope free_monad_scope.
 
