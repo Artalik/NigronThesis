@@ -147,9 +147,11 @@ Definition packet_SSH := packet_SSHS span.
 Definition fold_r {A B} (f : A -> B -> B) (b : B) (p : packet_SSHS A) : B :=
   f (payload p) (f (mac p) b).
 
+(* =decode_next= *)
 Definition decode_next : Decodeur N :=
   let! s := take 1 in
   read s 0.
+(* =end= *)
 
 Lemma rule_next : {{ emp }} decode_next {{ _; True }}.
 Proof.
