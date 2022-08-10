@@ -1,7 +1,6 @@
 From Formalisation Require Import String SizeNat Vector Span.
 From stdpp Require Import numbers.
 
-
 Open Scope N_scope.
 
 Section Syntax.
@@ -154,43 +153,7 @@ Section sem_PHOAS.
     | _ :: t => N.succ (lengthN t)
     end.
 
-  Inductive val : type -> Type :=
-  | VNat : N -> val Nat
-  | VNatN : forall {len}, natN len -> val (NatN len)
-  | VBool : bool -> val Bool
-  | VString : string -> val String
-  | VSpan : span -> val Span
-  | VUnit : val Unit
-  | VUnknown : forall {id}, val (Unknown id)
-  | VVec : forall {ty X}, type_to_Type ty = X -> VECTOR X -> val (Vector ty)
-  | VPair : forall {X Y}, val X -> val Y -> val (Pair X Y)
-  | VFst : forall {X Y}, val (Pair X Y) -> val X
-  | VSnd : forall {X Y}, val (Pair X Y) -> val Y
-  | VSome : forall {X}, val X -> val (Option X)
-  | VNone : forall {X}, val (Option X)
-  | VInl : forall {X Y}, val X -> val (Sum X Y)
-  | VInr : forall {X Y}, val Y -> val (Sum X Y)
-  | VGetVec : forall {X}, val (Vector X) -> val Nat -> val (Option X).
-
-  Fixpoint sem_val {X} (v : val X) : type_to_Type X.
-    destruct v eqn:?.
-    refine n.
-    refine n.
-    refine b.
-    refine s.
-    refine s.
-    refine tt.
-    simpl. trivial.
-    subst. refine v0.
-    refine (sem_val _ v0_1, sem_val _ v0_2).
-    refine ((sem_val _ v0).1).
-    refine ((sem_val _ v0).2).
-    refine (Some (sem_val _ v0)).
-    refine None.
-    refine (inl (sem_val _ v0)).
-    refine (inr (sem_val _ v0)).
-    refine (Vector.get (sem_val _ v0_1) (sem_val _ v0_2)).
-  Defined.
+  Definition val := type_to_Type.
 
   Definition PHOASV : type -> Type := @PHOAS val.
 
@@ -214,105 +177,76 @@ Section sem_PHOAS.
 
   (* 12 rules *)
   Inductive sem_bin : forall {X Y} Z, OpBin X Y Z -> val X -> val Y -> val Z -> Prop :=
-  | SAdd : forall vn0 n0 vn1 n1,
-      sem_val vn0 = n0 ->
-      sem_val vn1 = n1 ->
-      sem_bin Nat EAdd vn0 vn1 (VNat (n0 + n1))
-  | SSub : forall vn0 n0 vn1 n1,
-      sem_val vn0 = n0 ->
-      sem_val vn1 = n1 ->
-      sem_bin Nat ESub vn0 vn1 (VNat (n0 - n1))
-  | SMult :  forall vn0 n0 vn1 n1,
-      sem_val vn0 = n0 ->
-      sem_val vn1 = n1 ->
-      sem_bin Nat EMult vn0 vn1 (VNat (n0 * n1))
-  | SDiv : forall vn0 n0 vn1 n1,
-      sem_val vn0 = n0 ->
-      sem_val vn1 = n1 ->
-      sem_bin Nat EDiv vn0 vn1 (VNat (n0 / n1))
-  | SMod : forall vn0 n0 vn1 n1,
-      sem_val vn0 = n0 ->
-      sem_val vn1 = n1 ->
-      sem_bin Nat EMod vn0 vn1 (VNat (n0 `mod` n1))
-  | SEq : forall vn0 n0 vn1 n1,
-      sem_val vn0 = n0 ->
-      sem_val vn1 = n1 ->
-      sem_bin Bool EEq vn0 vn1 (VBool (n0 =? n1))
-  | SLe : forall vn0 n0 vn1 n1,
-      sem_val vn0 = n0 ->
-      sem_val vn1 = n1 ->
-      sem_bin Bool ELe vn0 vn1 (VBool (n0 <=? n1))
-  | SLt : forall vn0 n0 vn1 n1,
-      sem_val vn0 = n0 ->
-      sem_val vn1 = n1 ->
-      sem_bin Bool ELt vn0 vn1 (VBool (n0 <? n1))
-  | SAnd : forall vb0 b0 vb1 b1,
-      sem_val vb0 = b0 ->
-      sem_val vb1 = b1 ->
-      sem_bin Bool EAnd vb0 vb1 (VBool (b0 && b1))
-  | SOr :forall vb0 b0 vb1 b1,
-      sem_val vb0 = b0 ->
-      sem_val vb1 = b1 ->
-      sem_bin Bool EOr vb0 vb1 (VBool (b0 || b1))
-  | SStringGet : forall (vs : val String) s (vn : val Nat) n r,
-      sem_val vn = n ->
-      sem_val vs = s ->
+  | SAdd : forall n0 n1,
+      (* sem_val vn0 = n0 -> *)
+      (* sem_val vn1 = n1 -> *)
+      sem_bin Nat EAdd n0 n1 (n0 + n1)
+  | SSub : forall n0 n1,
+      sem_bin Nat ESub n0 n1 (n0 - n1)
+  | SMult :  forall n0 n1,
+      sem_bin Nat EMult n0 n1 (n0 * n1)
+  | SDiv : forall n0 n1,
+      sem_bin Nat EDiv n0 n1 (n0 / n1)
+  | SMod : forall n0 n1,
+      sem_bin Nat EMod n0 n1 (n0 `mod` n1)
+  | SEq : forall n0 n1,
+      sem_bin Bool EEq n0 n1 (n0 =? n1)
+  | SLe : forall n0 n1,
+      sem_bin Bool ELe n0 n1 (n0 <=? n1)
+  | SLt : forall n0 n1,
+      sem_bin Bool ELt n0 n1 (n0 <? n1)
+  | SAnd : forall b0 b1,
+      sem_bin Bool EAnd b0 b1 (b0 && b1)
+  | SOr :forall b0 b1,
+      sem_bin Bool EOr b0 b1 (b0 || b1)
+  | SStringGet : forall s n r,
       string_get n s = Some r ->
-      sem_bin (NatN 8) EStringGet vn vs (VNatN r)
+      sem_bin (NatN 8) EStringGet n s r
   | SPair : forall X Y n0 n1,
-      sem_bin (Pair X Y) EPair n0 n1 (VPair n0 n1)
-  | SpTo2p: forall len (vn0 : val (NatN len)) (vn1 : val (NatN len)) n0 n1,
-      sem_val vn0 = n0 ->
-      sem_val vn1 = n1 ->
-      sem_bin (NatN (2 * len)) EpTo2p vn0 vn1 (VNatN (n0 ↑ n1))
-  | SGetVec : forall X vvec vn,
-      sem_bin (Option X) EGetVec vvec vn (VGetVec vvec vn)
-  | SAddVec : forall ty (vvec : val (Vector ty)) (vec : VECTOR (type_to_Type ty)) (vx : val ty) x,
-      sem_val vvec = vec ->
-      sem_val vx = x ->
-      sem_bin (Vector ty) EAddVec vvec vx (VVec eq_refl (Vector.add vec x)).
+      sem_bin (Pair X Y) EPair n0 n1 (n0, n1)
+  | SpTo2p: forall len n0 n1,
+      sem_bin (NatN (2 * len)) EpTo2p n0 n1 (n0 ↑ n1)
+  | SGetVec : forall X vec n,
+      sem_bin (Option X) EGetVec vec n (get vec n)
+  | SAddVec : forall ty (vec : VECTOR (type_to_Type ty)) x,
+      sem_bin (Vector ty) EAddVec vec x (Vector.add vec x).
 
   (* 10 rules *)
   Inductive sem_unary : forall {X} Y, OpUna X Y -> val X -> val Y -> Prop :=
-  | SEVal : forall len (vn : val (NatN len)) n,
-      sem_val vn = n ->
-      sem_unary Nat EVal vn (VNat (↓ n))
-  | SNot : forall vb b,
-      sem_val vb = b ->
-      sem_unary Bool ENot vb (VBool (negb b))
-  | SStringLenOK : forall (vs : val String) s,
-      sem_val vs = s ->
-      sem_unary _ EStringLen vs (VNat (string_length s))
+  | SEVal : forall len (n : val (NatN len)),
+      sem_unary Nat EVal n (↓ n)
+  | SNot : forall b,
+      sem_unary Bool ENot b (negb b)
+  | SStringLenOK : forall s,
+      sem_unary Nat EStringLen s (string_length s)
   | SFst : forall X Y (v : val (Pair X Y)),
-      sem_unary X EFst v (VFst v)
+      sem_unary X EFst v (v.1)
   | SSnd : forall X Y (v : val (Pair X Y)),
-      sem_unary Y ESnd v (VSnd v)
+      sem_unary Y ESnd v (v.2)
   | SSome : forall X n,
-      sem_unary (Option X) ESome n (VSome n)
+      sem_unary (Option X) ESome n (Some n)
   | SInl : forall X Y v,
-      sem_unary (Sum X Y) EInl v (VInl v)
+      sem_unary (Sum X Y) EInl v (inl v)
   | SInr : forall X Y v,
-      sem_unary (Sum X Y) EInr v (VInr v)
-  | SLen : forall vs s,
-      sem_val vs = s ->
-      sem_unary Nat ELen vs (VNat (len s))
-  | SMake : forall ty (vn : val Nat) n,
-      sem_val vn = n ->
-      sem_unary (Vector ty) EMake vn (VVec eq_refl (Vector.make (type_to_Type ty) n)).
+      sem_unary (Sum X Y) EInr v (inr v)
+  | SLen : forall s,
+      sem_unary Nat ELen s (len s)
+  | SMake : forall ty n,
+      sem_unary (Vector ty) EMake n (Vector.make (type_to_Type ty) n).
 
   (* 4 rules *)
   Inductive sem_literal : forall {X : type}, Literal X -> val X -> Prop :=
   | SNat : forall n,
-        sem_literal (ENat n) (VNat n)
+        sem_literal (ENat n) n
   | SNatN : forall len (n : natN len),
-      sem_literal (ENatN n) (VNatN n)
+      sem_literal (ENatN n) n
   | SBool : forall b,
-      sem_literal (EBool b) (VBool b)
+      sem_literal (EBool b) b
   | SString : forall s,
-      sem_literal (EString s) (VString s)
+      sem_literal (EString s) s
   | SNone : forall X,
-      sem_literal (ENone : Literal (Option X)) VNone
-  | SUnit : sem_literal EUnit VUnit.
+      sem_literal (ENone : Literal (Option X)) None
+  | SUnit : sem_literal EUnit tt.
 
   (* 4 rules *)
   Inductive sem_VAL: forall {X}, @VAL val X -> val X -> Prop :=
@@ -348,44 +282,47 @@ Section sem_PHOAS.
       sem_PHOAS data p0 e None ->
       sem_PHOAS data p0 (LetIn e f) None
 
-  | sem_IfThenElseT : forall vb X (et ee : PHOASV X) res s,
-      sem_VAL vb (VBool true) ->
+  | sem_IfThenElseT : forall vb X (et ee : PHOASV X) res s (b : val Bool),
+      b = true ->
+      sem_VAL vb b ->
       sem_PHOAS data s et res ->
       sem_PHOAS data s (IfThenElse vb et ee) res
-  | sem_IfThenElseF : forall vb X (et ee : PHOASV X) res s,
-      sem_VAL vb (VBool false) ->
+
+  | sem_IfThenElseF : forall vb X (et ee : PHOASV X) res s (b : val Bool),
+      b = false ->
+      sem_VAL vb b ->
       sem_PHOAS data s ee res ->
       sem_PHOAS data s (IfThenElse vb et ee) res
 
   | SCaseOptionNone : forall X (vo : VAL (Option X)) Y (eN : PHOASV Y) eOpt res p,
-      sem_VAL vo VNone ->
+      sem_VAL vo None ->
       sem_PHOAS data p eN res ->
       sem_PHOAS data p (CaseOption vo eN eOpt) res
   | SCaseOptionSome : forall X (vo : VAL (Option X)) Y (eN : PHOASV Y) eOpt v res p,
-      sem_VAL vo (VSome v) ->
+      sem_VAL vo (Some v) ->
       sem_PHOAS data p (eOpt v) res ->
       sem_PHOAS data p (CaseOption vo eN eOpt) res
 
-  | sem_Switch : forall vn p n X (cases : case_switch X) res,
-      sem_VAL vn (VNat n) ->
+  | sem_Switch : forall vn p (n : val Nat) X (cases : case_switch X) res,
+      sem_VAL vn n ->
       sem_switch_cases data p n cases res ->
       sem_PHOAS data p (Switch vn cases) res
 
   | SFail : forall p0 X, sem_PHOAS data p0 (Fail : PHOAS X) None
 
   | STake : forall (hn : VAL Nat) s n,
-      sem_VAL hn (VNat n) ->
+      sem_VAL hn n ->
       sem_PHOAS data s (Take hn)
-        (Some (VSpan (mk_span (pos s) n), mk_span (pos s + n) (len s - n)))
+        (Some (mk_span (pos s) n, mk_span (pos s + n) (len s - n)))
 
   | SLength: forall s,
-      sem_PHOAS data s Length (Some (VNat (len s), s))
+      sem_PHOAS data s Length (Some ((len s : val Nat), s))
 
-  | SRead : forall s hs hn range n v default,
-      sem_VAL hs (VSpan range) ->
-      sem_VAL hn (VNat n) ->
+  | SRead : forall s hs hn (range : val Span) (n : val Nat) v default,
+      sem_VAL hs range ->
+      sem_VAL hn n ->
       nth (N.to_nat (pos range + n)) data default = v ->
-      sem_PHOAS data s (Read hs hn) (Some (VNatN v,s))
+      sem_PHOAS data s (Read hs hn) (Some (v,s))
 
   | SAlt1 : forall p0 X (e0 e1 : PHOASV X) v0 p1,
       sem_PHOAS data p0 e0 (Some (v0, p1)) ->
@@ -395,32 +332,36 @@ Section sem_PHOAS.
       sem_PHOAS data p0 e1 res ->
       sem_PHOAS data p0 (Alt e0 e1) res
 
-  | SScopeF : forall hs X (ex : PHOAS X) p s,
-      sem_VAL hs (VSome (VSpan s)) ->
+  | SScopeF : forall hs X (ex : PHOAS X) p s (res : val (Option Span)),
+      res = Some s ->
+      sem_VAL hs res ->
       sem_PHOAS data s ex None ->
       sem_PHOAS data p (Local hs ex) None
-  | SScopeS : forall hs X (ex : PHOAS X) p s v p0,
-      sem_VAL hs (VSome (VSpan s)) ->
+  | SScopeS : forall hs X (ex : PHOAS X) p s v p0 (res : val (Option Span)),
+      res = Some s ->
+      sem_VAL hs res ->
       sem_PHOAS data s ex (Some (v, p0)) ->
       sem_PHOAS data p (Local hs ex) (Some (v, p))
 
-  | SPeekF : forall hs X (ex : PHOAS X) p,
-      sem_VAL hs VNone ->
+  | SPeekF : forall hs X (ex : PHOAS X) p (res : val (Option Span)),
+      res = None ->
+      sem_VAL hs res ->
       sem_PHOAS data p ex None ->
       sem_PHOAS data p (Local hs ex) None
-  | SPeekS : forall hs X (ex : PHOAS X) p v p0,
-      sem_VAL hs VNone ->
+  | SPeekS : forall hs X (ex : PHOAS X) p v p0 (res : val (Option Span)),
+      res = None ->
+      sem_VAL hs res ->
       sem_PHOAS data p ex (Some (v, p0)) ->
       sem_PHOAS data p (Local hs ex) (Some (v, p))
 
   | SRepeatN : forall von X (vb : VAL X) p ex base res,
-      sem_VAL von VNone ->
+      sem_VAL von (None : val (Option Nat)) ->
       sem_VAL vb base ->
       sem_repeat_None data p ex base res ->
       sem_PHOAS data p (Repeat von ex vb) res
 
   | SRepeatS : forall p von n X ex (vb : VAL X) base res,
-      sem_VAL von (VSome (VNat n)) ->
+      sem_VAL von (Some n : val (Option Nat)) ->
       sem_VAL vb base ->
       sem_repeat_Some data p n ex base res ->
       sem_PHOAS data p (Repeat von ex vb) res
@@ -487,23 +428,23 @@ Section sem_PHOAS.
   Ltac head_constructor t :=
     let t' := head t in is_constructor t'.
 
-  Lemma sem_val_inj : forall X (v : val X) res0 res1,
-      sem_val v = res0 ->
-      sem_val v = res1 ->
-      res0 = res1.
-  Proof.
-    Local Ltac ind_val_inj IH :=
-    match goal with
-    | H : sem_val ?t _ |- _ =>
-        head_constructor t(* ; next_step H *)
-    | H0 : sem_val ?t _, H1 : sem_val ?t _ |- _ =>
-        injection (IH _ t _ _ H0 H1); clear H0; clear H1
-    | H0 : sem_val ?t _, H1 : sem_val ?t _ |- _ =>
-        eapply (IH _ t _ _ H0) in H1
-    end.
-    fix IH 2.
-    destruct v; intros; repeat ind_val_inj IH; subst; try reflexivity.
-  Qed.
+  (* Lemma sem_val_inj : forall X (v : val X) res0 res1, *)
+  (*     sem_val v = res0 -> *)
+  (*     sem_val v = res1 -> *)
+  (*     res0 = res1. *)
+  (* Proof. *)
+  (*   Local Ltac ind_val_inj IH := *)
+  (*   match goal with *)
+  (*   | H : sem_val ?t _ |- _ => *)
+  (*       head_constructor t(* ; next_step H *) *)
+  (*   | H0 : sem_val ?t _, H1 : sem_val ?t _ |- _ => *)
+  (*       injection (IH _ t _ _ H0 H1); clear H0; clear H1 *)
+  (*   | H0 : sem_val ?t _, H1 : sem_val ?t _ |- _ => *)
+  (*       eapply (IH _ t _ _ H0) in H1 *)
+  (*   end. *)
+  (*   fix IH 2. *)
+  (*   destruct v; intros; repeat ind_val_inj IH; subst; try reflexivity. *)
+  (* Qed. *)
 
   Lemma sem_bin_inj : forall X (v0 : val X) Y (v1 : val Y) Z o res1 res2,
       sem_bin Z o v0 v1 res1 ->
@@ -521,7 +462,10 @@ Section sem_PHOAS.
     end.
     fix IH 6.
     destruct o; intros; repeat ind_bin_inj IH; try reflexivity.
-    rewrite H5 in H6. inversion H6. reflexivity.
+    match goal with
+    | H0 : string_get v0 v1 = _,
+        H1 : string_get v0 v1 = _ |- _ => rewrite H0 in H1; injection H1
+    end. intro. auto.
   Qed.
 
   Lemma sem_unary_inj : forall X (v0 : val X) Y o res1 res2,
@@ -539,8 +483,7 @@ Section sem_PHOAS.
         eapply (IH _ t _ _ H0) in H1
     end.
     fix IH 4.
-    destruct o; intros; repeat ind_unary_inj IH;
-      repeat ind_val_inj sem_val_inj; intros; simpl_existT; subst; try reflexivity.
+    destruct o; intros; repeat ind_unary_inj IH; auto.
   Qed.
 
 
@@ -683,15 +626,14 @@ Section PHOAS_equiv.
 
 End PHOAS_equiv.
 
-Definition exotic_term : @PHOAS val Nat :=
-  let% v := Take (Const (ENat 2)) in
-  match v with
-  | VSpan s => Val (Const (ENat (pos s)))
-  | _ => Val (Const (ENat 0))
-  end.
+Definition exotic_term : @PHOAS val Unit :=
+  let% v := Val (Const (EBool true)) in
+  if (v : bool)
+  then Val (Const EUnit)
+  else Fail.
 
 Definition equiv_exotic :
-  {code : @PHOAS (fun _ => string) Nat | equiv_prog Nil Nat exotic_term code}.
+  {code : @PHOAS (fun _ => string) Unit | equiv_prog Nil Unit exotic_term code}.
   eapply exist. repeat econstructor. intros. Abort.
 
 Definition Expr X := forall (var : type -> Type), @PHOAS var X.
