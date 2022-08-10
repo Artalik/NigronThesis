@@ -1,15 +1,20 @@
 From Formalisation Require Import SizeNat.
 From Formalisation Require Import Nom parser.
-From Raffinement Require Import PHOAS RelNomPHOAS.
+From Raffinement Require Import PHOAS2 RelNomPHOAS2.
 
 Inductive list_val :=
 | Nil : list_val
-| CONS : forall X, PHOAS.val X -> list_val -> list_val.
+| CONS : forall X, PHOAS2.val X -> list_val -> list_val.
 
 Ltac list_sem_val f l :=
   match f with
-  | ?f (@sem_val ?ty ?v) =>
-      let l := constr:(CONS ty v l) in list_sem_val f l
+  | ?f ?v =>
+      match goal with
+      | H : v = ?vres |- _ =>
+          let l := constr:(CONS _ vres l) in list_sem_val f l
+      | H : ?vres = v |- _ =>
+          let l := constr:(CONS _ vres l) in list_sem_val f l
+      end
   | ?f _ => list_sem_val f l
   | _ => l
   end.
@@ -69,7 +74,7 @@ Definition ssh_parse_banner_rel :
   step. eapply alt_adequate.
   eapply (is_not_adequate (Const (EString _))); repeat econstructor; eauto.
   eapply consequence_adequate. eapply rest_adequate.
-  intros t2 v hv [P3 [P1 P2]]; auto. simpl in *. subst.
+  intros t2 v hv [P3 [P1 P2]]; auto. simpl in H1.
   ret_match; repeat econstructor; eauto.
 Defined.
 
@@ -87,14 +92,14 @@ Definition ssh_parse_record_header_rel :
   eapply exist. intros data s. unfold ssh_parse_record_header.
   step. eapply verify_adequate.
   2 : eapply be_u32_adequate.
-  intros. simpl in *. destruct H.
+  intros. destruct H.
   instantiate (1 := (fun vy => EBin ELt (Const (ENat 1)) (EUna EVal (Var vy)))).
-  eexists. split; repeat econstructor; eauto. simpl. subst. auto.
+  subst. repeat econstructor.
   step. eapply be_u8_adequate.
   step. eapply be_u8_adequate.
-  be_spec_clean. subst. destruct H as [[P3 P1] P2]. subst.
+  be_spec_clean. destruct H as [[P3 P1] P2].
   eapply (ret_adequate _ _ _ (EBin EPair (EBin EPair (Var vres) (Var vres0)) (Var vres1)));
-    repeat econstructor; eauto. lia.
+    subst; repeat econstructor; eauto. lia.
 Defined.
 
 Lemma ssh_parse_record_header_adequate :
@@ -110,13 +115,13 @@ Definition ssh_parse_record_rel :
   step. eapply verify_adequate.
   2 : eapply be_u32_adequate.
   intros. simpl in *. destruct H.
-  intros. instantiate (1:= (fun hx => EBin ELt (Const (ENat 1)) (EUna EVal (Var hx)))).
-  eexists. split; repeat econstructor; eauto. simpl. subst. eauto.
+  instantiate (1:= (fun hx => EBin ELt (Const (ENat 1)) (EUna EVal (Var hx)))).
+  subst. repeat econstructor.
   step. eapply be_u8_adequate.
   step. eapply be_u8_adequate.
-  be_spec_clean. destruct H as [[P3 P4] P2]. subst. repeat step. clean_up.
+  be_spec_clean. destruct H as [[P3 P4] P2]. repeat step. subst. econstructor.
   eapply (ret_adequate _ _ _ (EBin EPair (EBin EPair (Var vres) (Var vres0)) (Var vres1)));
-    repeat econstructor.
+    subst; repeat econstructor.
 Defined.
 
 Lemma ssh_parse_record_adequate :
@@ -127,7 +132,7 @@ Definition parse_string_rel :
   { code | forall data s, adequate (fun _ => span_eq data) parse_string code data s}.
   eapply exist. intros data s. unfold parse_string.
   eapply length_data_adequate. step. eapply be_u32_adequate.
-  destruct H. step.
+  destruct H. subst. step.
 Defined.
 
 Lemma parse_string_adequate :
@@ -161,8 +166,8 @@ Definition ssh_parse_key_exchange_rel :
   repeat step. unfold usize_16. step.
   1-10 : eapply parse_string_adequate.
   eapply be_u8_adequate. eapply be_u32_adequate.
-  simpl in *. destruct H10. destruct H11. repeat clean_up. subst.
-  ret_match; repeat econstructor.
+  be_spec_clean. repeat clean_up.
+  ret_match; subst; repeat econstructor.
 Defined.
 
 Lemma ssh_parse_key_exchange_adequate :
