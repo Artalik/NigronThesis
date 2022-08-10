@@ -2,9 +2,8 @@ From Formalisation Require Import SizeNat Nom IpAddr radius_attr.
 From Raffinement Require Import PHOAS RelNomPHOAS.
 
 Definition parse_attribute_content_rel (ht : VAL (NatN 8)) :
-  {code : PHOAS (Unknown "radius_attribute") | forall data s vt t,
-      sem_VAL ht vt ->
-      sem_val vt = t ->
+  {code : PHOAS (Unknown "radius_attribute") | forall data s t,
+      sem_VAL ht t ->
       adequate (fun _ _ _ => True%type)(parse_attribute_content t) code data s}.
   eapply exist. intros. unfold parse_attribute_content. subst.
   eapply (natN_switch_adequate _ (EUna EVal ht)); repeat econstructor; eauto.
@@ -44,33 +43,33 @@ Definition parse_attribute_content_rel (ht : VAL (NatN 8)) :
     (* 3 *)
   eapply (LScons_adequate _ _ 3).
   repeat step. eapply be_u8_adequate.
-  eapply rest_adequate. be_spec_clean. destruct H2 as [P3 [P4 P2]]. subst.
+  eapply rest_adequate. be_spec_clean. destruct H2 as [P3 [P4 P2]].
   eapply (cstruct_adequate "radius_attribute" "create_ChapPassword" (CONS (Var vres0) (CONS (Var vres1) NIL))).
 
   (* 30 *)
   eapply (LScons_adequate _ _ 30).
-  repeat step. eapply rest_adequate. destruct H0 as [P0 [P1 P2]]. subst.
+  repeat step. eapply rest_adequate. destruct H0 as [P0 [P1 P2]].
   eapply (cstruct_adequate "radius_attribute" "create_CalledStationId" (CONS (Var vres) NIL)).
 
   (* 26 *)
   eapply (LScons_adequate _ _ 26).
   repeat step. eapply be_u32_adequate. eapply rest_adequate.
-  repeat clean_up. destruct H2 as [P2 [P3 P4]]. subst.
+  repeat clean_up. destruct H2 as [P2 [P3 P4]].
   eapply (cstruct_adequate "radius_attribute" "create_VendorSpecific" (CONS (Var vres0) (CONS (Var vres1) NIL))).
 
   (* 10 *)
   eapply (LScons_adequate _ _ 10).
-  eapply bind_adequate. eapply be_u32_adequate. intros. repeat clean_up. subst.
+  eapply bind_adequate. eapply be_u32_adequate. intros. repeat clean_up.
   eapply (cstruct_adequate "radius_attribute" "create_Routing" (CONS (Var vres) NIL)).
 
   (* 6 *)
   eapply (LScons_adequate _ _ 6).
-  eapply bind_adequate. eapply be_u32_adequate. intros. repeat clean_up. subst.
+  eapply bind_adequate. eapply be_u32_adequate. intros. repeat clean_up.
   eapply (cstruct_adequate "radius_attribute" "create_Service" (CONS (Var vres) NIL)).
 
   (* 12 *)
   eapply (LScons_adequate _ _ 12).
-  eapply bind_adequate. eapply be_u32_adequate. intros. repeat clean_up. subst.
+  eapply bind_adequate. eapply be_u32_adequate. intros. repeat clean_up.
   eapply (cstruct_adequate "radius_attribute" "create_FramedMTU" (CONS (Var vres) NIL)).
 
   (* 8 *)
@@ -103,7 +102,7 @@ Definition parse_attribute_content_rel (ht : VAL (NatN 8)) :
   Ltac solve_default ht :=
     step; [eapply rest_adequate |
             match goal with
-            | H : rest_spec _ _ _ (sem_val ?vres) |- _ =>
+            | H : rest_spec _ _ _ ?vres |- _ =>
                 let P0 := fresh "P" in
                 let P1 := fresh "P" in
                 let P2 := fresh "P" in
@@ -116,21 +115,19 @@ Definition parse_attribute_content_rel (ht : VAL (NatN 8)) :
 Defined.
 
 Lemma parse_attribute_content_adequate (ht : VAL (NatN 8)) :
-    forall data s vt t,
-      sem_VAL ht vt ->
-      sem_val vt = t ->
+    forall data s t,
+      sem_VAL ht t ->
       adequate (fun _ _ _ => True%type)(parse_attribute_content t)
         (proj1_sig (parse_attribute_content_rel ht)) data s.
 Proof. intros. destruct parse_attribute_content_rel. eauto. Qed.
-
 
 Definition parse_radius_attribute_rel :
   {code : PHOAS (Unknown "radius_attribute") | forall data vs, adequate (fun _ _ _ => True%type) parse_radius_attribute code data vs}.
   eapply exist. intros data vs. unfold parse_radius_attribute.
   repeat step. eapply be_u8_adequate. eapply verify_adequate.
-  2 : eapply be_u8_adequate. be_spec_clean. intros vy x s [P2 P1]. subst.
+  2 : eapply be_u8_adequate. be_spec_clean. intros vy x s [P2 P1].
   instantiate (1 := fun vy => EBin ELe (Const (ENat 2)) (EUna EVal (Var vy))).
-  eexists. split; repeat econstructor; eauto. be_spec_clean.
+  subst; repeat econstructor; eauto. be_spec_clean.
   destruct H0 as [[P1 P3] P2]. subst.
   eapply map_parser_adequate. eapply consequence_adequate. step.
   intros. repeat clean_up. split; auto.

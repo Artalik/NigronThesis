@@ -13,13 +13,12 @@ Definition parse_radius_data_rel :
   eapply be_u16_adequate.
   unfold sizeu16. step.
   eapply (cond_adequate (EBin ELt (Const (ENat 20)) (EUna EVal (Var vres1))));
-    repeat econstructor; eauto; repeat clean_up; be_spec_clean; subst.
-  auto.
+    repeat clean_up; be_spec_clean; subst; repeat econstructor; eauto.
   intro. eapply map_parser_adequate. eapply consequence_adequate. step.
   intros. repeat clean_up. split; auto.
   intros. eapply many1_adequate.
   intros. eapply parse_radius_attribute_adequate.
-  simpl in *. repeat clean_up. subst.
+  repeat clean_up.
   eapply (cstruct_adequate "radius_data" "create_RadiusData"
             (CONS (Var vres)
                (CONS (Var vres0)
