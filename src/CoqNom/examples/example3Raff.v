@@ -145,9 +145,10 @@ Inductive sem_Expr {data : list N} :
 
 End sem_PHOAS.
 
-
+(* =span_data_wf= *)
 Definition span_data_wf (data : list N) (s : span) :=
-    pos s + len s < length data.
+    pos s + len s <= length data.
+(* =end= *)
 
 Definition adequate {X Y} (R : X -> Y -> Prop) (d : Decodeur X) (e : Expr Y) (data : list N) :=
   forall s res,
