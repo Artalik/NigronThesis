@@ -8,7 +8,7 @@ From Raffinement Require Import PHOAS.
 Open Scope N_scope.
 
 Definition span_data_wf (data : list nat8) (s : span) :=
-    pos s + len s < lengthN data.
+    pos s + len s <= lengthN data.
 
 Definition adequate {X Y} (R : span -> X -> type_to_Type Y -> Prop) (n : NomG X) (e : PHOASV Y)
   (data : list nat8) (s : span) :=
