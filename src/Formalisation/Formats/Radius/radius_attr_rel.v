@@ -1,8 +1,8 @@
 From Formalisation Require Import SizeNat Nom IpAddr radius_attr.
-From Raffinement Require Import PHOAS2 RelNomPHOAS2.
+From Raffinement Require Import PHOAS RelNomPHOAS.
 
 
-Definition attribute : PHOAS2.type :=
+Definition attribute : type :=
 Sum
   (Sum (Sum (Sum (Sum Span Span) (Pair (NatN 8) Span)) (Sum (Sum (Unknown "ipv4") (NatN 32)) (NatN 32)))
      (Sum (Sum (Sum (NatN 32) (Unknown "ipv4")) (Unknown "ipv4")) (Sum (Sum (NatN 32) Span) (Sum (NatN 32) (NatN 32)))))

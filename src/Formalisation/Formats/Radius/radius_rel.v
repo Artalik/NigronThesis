@@ -1,5 +1,5 @@
-From Formalisation Require Import SizeNat Nom IpAddr radius_attr_rel2 radius.
-From Raffinement Require Import PHOAS2 RelNomPHOAS2.
+From Formalisation Require Import SizeNat Nom IpAddr radius_attr_rel radius.
+From Raffinement Require Import PHOAS RelNomPHOAS.
 
 Definition radius_data : type :=
   Pair (Pair (Pair (Pair (NatN 8) (NatN 8)) (NatN 16)) Span) (Option (Vector attribute)).

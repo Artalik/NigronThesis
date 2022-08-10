@@ -1,10 +1,10 @@
 From Formalisation Require Import SizeNat.
 From Formalisation Require Import Nom parser.
-From Raffinement Require Import PHOAS2 RelNomPHOAS2.
+From Raffinement Require Import PHOAS RelNomPHOAS.
 
 Inductive list_val :=
 | Nil : list_val
-| CONS : forall X, PHOAS2.val X -> list_val -> list_val.
+| CONS : forall X, val X -> list_val -> list_val.
 
 Ltac list_sem_val f l :=
   match f with

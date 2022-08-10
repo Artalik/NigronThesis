@@ -3,7 +3,7 @@ From Formalisation Require Import Nom Monotone FuelMono.
 
 From Formalisation Require Import combinator multi sequence bin_combinators bytes.
 From Formalisation Require Import ProgramLogic adequacy.
-From Raffinement Require Import PHOAS2.
+From Raffinement Require Import PHOAS.
 
 Open Scope N_scope.
 
