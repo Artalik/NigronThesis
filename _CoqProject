@@ -46,6 +46,13 @@ src/Formalisation/Formats/Ipsec/ikev2_parser.v
 src/Formalisation/Formats/Ipsec/ikev2_parser_spec.v
 
 -Q ./src/Raffinement Raffinement
+src/Raffinement/PHOAS2.v
+src/Raffinement/RelNomPHOAS2.v
+src/Formalisation/Formats/Radius/radius_attr_rel2.v
+src/Formalisation/Formats/Radius/radius_rel2.v
+src/Formalisation/Formats/Radius/versionUnknown/radius_attr_rel2_C.v
+src/Formalisation/Formats/Radius/versionUnknown/radius_rel2_C.v
+src/Formalisation/Formats/SSH/parser_rel2.v
 src/Raffinement/PHOAS.v
 src/Raffinement/RelNomPHOAS.v
 src/Formalisation/Formats/SSH/parser_rel.v
