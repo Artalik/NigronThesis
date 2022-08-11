@@ -40,11 +40,11 @@ End PHOAS.
 
 Notation "'let%' v ':=' e 'in' k" := (LetIn e (fun v => k))(at level 50).
 Notation "'If' b 'Then' et 'Else' ef" := (IfThenElse b et ef)(at level 50).
-Notation "b0 '<!' b1" := (Lt b0 b1)(at level 30).
-Notation "b0 '<=!' b1" := (Le b0 b1)(at level 30).
-Notation "n0 '+!' n1" := (Add n0 n1)(at level 25, left associativity).
-Notation "n0 '-!' n1" := (Sub n0 n1)(at level 25, left associativity).
-Notation "'(!' a ',' b ')'" := (Pair a b)(at level 25, left associativity).
+Notation "b0 '<%' b1" := (Lt b0 b1)(at level 30).
+Notation "b0 '<=%' b1" := (Le b0 b1)(at level 30).
+Notation "n0 '+%' n1" := (Add n0 n1)(at level 25, left associativity).
+Notation "n0 '-%' n1" := (Sub n0 n1)(at level 25, left associativity).
+Notation "'(%' a ',' b ')'" := (Pair a b)(at level 25, left associativity).
 
 Section sem_PHOAS.
 
@@ -150,7 +150,9 @@ Definition span_data_wf (data : list N) (s : span) :=
     pos s + len s <= length data.
 (* =end= *)
 
-Definition adequate {X Y} (R : X -> Y -> Prop) (d : Decodeur X) (e : Expr Y) (data : list N) :=
+(* =adequate= *)
+Definition adequate {X Y} (R : X -> Y -> Prop) (d : Decodeur X) (e : Expr Y)
+  (data : list N) :=
   forall s res,
     span_data_wf data s ->
     @sem_Expr data s Y e res ->
@@ -158,6 +160,7 @@ Definition adequate {X Y} (R : X -> Y -> Prop) (d : Decodeur X) (e : Expr Y) (da
     | None => eval d data s = None
     | Some (v, t) => ∃ r, eval d data s = Some (r, t) /\ R r v
     end.
+(* =end= *)
 
 Axiom adequacy_pure : forall X e (Q : X -> Prop),
     {{ emp }} e {{ v; ⌜Q v⌝ }} ->
@@ -220,14 +223,6 @@ Ltac sem_VAL_unif :=
   | H : sem_VAL ?t _, H0 : sem_VAL ?t _ |- _ => eapply (sem_VAL_inj _ t _ _ H) in H0
   end.
 
-(* Ltac inj_val := *)
-(*   match goal with *)
-(*   | H : VNat _ = VNat _ |- _ => injection H; intros; clear H *)
-(*   | H : VSpan _ = VSpan _ |- _ => injection H; intros; clear H *)
-(*   | H : VBool _ = VBool _ |- _ => injection H; intros; clear H *)
-(*   | H : VPair _ _ = VPair _ _ |- _ => injection H; intros; clear H *)
-(*   end. *)
-
 Ltac VAL_unif := repeat sem_VAL_unif.
 
 Open Scope free_monad_scope.
@@ -236,51 +231,77 @@ Axiom run_bind_fail : forall s data X Y e (k : X -> Decodeur Y),
     eval e data s = None ->
     eval (let! v := e in k v) data s = None.
 
-Lemma bind_adequate :
-  forall data (X X0 Y Y0 : Type) R R0 (e : Decodeur X) (ke : X -> Decodeur Y)
-    (h : Expr X0) (kh : X0 -> Expr Y0),
-    adequate R0 e h data ->
+Axiom run_bind_decompose : forall s data X Y e (k : X -> Decodeur Y) v s0 res,
+    eval e data s = Some (v, s0) ->
+    eval (k v) data s0 = res ->
+    eval (let! v := e in k v) data s = res.
+
+Section bind_rules.
+
+  Context {X X0 Y Y0 : Type}.
+
+(* =bind_adequate= *)
+Lemma bind_adequate R R0
+  (e : Decodeur X) (ke : X -> Decodeur Y)
+  (h : Expr X0) (kh : X0 -> Expr Y0) data :
+
+    adequate R0 e h data  ->
     (forall res vres, R0 res vres -> adequate R (ke res) (kh vres) data) ->
     adequate R (let! v := e in ke v) (let% v := h in kh v) data.
+(* =end= *)
 Proof.
   unfold adequate.
-  intros data X X0 Y Y0 R R0 e ke h kh SEME SEMK s res WF SEM.
+  intros SEME SEMK s res WF SEM.
   next_step SEM.
   - eapply SEME in H2 as P1; auto.
     eapply run_bind_fail. auto.
   - eapply SEME in H3 as [r [P0 R0r]]; auto.
     eapply SEMK in H6. destruct res.
     + destruct p. destruct H6 as [r0 [EVAL Rr0]]. exists r0. split; auto.
-      admit.
-    + admit.
+      eapply run_bind_decompose; eauto.
+    + eapply run_bind_decompose; eauto.
     + eauto.
-    + admit.
-Admitted.
+    + unfold span_data_wf in *.
+      eapply eval_monotone in P0 as [P1 P2]. lia.
+Qed.
+
+End bind_rules.
+
+Section ret_rules.
+
+  Context {X Y : Type}.
 
 
-Lemma ret_adequate :
-  forall Y (va : VAL Y) (X : Type) (R : X -> Y -> Prop) a (v : X) data,
+(* =ret_adequate= *)
+Lemma ret_adequate (R : X -> Y -> Prop) (v : X) (va : VAL Y) a data :
     sem_VAL va a ->
     R v a ->
     adequate R (ret v) (Val va) data.
+(* =end= *)
 Proof.
   unfold adequate.
-  intros Y va X R a v data SEMA RA s res WF SEM.
+  intros SEMA RA s res WF SEM.
   next_step SEM. VAL_unif. subst. exists v. split; auto.
 Qed.
 
+End ret_rules.
+
+(* =span_eq_take= *)
 Definition span_eq_take data n (s0 s1 : span) : Prop :=
   s0 = s1 /\ span_data_wf data s1 /\ len s1 = n.
+(* =end= *)
 
-Lemma take_adequate : forall (hn : VAL N) data (n : N),
+(* =take_adequate= *)
+Lemma take_adequate (hn : VAL N) data (n : N) :
     sem_VAL hn n ->
     adequate (span_eq_take data n) (take n)
       (let% len := Length in
-       IfThenElse (Le hn (Var len))
-         (Take hn)
-         Fail) data.
+       If hn <=% Var len
+       Then Take hn
+       Else Fail) data.
+(* =end= *)
 Proof.
-  intros hn data n VALN s res WF SEM.
+  intros VALN s res WF SEM.
   next_step SEM.
   - next_step H2.
   - next_step H6.
@@ -333,32 +354,37 @@ Proof.
       reflexivity.
 Qed.
 
-Lemma read_adequate : forall hs hn data (n n0 : N) s,
-    span_eq_take data n0 s s ->
+(* =read_adequate= *)
+Lemma read_adequate hs hn data n s :
+    span_data_wf data s ->
     sem_VAL hs s ->
     sem_VAL hn n ->
-    adequate eq (read s n) (IfThenElse (Lt hn (Len hs)) (Read hs hn) Fail) data.
+    adequate eq (read s n)
+      (If hn <% Len hs
+       Then Read hs hn
+       Else Fail) data.
+(* =end= *)
 Proof.
-  intros hs hn data n n0 s RS ADES ADEN s0 res WF SEM.
+  intros RS ADES ADEN s0 res WF SEM.
   next_step SEM.
   - next_step H3. next_step H4. next_step H6. repeat VAL_unif. subst. simpl in *.
-    destruct RS as [P0 [P1 P2]]. subst.
     unfold example2.bind, readM. rewrite H1. eapply N.ltb_lt in H1.
-    rewrite (lookup_nth (pos range + n1) data default).
-    eexists. split; auto. unfold span_data_wf in P1. lia.
+    rewrite (lookup_nth (pos range + n0) data default).
+    eexists. split; auto. unfold span_data_wf in RS. lia.
   - next_step H6. next_step H3. next_step H4. repeat VAL_unif. subst. simpl in *.
-    destruct RS as [P0 [P1 P2]]. subst.
     unfold example2.bind, readM. rewrite H1. reflexivity.
 Qed.
 
-Lemma read2_adequate : forall hs hn data (n n0 : N) s,
+(* =read2_adequate= *)
+Lemma read2_adequate hs hn data n n0 s :
     span_eq_take data n0 s s ->
     sem_VAL hs s ->
     sem_VAL hn n ->
     n < n0 ->
     adequate eq (read s n) (Read hs hn) data.
+(* =end= *)
 Proof.
-  intros hs hn data n n0 s RS ADES ADEN LT s0 res WF SEM.
+  intros RS ADES ADEN LT s0 res WF SEM.
   next_step SEM.
   repeat VAL_unif. subst. simpl. unfold example2.bind, readM. eapply N.ltb_lt in LT.
   destruct RS as [P0 [P1 P2]]. subst.
@@ -367,21 +393,37 @@ Proof.
   eexists. split; auto. lia.
 Qed.
 
-Lemma ite_adequate : forall hb data X Y R (b : bool) (et : Decodeur X) (ht : Expr Y) ef hf,
+Section ite_rules.
+
+  Context {X Y : Type}.
+
+(* =ite_adequate= *)
+Lemma ite_adequate hb data R b (et : Decodeur X) (ht : Expr Y) ef hf :
     sem_VAL hb b ->
     (b = true -> adequate R et ht data) ->
     (b = false -> adequate R ef hf data) ->
     adequate R (if b then et else ef) (IfThenElse hb ht hf) data.
+(* =end= *)
 Proof.
-  intros hb data X Y R b et ht ef hf EQ ADET ADEF s res WF SEM.
+  intros EQ ADET ADEF s res WF SEM.
   subst. next_step SEM.
   - repeat VAL_unif. subst. simpl. eapply ADET; auto.
   - repeat VAL_unif. subst. simpl. eapply ADEF; auto.
 Qed.
 
-Lemma fail_adequate : forall data X Y R,
-    adequate R (fail : Decodeur X) (Fail : Expr Y) data.
-Proof. intros data X Y R s res WF SEM. next_step SEM. reflexivity. Qed.
+End ite_rules.
+
+Section fail_rules.
+
+  Context {X Y : Type}.
+  Implicit Type R : X -> Y -> Prop.
+
+(* =fail_adequate= *)
+Lemma fail_adequate R data : adequate R fail Fail data.
+(* =end= *)
+Proof. intros s res WF SEM. next_step SEM. reflexivity. Qed.
+
+End fail_rules.
 
 Ltac Pos_is_literal p :=
   match p with
@@ -402,8 +444,8 @@ Ltac what_is e k :=
   | _ =>
       match goal with
       | H : sem_VAL ?v e |- _ => k v
-      | H : ?v = e |- _ => is_var e; k (@Var ID v)
-      | H : e = ?v |- _ => is_var e; k (@Var ID v)
+      | H : ?v = e |- _ => is_var e; k (@Var ID _ v)
+      | H : e = ?v |- _ => is_var e; k (@Var ID _ v)
       end
   (* | H : sem_val ?v = ?e |- ?e => is_var e; k (@Var var v) *)
   (* | ?e => is_var e; k (@Var _ var e) *)
@@ -428,24 +470,24 @@ Ltac clean_up :=
       destruct H as [P0 [P1 P2]]
   end.
 
-Ltac step := repeat clean_up; subst;
+Ltac step := repeat clean_up; (* subst; *)
   match goal with
   | |- adequate _ (let! _ := _ in _) _ _ =>
         eapply bind_adequate; [ idtac | intros  ]
   | |- adequate _ (take ?e) _ _ =>
-      what_is e ltac:(fun v => eapply (take_adequate v)); repeat econstructor
+      what_is e ltac:(fun v => eapply (take_adequate v)); subst; repeat econstructor
   | |- adequate _ (read ?s ?n) _ _ =>
       what_is s ltac:(fun s => what_is n ltac:(fun n => eapply (read2_adequate s n)));
-      [repeat split; eauto | repeat econstructor | repeat econstructor | lia]
+      [ subst; repeat split; eauto | subst; repeat econstructor | subst; repeat econstructor | lia]
   | |- adequate _ (read ?s ?n) _ _ =>
       what_is s ltac:(fun s => what_is n ltac:(fun n => eapply (read_adequate s n)));
-      [repeat split; eauto | repeat econstructor | repeat econstructor]
+      [subst; eauto | subst; repeat econstructor | subst; repeat econstructor]
   | |- adequate _ (if ?b then ?et else ?ef) _ _ =>
       what_is b ltac:(fun s => eapply (ite_adequate s));
-      repeat econstructor; eauto; intros
+      [subst; repeat econstructor| intros | intros]
   | |- adequate _ fail _ _ => eapply fail_adequate
   | |- adequate _ (ret ?v) _ _ =>
-      what_is v ltac:(fun v => eapply (ret_adequate _ v)); repeat econstructor; eauto
+      what_is v ltac:(fun v => eapply (ret_adequate _ _ v)); subst; repeat econstructor; eauto
   end.
 
 Ltac StartDF :=
@@ -461,26 +503,31 @@ Local Hint Extern 3 (adequate _ _ _ _) => (* repeat  *)step : core.
 Definition decode_next_DF_example :
   {code | forall data, adequate eq decode_next code data}.
 Proof.
-  what_is 1 ltac:(fun v => pose (H := v)).
   eapply exist. intro. unfold decode_next.
   eapply bind_adequate.
   - eapply (take_adequate (Const 1)); constructor.
   - intros res vres [P0 [P1 P2]]. subst.
-    eapply (read_adequate (Var vres) (Const 0)); constructor; auto.
+    eapply (read_adequate (Var vres) (Const 0));
+      [assumption | constructor | constructor].
 Defined.
 
+(* =decode_next_DF= *)
 Definition decode_next_DF :
   {code | forall data, adequate eq decode_next code data}.
-Proof. StartDF; auto. Defined.
+(* =end= *)
+Proof. StartDF. auto. Defined.
+
 
 Lemma decode_first_eq : proj1_sig decode_next_DF_example = proj1_sig decode_next_DF.
 Fail reflexivity. Abort.
 
 Compute (proj1_sig decode_next_DF).
 
-Lemma decode_next_adequate :
-  forall data, adequate eq decode_next (`decode_next_DF) data.
-Proof. intros. destruct (decode_next_DF) as [x P]. eapply P. Qed.
+(* =decode_next_adequate= *)
+Lemma decode_next_adequate data :
+  adequate eq decode_next (`decode_next_DF) data.
+(* =end= *)
+Proof. destruct (decode_next_DF) as [x P]. eapply P. Qed.
 
 Ltac FMfirst :=
   match goal with
@@ -490,15 +537,15 @@ Ltac FMfirst :=
 
 Local Hint Extern 3 (adequate _ decode_next _ _) => eapply decode_next_adequate : core.
 
-Definition decode_u32_DF :
-  { code | forall data, adequate eq decode_u32 code data}.
-Proof. StartDF; auto. Defined.
+(* =decode_u32_DF= *)
+Definition decode_u32_DF : { code | forall data, adequate eq decode_u32 code data}.
+(* =end= *)
+Proof. StartDF. auto. Defined.
 
-Compute (proj1_sig decode_u32_DF).
-
-Lemma decode_u32_adequate :
-  forall data, adequate eq decode_u32 (`decode_u32_DF) data.
-Proof. intros. destruct (decode_u32_DF) as [x P]. eapply P. Qed.
+(* =decode_u32_adequate= *)
+Lemma decode_u32_adequate data : adequate eq decode_u32 (`decode_u32_DF) data.
+(* =end= *)
+Proof. destruct (decode_u32_DF) as [x P]. eapply P. Qed.
 
 Ltac FMU32 :=
   match goal with
@@ -508,20 +555,82 @@ Ltac FMU32 :=
 
 Local Hint Extern 3 (adequate _ decode_u32 _ _) => eapply decode_u32_adequate : core.
 
+(* =RpacketSSH= *)
 Definition RpacketSSH (s : packet_SSH) (v : (N * N) * (span * span)) :=
   v.1.1 = packet_length s /\
   v.1.2 = padding_length s /\
   v.2.1 = payload s /\
   v.2.2 = mac s.
+(* =end= *)
 
-Definition decode_packet_SSH_sig :
+
+
+Inductive list_val :=
+| Nil : list_val
+| CONS : forall X, ID X -> list_val -> list_val.
+
+Ltac list_sem_val f l :=
+  match f with
+  | ?f ?v =>
+      match goal with
+      | H : v = ?vres |- _ =>
+          let l := constr:(CONS _ vres l) in list_sem_val f l
+      | H : ?vres = v |- _ =>
+          let l := constr:(CONS _ vres l) in list_sem_val f l
+      end
+  | ?f _ => list_sem_val f l
+  | _ => l
+  end.
+
+Ltac list_val f :=
+  let l := list_sem_val f constr:(Nil) in pose l.
+
+Ltac build_prod ty vals :=
+  match ty with
+  | prod ?l ?r =>
+      let l := build_prod l vals in
+      match l with
+      | @pair _ _ ?l ?vs =>
+          let r := build_prod r vs in
+          match r with
+            | @pair _ _ ?r ?vs =>
+                constr:((@Pair ID _ _ l r, vs))
+          end
+      end
+  | ?l =>
+      match vals with
+      | CONS _ ?v ?vs =>
+          constr:((@Var ID _ v, vs))
+      end
+  end.
+
+(* | Pair : forall {X Y}, VAL X -> VAL Y -> VAL (X * Y) *)
+
+Ltac build ty vals :=
+  let v := build_prod ty vals in
+  match v with
+  | @pair _ _ ?r ?vs =>
+      r
+  end.
+
+Ltac ret_match := repeat clean_up;
+  match goal with
+  | |- @adequate _ ?p _ (@ret _ _ ?f) _ _ =>
+      let l := list_sem_val f constr:(Nil) in
+      let v := build p l in
+      eapply (ret_adequate _ _ v); [subst; repeat econstructor | idtac]
+  | |- @adequate _ ?p _ (@ret _ _ ?f) _ _ =>
+      unfold p; ret_match
+  end.
+
+(* =decode_packet_SSH_DF= *)
+Definition decode_packet_SSH_DF :
   { code | forall data, adequate RpacketSSH decode_packet_SSH code data}.
+(* =end= *)
 Proof.
-  StartDF. repeat FMU32. repeat clean_up.
-  eapply bind_adequate. step. intros. clean_up.
-  eapply (ret_adequate _ (Pair (Pair (Var vres) (Var vres0)) (Pair (Var vres1) (Var vres3)))).
-  repeat econstructor.
+  StartDF. repeat FMU32.
+  ret_match.
   repeat split; eauto.
 Defined.
 
-Compute (proj1_sig decode_packet_SSH_sig).
+Compute (proj1_sig decode_packet_SSH_DF).

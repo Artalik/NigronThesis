@@ -161,12 +161,14 @@ Proof.
   eauto.
 Qed.
 
+(* =decode_u32= *)
 Definition decode_u32 :=
   let! a := decode_next in
   let! b := decode_next in
   let! c := decode_next in
   let! d := decode_next in
   ret (to_u32 a b c d).
+(* =end= *)
 
 Lemma rule_u32 : {{ emp }} decode_u32 {{ _; True }}.
 Proof.
