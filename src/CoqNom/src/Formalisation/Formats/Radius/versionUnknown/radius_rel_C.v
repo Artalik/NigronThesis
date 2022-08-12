@@ -19,7 +19,7 @@ Definition parse_radius_data_rel :
   intros. eapply many1_adequate.
   intros. eapply parse_radius_attribute_adequate.
   repeat clean_up.
-  eapply (cstruct_adequate "radius_data" "create_RadiusData"
+  eapply (extern_adequate "radius_data" "create_RadiusData"
             (CONS (Var vres)
                (CONS (Var vres0)
                   (CONS (Var vres1)

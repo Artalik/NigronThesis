@@ -11,90 +11,90 @@ Definition parse_attribute_content_rel (ht : VAL (NatN 8)) :
   (* 31 *)
   eapply (LScons_adequate _ _ 31).
   step. eapply rest_adequate. destruct H0 as [P0 [P1 P2]].
-  eapply (cstruct_adequate "radius_attribute" "create_CallingStationId" (CONS (Var vres) NIL)).
+  eapply (extern_adequate "radius_attribute" "create_CallingStationId" (CONS (Var vres) NIL)).
 
   (* 11 *)
   eapply (LScons_adequate _ _ 11).
   step. eapply rest_adequate. destruct H0 as [P0 [P1 P2]].
-  eapply (cstruct_adequate "radius_attribute" "create_FilterId" (CONS (Var vres) NIL)).
+  eapply (extern_adequate "radius_attribute" "create_FilterId" (CONS (Var vres) NIL)).
 
   (* 7 *)
   eapply (LScons_adequate _ _ 7).
   eapply bind_adequate. eapply be_u32_adequate. intros. be_spec_clean.
-  eapply (cstruct_adequate "radius_attribute" "create_Protocol" (CONS (Var vres) NIL)).
+  eapply (extern_adequate "radius_attribute" "create_Protocol" (CONS (Var vres) NIL)).
 
   (* 13 *)
   eapply (LScons_adequate _ _ 13).
   eapply bind_adequate. eapply be_u32_adequate. intros. be_spec_clean.
-  eapply (cstruct_adequate "radius_attribute" "create_Compression" (CONS (Var vres) NIL)).
+  eapply (extern_adequate "radius_attribute" "create_Compression" (CONS (Var vres) NIL)).
 
   (* 9 *)
   eapply (LScons_adequate _ _ 9).
   eapply map_parser_adequate. eapply consequence_adequate. unfold size4u. step.
   intros. clean_up. split; auto. intros. step.
   eapply get_ipv4_adequate.
-  eapply (cstruct_adequate "radius_attribute" "create_FramedIPNetmask" (CONS (Var vres) NIL)).
+  eapply (extern_adequate "radius_attribute" "create_FramedIPNetmask" (CONS (Var vres) NIL)).
 
   (* 5 *)
   eapply (LScons_adequate _ _ 5).
   eapply bind_adequate. eapply be_u32_adequate. intros. be_spec_clean. subst.
-  eapply (cstruct_adequate "radius_attribute" "create_NasPort" (CONS (Var vres) NIL)).
+  eapply (extern_adequate "radius_attribute" "create_NasPort" (CONS (Var vres) NIL)).
 
     (* 3 *)
   eapply (LScons_adequate _ _ 3).
   repeat step. eapply be_u8_adequate.
   eapply rest_adequate. be_spec_clean. destruct H2 as [P3 [P4 P2]].
-  eapply (cstruct_adequate "radius_attribute" "create_ChapPassword" (CONS (Var vres0) (CONS (Var vres1) NIL))).
+  eapply (extern_adequate "radius_attribute" "create_ChapPassword" (CONS (Var vres0) (CONS (Var vres1) NIL))).
 
   (* 30 *)
   eapply (LScons_adequate _ _ 30).
   repeat step. eapply rest_adequate. destruct H0 as [P0 [P1 P2]].
-  eapply (cstruct_adequate "radius_attribute" "create_CalledStationId" (CONS (Var vres) NIL)).
+  eapply (extern_adequate "radius_attribute" "create_CalledStationId" (CONS (Var vres) NIL)).
 
   (* 26 *)
   eapply (LScons_adequate _ _ 26).
   repeat step. eapply be_u32_adequate. eapply rest_adequate.
   repeat clean_up. destruct H2 as [P2 [P3 P4]].
-  eapply (cstruct_adequate "radius_attribute" "create_VendorSpecific" (CONS (Var vres0) (CONS (Var vres1) NIL))).
+  eapply (extern_adequate "radius_attribute" "create_VendorSpecific" (CONS (Var vres0) (CONS (Var vres1) NIL))).
 
   (* 10 *)
   eapply (LScons_adequate _ _ 10).
   eapply bind_adequate. eapply be_u32_adequate. intros. repeat clean_up.
-  eapply (cstruct_adequate "radius_attribute" "create_Routing" (CONS (Var vres) NIL)).
+  eapply (extern_adequate "radius_attribute" "create_Routing" (CONS (Var vres) NIL)).
 
   (* 6 *)
   eapply (LScons_adequate _ _ 6).
   eapply bind_adequate. eapply be_u32_adequate. intros. repeat clean_up.
-  eapply (cstruct_adequate "radius_attribute" "create_Service" (CONS (Var vres) NIL)).
+  eapply (extern_adequate "radius_attribute" "create_Service" (CONS (Var vres) NIL)).
 
   (* 12 *)
   eapply (LScons_adequate _ _ 12).
   eapply bind_adequate. eapply be_u32_adequate. intros. repeat clean_up.
-  eapply (cstruct_adequate "radius_attribute" "create_FramedMTU" (CONS (Var vres) NIL)).
+  eapply (extern_adequate "radius_attribute" "create_FramedMTU" (CONS (Var vres) NIL)).
 
   (* 8 *)
   eapply (LScons_adequate _ _ 8).
   eapply map_parser_adequate. eapply consequence_adequate. unfold size4u. step.
   intros. clean_up. split; auto. intros.
   step. eapply get_ipv4_adequate.
-  eapply (cstruct_adequate "radius_attribute" "create_FramedIPAddress" (CONS (Var vres) NIL)).
+  eapply (extern_adequate "radius_attribute" "create_FramedIPAddress" (CONS (Var vres) NIL)).
 
   (* 4 *)
   eapply (LScons_adequate _ _ 4).
   eapply map_parser_adequate. eapply consequence_adequate. unfold size4u. step.
   intros. clean_up. split; auto. intros.
   step. eapply get_ipv4_adequate.
-  eapply (cstruct_adequate "radius_attribute" "create_NasIPAddress" (CONS (Var vres) NIL)).
+  eapply (extern_adequate "radius_attribute" "create_NasIPAddress" (CONS (Var vres) NIL)).
 
   (* 2 *)
   eapply (LScons_adequate _ _ 2).
   step. eapply rest_adequate.
-  eapply (cstruct_adequate "radius_attribute" "create_UserPassword" (CONS (Var vres) NIL)).
+  eapply (extern_adequate "radius_attribute" "create_UserPassword" (CONS (Var vres) NIL)).
 
   (* 1 *)
   eapply (LScons_adequate _ _ 1).
   step. eapply rest_adequate.
-  eapply (cstruct_adequate "radius_attribute" "create_UserName" (CONS (Var vres) NIL)).
+  eapply (extern_adequate "radius_attribute" "create_UserName" (CONS (Var vres) NIL)).
 
   (* default *)
   eapply LSnil_adequate. intros elem elem_neq.
@@ -107,7 +107,7 @@ Definition parse_attribute_content_rel (ht : VAL (NatN 8)) :
                 let P1 := fresh "P" in
                 let P2 := fresh "P" in
                 destruct H as [P0 [P1 P2]]; subst;
-                eapply (cstruct_adequate "radius_attribute" "create_Unknown" (CONS ht (CONS (Var vres) NIL)))
+                eapply (extern_adequate "radius_attribute" "create_Unknown" (CONS ht (CONS (Var vres) NIL)))
           end].
     solve_default ht.
     repeat (destruct elem; try (exfalso; apply elem_neq; repeat constructor; done);
