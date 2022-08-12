@@ -79,9 +79,9 @@ Proof.
   next_step SEM. VAL_unif. subst. eexists. repeat split. eauto. exists O. reflexivity.
 Qed.
 
-Lemma cstruct_adequate :
+Lemma extern_adequate :
   forall ty constr l (X : Type) (v : X) data s,
-    adequate (fun _ _ _ => True%type) (ret v) (Cstruct ty constr l) data s.
+    adequate (fun _ _ _ => True%type) (ret v) (ExternStruct ty constr l) data s.
 Proof.
   unfold adequate.
   intros ty constr l X v data s WF res SEM.
@@ -1177,7 +1177,7 @@ Definition get_ipv4_adequate_sig :
   eapply exist. intros. unfold get_ipv4.
   repeat step.
   1-4 : eapply be_u8_adequate. repeat clean_up. subst.
-  eapply (cstruct_adequate "ipv4" "create_ipv4"
+  eapply (extern_adequate "ipv4" "create_ipv4"
             (CONS (Var vres)
                (CONS (Var vres0)
                   (CONS (Var vres1)
