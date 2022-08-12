@@ -118,7 +118,7 @@ Defined.
   | CONS : forall {X}, VAL X -> LIST -> LIST.
 
   Inductive PHOAS : type -> Type :=
-  | Cstruct : forall (ty : string), string -> LIST -> PHOAS (Unknown ty)
+  | ExternStruct : forall (ty : string), string -> LIST -> PHOAS (Unknown ty)
   | Val : forall {X}, VAL X -> PHOAS X
   | LetIn : forall {X}, PHOAS X -> forall {Y}, (var X -> PHOAS Y) -> PHOAS Y
 
@@ -271,8 +271,8 @@ Section sem_PHOAS.
   (* 20 rules *)
   Inductive sem_PHOAS (data : list nat8):
       forall {X : type}, span -> PHOASV X  -> option (val X * span) -> Prop :=
-  | SCstruct : forall ty f l v s,
-      sem_PHOAS data s (Cstruct ty f l) (Some (v, s))
+  | SExternStruct : forall ty f l v s,
+      sem_PHOAS data s (ExternStruct ty f l) (Some (v, s))
 
   | SVal : forall X (vv : VAL X) v s,
       sem_VAL vv v ->
@@ -572,7 +572,7 @@ Section PHOAS_equiv.
   Inductive equiv_prog : Env -> forall X, @PHOAS var1 X -> @PHOAS var2 X -> Prop :=
   | EquivCstruct : forall env ty constr l1 l2,
     equiv_LIST env l1 l2 ->
-    equiv_prog env (Unknown ty) (Cstruct ty constr l1) (Cstruct ty constr l2)
+    equiv_prog env (Unknown ty) (ExternStruct ty constr l1) (ExternStruct ty constr l2)
   | EquivVal : forall X env v1 v2,
       equiv_VAL env X v1 v2 ->
       equiv_prog env X (Val v1) (Val v2)
