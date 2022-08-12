@@ -5,64 +5,68 @@ Open Scope N_scope.
 
 Section Syntax.
 
-  Inductive type : Type :=
-  | Nat
-  | NatN : N -> type
-  | Bool
-  | Vector : type -> type
-  | String
-  | Unit
-  | Span
-  | Unknown : string -> type
-  | Option : type -> type
-  | Pair : type -> type -> type
-  | Sum : type -> type -> type.
+(* =type= *)
+Inductive type : Type :=
+| Nat
+| NatN : N -> type
+| Bool
+| Vector : type -> type
+| String
+| Unit
+| Span
+| Unknown : string -> type
+| Option : type -> type
+| Pair : type -> type -> type
+| Sum : type -> type -> type.
+(* =end= *)
 
-  Fixpoint type_to_Type (ty : type) : Type :=
-    match ty with
-    | Nat => N
-    | NatN n => natN n
-    | Bool => bool
-    | Vector ty => VECTOR (type_to_Type ty)
-    | String => string
-    | Unit => unit
-    | Span => span
-    | Option ty => option (type_to_Type ty)
-    | Pair ty0 ty1 => type_to_Type ty0 * type_to_Type ty1
-    | Sum ty0 ty1 => type_to_Type ty0 + type_to_Type ty1
-    | Unknown s => True
+(* =type_to_Type= *)
+Fixpoint type_to_Type (ty : type) : Type :=
+  match ty with
+  | Nat => N
+  | NatN n => natN n
+  | Bool => bool
+  | Vector ty => VECTOR (type_to_Type ty)
+  | String => string
+  | Unit => unit
+  | Span => span
+  | Option ty => option (type_to_Type ty)
+  | Pair ty0 ty1 => type_to_Type ty0 * type_to_Type ty1
+  | Sum ty0 ty1 => type_to_Type ty0 + type_to_Type ty1
+  | Unknown s => True
+  end.
+(* =end= *)
+
+Fixpoint type_eq_dec (x y : type) : {x = y} + {x ≠ y}.
+  Local Ltac type_eq_dec_tac :=
+    match goal with
+    | |- {?l = ?l} + {_ ≠ _} => eapply left; reflexivity
+    | |- {?l = ?r} + {_ ≠ _} => eapply right; intro H; inversion H; done
     end.
-
-  Fixpoint type_eq_dec (x y : type) : {x = y} + {x ≠ y}.
-    Local Ltac type_eq_dec_tac :=
-      match goal with
-      | |- {?l = ?l} + {_ ≠ _} => eapply left; reflexivity
-      | |- {?l = ?r} + {_ ≠ _} => eapply right; intro H; inversion H; done
-      end.
-    destruct x,y; try type_eq_dec_tac.
-    destruct (N.eq_dec n n0).
-    left. subst. reflexivity.
-    right. intro. eapply n1. inversion H. reflexivity.
-    destruct (type_eq_dec x y).
-    left. subst. reflexivity.
-    right. intro. eapply n. inversion H. reflexivity.
-    destruct (string_dec s s0).
-    left. subst. reflexivity.
-    right. intro. eapply n. inversion H. reflexivity.
-    destruct (type_eq_dec x y).
-    left. subst. reflexivity.
-    right. intro. eapply n. inversion H. reflexivity.
-    destruct (type_eq_dec x1 y1).
-    destruct (type_eq_dec x2 y2).
-    left. subst. reflexivity.
-    right. intro. eapply n. inversion H. reflexivity.
-    right. intro. eapply n. inversion H. reflexivity.
-    destruct (type_eq_dec x1 y1).
-    destruct (type_eq_dec x2 y2).
-    left. subst. reflexivity.
-    right. intro. eapply n. inversion H. reflexivity.
-    right. intro. eapply n. inversion H. reflexivity.
-  Defined.
+  destruct x,y; try type_eq_dec_tac.
+  destruct (N.eq_dec n n0).
+  left. subst. reflexivity.
+  right. intro. eapply n1. inversion H. reflexivity.
+  destruct (type_eq_dec x y).
+  left. subst. reflexivity.
+  right. intro. eapply n. inversion H. reflexivity.
+  destruct (string_dec s s0).
+  left. subst. reflexivity.
+  right. intro. eapply n. inversion H. reflexivity.
+  destruct (type_eq_dec x y).
+  left. subst. reflexivity.
+  right. intro. eapply n. inversion H. reflexivity.
+  destruct (type_eq_dec x1 y1).
+  destruct (type_eq_dec x2 y2).
+  left. subst. reflexivity.
+  right. intro. eapply n. inversion H. reflexivity.
+  right. intro. eapply n. inversion H. reflexivity.
+  destruct (type_eq_dec x1 y1).
+  destruct (type_eq_dec x2 y2).
+  left. subst. reflexivity.
+  right. intro. eapply n. inversion H. reflexivity.
+  right. intro. eapply n. inversion H. reflexivity.
+Defined.
 
   Context {var : type -> Type}.
 

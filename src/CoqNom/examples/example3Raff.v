@@ -243,7 +243,7 @@ Section bind_rules.
 (* =bind_adequate= *)
 Lemma bind_adequate R R0
   (e : Decodeur X) (ke : X -> Decodeur Y)
-  (h : Expr X0) (kh : X0 -> Expr Y0) data :
+  (h : Expr X0) (kh : ID X0 -> Expr Y0) data :
 
     adequate R0 e h data  ->
     (forall res vres, R0 res vres -> adequate R (ke res) (kh vres) data) ->
@@ -563,27 +563,16 @@ Definition RpacketSSH (s : packet_SSH) (v : (N * N) * (span * span)) :=
   v.2.2 = mac s.
 (* =end= *)
 
-
-
 Inductive list_val :=
 | Nil : list_val
-| CONS : forall X, ID X -> list_val -> list_val.
+| CONS : forall X, X -> list_val -> list_val.
 
-Ltac list_sem_val f l :=
+Ltac list_sem_val f l k :=
   match f with
   | ?f ?v =>
-      match goal with
-      | H : v = ?vres |- _ =>
-          let l := constr:(CONS _ vres l) in list_sem_val f l
-      | H : ?vres = v |- _ =>
-          let l := constr:(CONS _ vres l) in list_sem_val f l
-      end
-  | ?f _ => list_sem_val f l
-  | _ => l
+      what_is v ltac:(fun v => list_sem_val f (CONS _ v l) k)
+  | _ => k l
   end.
-
-Ltac list_val f :=
-  let l := list_sem_val f constr:(Nil) in pose l.
 
 Ltac build_prod ty vals :=
   match ty with
@@ -600,11 +589,9 @@ Ltac build_prod ty vals :=
   | ?l =>
       match vals with
       | CONS _ ?v ?vs =>
-          constr:((@Var ID _ v, vs))
+          constr:((v, vs))
       end
   end.
-
-(* | Pair : forall {X Y}, VAL X -> VAL Y -> VAL (X * Y) *)
 
 Ltac build ty vals :=
   let v := build_prod ty vals in
@@ -616,12 +603,16 @@ Ltac build ty vals :=
 Ltac ret_match := repeat clean_up;
   match goal with
   | |- @adequate _ ?p _ (@ret _ _ ?f) _ _ =>
-      let l := list_sem_val f constr:(Nil) in
-      let v := build p l in
-      eapply (ret_adequate _ _ v); [subst; repeat econstructor | idtac]
+      list_sem_val f constr:(Nil)
+        ltac:(fun v =>
+                let v := build p v in
+                eapply (ret_adequate _ _ v); [subst; repeat econstructor; eauto | auto])
   | |- @adequate _ ?p _ (@ret _ _ ?f) _ _ =>
       unfold p; ret_match
   end.
+
+Ltac list_val f :=
+  list_sem_val f constr:(Nil) ltac:(fun v => pose v).
 
 (* =decode_packet_SSH_DF= *)
 Definition decode_packet_SSH_DF :
@@ -629,8 +620,10 @@ Definition decode_packet_SSH_DF :
 (* =end= *)
 Proof.
   StartDF. repeat FMU32.
+  (* repeat clean_up. *)
+  (* eapply (ret_adequate _ _ (Pair (Pair (Var vres) (Var vres0)) (Pair (Var vres1) (Var vres3)))). *)
+  (* subst; repeat econstructor. *)
+  (* subst;  *)
   ret_match.
   repeat split; eauto.
 Defined.
-
-Compute (proj1_sig decode_packet_SSH_DF).
