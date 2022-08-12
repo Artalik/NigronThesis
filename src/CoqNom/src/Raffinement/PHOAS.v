@@ -117,26 +117,27 @@ Defined.
   | NIL : LIST
   | CONS : forall {X}, VAL X -> LIST -> LIST.
 
-  Inductive PHOAS : type -> Type :=
-  | ExternStruct : forall (ty : string), string -> LIST -> PHOAS (Unknown ty)
-  | Val : forall {X}, VAL X -> PHOAS X
-  | LetIn : forall {X}, PHOAS X -> forall {Y}, (var X -> PHOAS Y) -> PHOAS Y
+(* =PHOAS= *)
+Inductive PHOAS : type -> Type
+(* =end= *)
+  :=
+| ExternStruct : forall (ty : string), string -> LIST -> PHOAS (Unknown ty)
+| Val : forall {X}, VAL X -> PHOAS X
+| LetIn : forall {X}, PHOAS X -> forall {Y}, (var X -> PHOAS Y) -> PHOAS Y
+| IfThenElse : VAL Bool -> forall {X}, PHOAS X -> PHOAS X -> PHOAS X
+| CaseOption : forall {X}, VAL (Option X)  -> forall {Y}, PHOAS Y -> (var X -> PHOAS Y) -> PHOAS Y
+| Switch : VAL Nat -> forall {X}, case_switch X -> PHOAS X
+| Fail : forall {X}, PHOAS X
+| Take : VAL Nat -> PHOAS Span
+| Length : PHOAS Nat
+| Read : VAL Span -> VAL Nat -> PHOAS (NatN 8)
+| Alt : forall {X}, PHOAS X -> PHOAS X -> PHOAS X
+| Local : VAL (Option Span) -> forall {X}, PHOAS X -> PHOAS X
+| Repeat  : VAL (Option Nat) -> forall {X}, (var X -> PHOAS X) -> VAL X -> PHOAS X
 
-  | IfThenElse : VAL Bool -> forall {X}, PHOAS X -> PHOAS X -> PHOAS X
-  | CaseOption : forall {X}, VAL (Option X)  -> forall {Y}, PHOAS Y -> (var X -> PHOAS Y) -> PHOAS Y
-  | Switch : VAL Nat -> forall {X}, case_switch X -> PHOAS X
-
-  | Fail : forall {X}, PHOAS X
-  | Take : VAL Nat -> PHOAS Span
-  | Length : PHOAS Nat
-  | Read : VAL Span -> VAL Nat -> PHOAS (NatN 8)
-  | Alt : forall {X}, PHOAS X -> PHOAS X -> PHOAS X
-  | Local : VAL (Option Span) -> forall {X}, PHOAS X -> PHOAS X
-  | Repeat  : VAL (Option Nat) -> forall {X}, (var X -> PHOAS X) -> VAL X -> PHOAS X
-
-  with case_switch : type -> Type :=
-  | LSnil : forall {X}, PHOAS X -> case_switch X
-  | LScons : N -> forall {X}, PHOAS X -> case_switch X -> case_switch X.
+with case_switch : type -> Type :=
+| LSnil : forall {X}, PHOAS X -> case_switch X
+| LScons : N -> forall {X}, PHOAS X -> case_switch X -> case_switch X.
 
 End Syntax.
 
@@ -157,9 +158,11 @@ Section sem_PHOAS.
     | _ :: t => N.succ (lengthN t)
     end.
 
-  Definition val := type_to_Type.
+(* =val= *)
+Definition val := type_to_Type.
+(* =end= *)
 
-  Definition PHOASV : type -> Type := @PHOAS val.
+Definition PHOASV : type -> Type := @PHOAS val.
 
   Lemma zero_is_u8 : 0 < 2 ^ 8. simpl. lia. Qed.
 
@@ -269,10 +272,16 @@ Section sem_PHOAS.
       sem_VAL (Const lit) v.
 
   (* 20 rules *)
-  Inductive sem_PHOAS (data : list nat8):
-      forall {X : type}, span -> PHOASV X  -> option (val X * span) -> Prop :=
-  | SExternStruct : forall ty f l v s,
-      sem_PHOAS data s (ExternStruct ty f l) (Some (v, s))
+(* =sem_PHOAS= *)
+Inductive sem_PHOAS (data : list nat8):
+  forall {X : type}, span -> @PHOAS val X  -> option (val X * span) -> Prop
+(* =end= *)
+  :=
+
+(* =sem_Extern= *)
+| SExternStruct : forall ty f l v s,
+    sem_PHOAS data s (ExternStruct ty f l) (Some (v, s))
+(* =end= *)
 
   | SVal : forall X (vv : VAL X) v s,
       sem_VAL vv v ->

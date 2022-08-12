@@ -2,23 +2,28 @@ From Formalisation Require Import String Span.
 From Formalisation Require Import Nom Monotone FuelMono.
 
 From Formalisation Require Import combinator multi sequence bin_combinators bytes.
-From Formalisation Require Import ProgramLogic adequacy.
+From Formalisation Require Import ProgramLogic adequacy disjoint.
 From Raffinement Require Import PHOAS.
 
 Open Scope N_scope.
 
 Definition span_data_wf (data : list nat8) (s : span) :=
-    pos s + len s <= lengthN data.
+  pos s + len s <= lengthN data.
 
-Definition adequate {X Y} (R : span -> X -> type_to_Type Y -> Prop) (n : NomG X) (e : PHOASV Y)
-  (data : list nat8) (s : span) :=
+(* =adequate= *)
+Definition adequate {X Y} (R : span -> X -> type_to_Type Y -> Prop)
+  (n : NomG X) (e : PHOAS Y) (data : list nat8) (s : span) :=
   span_data_wf data s ->
   forall res,
     sem_PHOAS data s e res ->
     match res with
-    | None => exists fuel, run fuel n data s = NoRes
-    | Some (v, t) => exists r, R t r v /\ exists fuel, run fuel n data s = Res (t, r)
+    | None =>
+        exists fuel, run fuel n data s = NoRes
+    | Some (v, t) =>
+        exists r, R t r v /\
+        exists fuel, run fuel n data s = Res (t, r)
     end.
+(* =end= *)
 
 Lemma adequacy_pure_PHOAS {X Y} :
   forall (d : NomG X) (e : PHOASV Y)  (R : span -> X -> type_to_Type Y -> Prop) data s,
@@ -36,16 +41,20 @@ Proof.
   eapply R_OK; eauto. eapply adequacy_pure_run; eauto. auto.
 Qed.
 
-Lemma adequacy_pure_PHOAS_disjoint `{Foldable X} `{Foldable (fun s=> type_to_Type (Y s))}:
-  forall (e : NomG (X span)) (h : PHOASV (Y span)),
+(* =adequate_disjoint= *)
+Lemma adequacy_disjoint `{Foldable X} `{Foldable (fun s => val (Y s))}:
+  forall (e : NomG (X span)) (h : PHOAS (Y span)),
     {{ emp }} e {{ v; ⌜all_disjointM v⌝ }} ->
-    forall (R : span -> X span -> type_to_Type (Y span) -> Prop) data s,
+
+    forall R data s,
       adequate R e h data s ->
-      forall vv sres,
-        sem_PHOAS data s h (Some (vv,sres)) ->
+
+      forall v sres,
+        sem_PHOAS data s h (Some (v,sres)) ->
         span_data_wf data s ->
-        (forall x, all_disjointM x -> R sres x vv -> all_disjointM vv) ->
-        all_disjointM vv.
+        (forall x, all_disjointM x -> R sres x v -> all_disjointM v) ->
+        all_disjointM v.
+(* =end= *)
 Proof.
   unfold adequate. intros e h TRIPLE R data s ADE vv sres SEM WF R_OK.
   eapply adequacy_pure_PHOAS; eauto.
