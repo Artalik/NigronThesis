@@ -894,18 +894,28 @@ Ltac step := repeat clean_up; (* subst; *)
       what_is v ltac:(fun v => eapply (ret_adequate _ _ _ v)); repeat econstructor; eauto
   end.
 
-
+(* =rest_spec= *)
 Definition rest_spec data t x y := len t = 0 /\ span_eq data x y /\ x = y.
+(* =end= *)
 
-Definition rest_adequate_sig : {code | forall data s, adequate (rest_spec data) rest code data s}.
-  eapply exist. intros. unfold rest. repeat step.
+(* =rest_adequate_DF= *)
+Definition rest_adequate_DF :
+  {code | forall data s, adequate (rest_spec data) rest code data s}.
+(* =end= *)
+  eapply exist. unfold rest. intros.
+  eapply bind_adequate.
+  eapply length_adequate.
+  unfold length_spec. intros vres r t. intros.
   eapply consequence_adequate. clean_up. step.
-  intros t0 v hv [P2 [P3 P4]]. repeat clean_up. subst. repeat split; eauto.
-  rewrite P4. eapply N.sub_diag.
+  intros t0 v hv. unfold span_eq_take, rest_spec. repeat clean_up. subst.
+  intros. repeat clean_up. clear P1. subst.
+  unfold span_eq. repeat split; eauto.
+  rewrite P2. eapply N.sub_diag.
 Defined.
 
-Lemma rest_adequate : forall data s, adequate (rest_spec data) rest (`rest_adequate_sig) data s.
-Proof. intros. destruct rest_adequate_sig as [p a]. eapply a. Qed.
+Lemma rest_adequate data s :
+  adequate (rest_spec data) rest (`rest_adequate_DF) data s.
+Proof. destruct rest_adequate_DF as [p a]. eapply a. Qed.
 
 Definition verify_spec {X Y} (R : span -> X -> type_to_Type Y -> Prop)
   (hb : val Y -> VAL Bool) (b : X -> bool) s x y :=

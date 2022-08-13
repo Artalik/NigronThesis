@@ -77,9 +77,11 @@ Section combinator.
   Definition opt {X} (c : NomG X): NomG(option X) :=
     alt (let! v := c in ret (Some v)) (ret None).
 
-  Definition rest : NomG span :=
-    let! l := length in
-    take l.
+(* =rest= *)
+Definition rest : NomG span :=
+  let! l := length in
+  take l.
+(* =end= *)
 
   Definition rest_len : NomG N := length.
 
