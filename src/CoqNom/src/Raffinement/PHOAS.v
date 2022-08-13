@@ -546,87 +546,97 @@ Section PHOAS_equiv.
 
   Context {var1 var2 : type -> Type}.
 
-  Inductive Env :=
-  | Nil : Env
-  | Cons : forall {X}, var1 X -> var2 X -> Env -> Env.
+(* =Env= *)
+Inductive Env :=
+| Nil : Env
+| Cons : forall {X}, var1 X -> var2 X -> Env -> Env.
+(* =end= *)
 
-  Inductive In {X} (v1 : var1 X) (v2 : var2 X) : Env -> Prop :=
-  | Here : forall env, In v1 v2 (Cons v1 v2 env)
-  | Later : forall X (t1 : var1 X) (t2 : var2 X) env,
-      In v1 v2 env ->
-      In v1 v2 (Cons t1 t2 env).
+(* =In= *)
+Inductive In {X} (v1 : var1 X) (v2 : var2 X) : Env -> Prop :=
+| Here : forall env, In v1 v2 (Cons v1 v2 env)
+| Later : forall X (t1 : var1 X) (t2 : var2 X) env,
+    In v1 v2 env ->
+    In v1 v2 (Cons t1 t2 env).
+(* =end= *)
 
-  Inductive equiv_VAL : Env -> forall X, @VAL var1 X -> @VAL var2 X -> Prop :=
-  | EquivVar : forall X env v1 v2,
-      In v1 v2 env ->
-      equiv_VAL env X (Var v1) (Var v2)
-  | EquivBin : forall X Y Z env o v1 v2 v3 v4,
-      equiv_VAL env X v1 v3 ->
-      equiv_VAL env Y v2 v4 ->
-      equiv_VAL env Z (EBin o v1 v2) (EBin o v3 v4)
-  | EquivUna : forall X Y env o v1 v3,
-      equiv_VAL env X v1 v3 ->
-      equiv_VAL env Y (EUna o v1) (EUna o v3)
-  | EquivConst : forall X env c,
-      equiv_VAL env X (Const c) (Const c).
+(* =equiv_VAL= *)
+Inductive equiv_VAL : Env -> forall X, @VAL var1 X -> @VAL var2 X -> Prop :=
+| EquivVar : forall X env v1 v2,
+    In v1 v2 env ->
+    equiv_VAL env X (Var v1) (Var v2)
+(* =end= *)
+| EquivBin : forall X Y Z env o v1 v2 v3 v4,
+    equiv_VAL env X v1 v3 ->
+    equiv_VAL env Y v2 v4 ->
+    equiv_VAL env Z (EBin o v1 v2) (EBin o v3 v4)
+| EquivUna : forall X Y env o v1 v3,
+    equiv_VAL env X v1 v3 ->
+    equiv_VAL env Y (EUna o v1) (EUna o v3)
+| EquivConst : forall X env c,
+    equiv_VAL env X (Const c) (Const c).
 
-  Inductive equiv_LIST : Env -> @LIST var1 -> @LIST var2 -> Prop :=
-  | EquivNIL : forall env,
-      equiv_LIST env NIL NIL
-  | EquivCONS : forall env X v1 v2 l1 l2,
-      equiv_VAL env X v1 v2 ->
-      equiv_LIST env l1 l2 ->
-      equiv_LIST env (CONS v1 l1) (CONS v2 l2).
+Inductive equiv_LIST : Env -> @LIST var1 -> @LIST var2 -> Prop :=
+| EquivNIL : forall env,
+    equiv_LIST env NIL NIL
+| EquivCONS : forall env X v1 v2 l1 l2,
+    equiv_VAL env X v1 v2 ->
+    equiv_LIST env l1 l2 ->
+    equiv_LIST env (CONS v1 l1) (CONS v2 l2).
 
-  Inductive equiv_prog : Env -> forall X, @PHOAS var1 X -> @PHOAS var2 X -> Prop :=
-  | EquivCstruct : forall env ty constr l1 l2,
+(* =equiv_prog= *)
+Inductive equiv_prog : Env -> forall X, @PHOAS var1 X -> @PHOAS var2 X -> Prop :=
+(* =end= *)
+| EquivCstruct : forall env ty constr l1 l2,
     equiv_LIST env l1 l2 ->
     equiv_prog env (Unknown ty) (ExternStruct ty constr l1) (ExternStruct ty constr l2)
-  | EquivVal : forall X env v1 v2,
-      equiv_VAL env X v1 v2 ->
-      equiv_prog env X (Val v1) (Val v2)
-  | EquivLetIn : forall X Y env e0 e1 k0 k1,
-      equiv_prog env X e0 e1 ->
-      (forall v0 v1, equiv_prog (Cons v0 v1 env) Y (k0 v0) (k1 v1)) ->
-      equiv_prog env Y (LetIn e0 k0) (LetIn e1 k1)
-  | EquivIfThenElse : forall X env vb1 vb2 et1 et2 ef1 ef2,
-      equiv_VAL env Bool vb1 vb2 ->
-      equiv_prog env X et1 et2 ->
-      equiv_prog env X ef1 ef2 ->
-      equiv_prog env X (IfThenElse vb1 et1 ef1) (IfThenElse vb2 et2 ef2)
-  | EquivCaseOption : forall X Y env vo1 vo2 en1 en2 es1 es2,
-      equiv_VAL env (Option X) vo1 vo2 ->
-      equiv_prog env Y en1 en2 ->
-      (forall v0 v1, equiv_prog (Cons v0 v1 env) Y (es1 v0) (es2 v1)) ->
-      equiv_prog env Y (CaseOption vo1 en1 es1) (CaseOption vo2 en2 es2)
-  | EquivSwitch : forall Y env vn1 vn2 c1 c2,
-      equiv_VAL env Nat vn1 vn2 ->
-      equiv_branch env Y c1 c2 ->
-      equiv_prog env Y (Switch vn1 c1) (Switch vn2 c2)
-  | EquivFail : forall Y env,
-      equiv_prog env Y Fail Fail
-  | EquivTake : forall env vn1 vn2,
-      equiv_VAL env Nat vn1 vn2 ->
-      equiv_prog env Span (Take vn1) (Take vn2)
-  | EquivLength : forall env,
-      equiv_prog env Nat Length Length
-  | EquivRead : forall env vs1 vs2 vn1 vn2,
-      equiv_VAL env Span vs1 vs2 ->
-      equiv_VAL env Nat vn1 vn2 ->
-      equiv_prog env (NatN 8) (Read vs1 vn1) (Read vs2 vn2)
-  | EquivAlt : forall X env e1 e2 e3 e4,
-      equiv_prog env X e1 e3 ->
-      equiv_prog env X e2 e4 ->
-      equiv_prog env X (Alt e1 e2) (Alt e3 e4)
-  | EquivLocal : forall X env vo1 vo2 e1 e2,
-      equiv_VAL env (Option Span) vo1 vo2 ->
-      equiv_prog env X e1 e2 ->
-      equiv_prog env X (Local vo1 e1) (Local vo2 e2)
-  | EquivRepeat : forall X env on1 on2 k1 k2 b1 b2,
-      equiv_VAL env (Option Nat) on1 on2 ->
-      (forall v1 v2, equiv_prog (Cons v1 v2 env) X (k1 v1) (k2 v2)) ->
-      equiv_VAL env X b1 b2 ->
-      equiv_prog env X (Repeat on1 k1 b1) (Repeat on2 k2 b2)
+| EquivVal : forall X env v1 v2,
+    equiv_VAL env X v1 v2 ->
+    equiv_prog env X (Val v1) (Val v2)
+(* =EquivLetIn= *)
+| EquivLetIn : forall X Y env e0 e1 k0 k1,
+    equiv_prog env X e0 e1 ->
+    (forall v0 v1, equiv_prog (Cons v0 v1 env) Y (k0 v0) (k1 v1)) ->
+    equiv_prog env Y (LetIn e0 k0) (LetIn e1 k1)
+(* =end= *)
+| EquivIfThenElse : forall X env vb1 vb2 et1 et2 ef1 ef2,
+    equiv_VAL env Bool vb1 vb2 ->
+    equiv_prog env X et1 et2 ->
+    equiv_prog env X ef1 ef2 ->
+    equiv_prog env X (IfThenElse vb1 et1 ef1) (IfThenElse vb2 et2 ef2)
+| EquivCaseOption : forall X Y env vo1 vo2 en1 en2 es1 es2,
+    equiv_VAL env (Option X) vo1 vo2 ->
+    equiv_prog env Y en1 en2 ->
+    (forall v0 v1, equiv_prog (Cons v0 v1 env) Y (es1 v0) (es2 v1)) ->
+    equiv_prog env Y (CaseOption vo1 en1 es1) (CaseOption vo2 en2 es2)
+| EquivSwitch : forall Y env vn1 vn2 c1 c2,
+    equiv_VAL env Nat vn1 vn2 ->
+    equiv_branch env Y c1 c2 ->
+    equiv_prog env Y (Switch vn1 c1) (Switch vn2 c2)
+| EquivFail : forall Y env,
+    equiv_prog env Y Fail Fail
+| EquivTake : forall env vn1 vn2,
+    equiv_VAL env Nat vn1 vn2 ->
+    equiv_prog env Span (Take vn1) (Take vn2)
+| EquivLength : forall env,
+    equiv_prog env Nat Length Length
+| EquivRead : forall env vs1 vs2 vn1 vn2,
+    equiv_VAL env Span vs1 vs2 ->
+    equiv_VAL env Nat vn1 vn2 ->
+    equiv_prog env (NatN 8) (Read vs1 vn1) (Read vs2 vn2)
+| EquivAlt : forall X env e1 e2 e3 e4,
+    equiv_prog env X e1 e3 ->
+    equiv_prog env X e2 e4 ->
+    equiv_prog env X (Alt e1 e2) (Alt e3 e4)
+| EquivLocal : forall X env vo1 vo2 e1 e2,
+    equiv_VAL env (Option Span) vo1 vo2 ->
+    equiv_prog env X e1 e2 ->
+    equiv_prog env X (Local vo1 e1) (Local vo2 e2)
+| EquivRepeat : forall X env on1 on2 k1 k2 b1 b2,
+    equiv_VAL env (Option Nat) on1 on2 ->
+    (forall v1 v2, equiv_prog (Cons v1 v2 env) X (k1 v1) (k2 v2)) ->
+    equiv_VAL env X b1 b2 ->
+    equiv_prog env X (Repeat on1 k1 b1) (Repeat on2 k2 b2)
 
   with equiv_branch : Env -> forall X, @case_switch var1 X -> @case_switch var2 X -> Prop :=
   | EquivLSNil : forall X env e1 e2,
