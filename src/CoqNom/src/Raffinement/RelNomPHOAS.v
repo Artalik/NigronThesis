@@ -43,6 +43,7 @@ Qed.
 
 (* =adequate_disjoint= *)
 Lemma adequacy_disjoint `{Foldable X} `{Foldable (fun s => val (Y s))}:
+
   forall (e : NomG (X span)) (h : PHOAS (Y span)),
     {{ emp }} e {{ v; ⌜all_disjointM v⌝ }} ->
 
@@ -77,16 +78,26 @@ Ltac sem_VAL_unif :=
 
 Ltac VAL_unif := repeat sem_VAL_unif.
 
-Lemma ret_adequate data s :
-  forall Y (va : VAL Y) (X : Type) (R : span -> X -> type_to_Type Y -> Prop) a (v : X),
-    sem_VAL va a ->
-    R s v a ->
-    adequate R (ret v) (Val va) data s.
+
+Section ret_rules.
+
+  Context {X : Type}.
+  Context {Y : type}.
+
+(* =ret_adequate= *)
+Lemma ret_adequate data s
+  (R : span -> X -> type_to_Type Y -> Prop) (v : X) (va : VAL Y) a :
+  sem_VAL va a ->
+  R s v a ->
+  adequate R (ret v) (Val va) data s.
+(* =end= *)
 Proof.
   unfold adequate.
-  intros Y va X R a v SEMA RA WF res SEM.
+  intros SEMA RA WF res SEM.
   next_step SEM. VAL_unif. subst. eexists. repeat split. eauto. exists O. reflexivity.
 Qed.
+
+End ret_rules.
 
 Lemma extern_adequate :
   forall ty constr l (X : Type) (v : X) data s,
@@ -97,15 +108,23 @@ Proof.
   next_step SEM. exists v. split; auto. exists O. reflexivity.
 Qed.
 
-Lemma bind_adequate data s :
-  forall (X Y : Type) (X0 Y0 : type) T R (e : NomG X) (ke : X -> NomG Y)
-    (h : PHOASV X0) (kh : val X0 -> PHOASV Y0),
+Section bind_rules.
+  Context {X : Type}.
+  Context {Y : Type}.
+  Context {X0 : type}.
+  Context {Y0 : type}.
+
+(* =bind_adequate= *)
+Lemma bind_adequate data s T R
+  (e : NomG X) (ke : X -> NomG Y)
+  (h : PHOAS X0) (kh : val X0 -> PHOAS Y0) :
     adequate T e h data s ->
     (forall vres r t, T t r vres -> adequate R (ke r) (kh vres) data t) ->
     adequate R (let! v := e in ke v) (let% v := h in kh v) data s.
+(* =end= *)
 Proof.
   unfold adequate.
-  intros X Y X0 Y0 T R e ke h kh SEME SEMK WF res SEM.
+  intros SEME SEMK WF res SEM.
   next_step SEM.
   - eapply SEME in H3 as [x [Rx [fuel P1]]]; auto.
     eapply SEMK in H6. destruct res as [[v0 t]|].
@@ -117,6 +136,8 @@ Proof.
   - eapply SEME in H2 as [fuel P1]; auto.
     exists fuel. eapply run_bind_fail. auto.
 Qed.
+
+End bind_rules.
 
 Lemma consequence_adequate :
   forall (X : Type) Y (R T : span -> X -> type_to_Type Y -> Prop) (e : NomG X) (h : PHOASV Y) data s,
@@ -130,18 +151,38 @@ Proof.
   exists r. split; auto. exists fuel. auto.
 Qed.
 
-Definition length_spec s t x (y: type_to_Type Nat) := s = t /\ x = y /\ x = len t.
+Section length.
+  Implicit Type y : type_to_Type Nat.
 
-Lemma length_adequate : forall data s, adequate (length_spec s) length Length data s.
+(* =length_spec= *)
+Definition length_spec s t x y := s = t /\ x = y /\ x = len t.
+(* =end= *)
+
+(* =length_adequate= *)
+Lemma length_adequate data s : adequate (length_spec s) length Length data s.
+(* =end= *)
 Proof.
-  intros data s WF res SEM. next_step SEM.
+  intros WF res SEM. next_step SEM.
   simpl. eexists. split. repeat split; econstructor. exists O. reflexivity.
 Qed.
 
-Definition span_eq data (s0 : span) (s1 : type_to_Type Span) := s0 = s1 /\ span_data_wf data s0.
+End length.
 
-Definition span_eq_take data s n t (s0 : span) (s1 : type_to_Type Span) : Prop :=
-  span_eq data s0 s1 /\ len s0 = n /\ len t = len s - n.
+Section span_eq_sec.
+
+  Implicit Type x : span.
+  Implicit Type y : type_to_Type Span.
+
+(* =span_eq= *)
+Definition span_eq data x y := x = y /\ span_data_wf data x.
+(* =end= *)
+
+(* =span_eq_take= *)
+Definition span_eq_take data s n t x y : Prop :=
+  span_eq data x y /\ len x = n /\ len t = len s - n.
+(* =end= *)
+
+End span_eq_sec.
 
 Lemma length_helper : forall data s v p1,
     sem_PHOAS data s Length (Some (v, p1)) ->
@@ -167,15 +208,17 @@ Proof.
   right. exists b. split; auto.
 Qed.
 
-Lemma take_verif_adequate data s : forall (hn : VAL Nat) (n : N),
-    sem_VAL hn n ->
-    adequate (span_eq_take data s n) (take n)
-      (let% len := Length in
-       If hn <=! Var len
-         Then Take hn
-         Else Fail) data s.
+(* =take_verif_adequate= *)
+Lemma take_verif_adequate data s (hn : VAL Nat) (n : N) :
+  sem_VAL hn n ->
+  adequate (span_eq_take data s n) (take n)
+    (let% len := Length in
+     If hn <=! Var len
+     Then Take hn
+     Else Fail) data s.
+(* =end= *)
 Proof.
-  intros hn n VALN WF res SEM.
+  intros VALN WF res SEM.
   next_step SEM.
   - eapply ite_helper in H6 as [[b [P0 [P1 P2]]]|[b [P0 [P1 P2]]]].
     + eapply length_helper in H3 as [P3 P4]. subst s v.
@@ -201,12 +244,14 @@ Proof.
   - next_step H2.
 Qed.
 
-Lemma take_adequate data s : forall (hn : VAL Nat) (n : N),
+(* =take_adequate= *)
+Lemma take_adequate data s (hn : VAL Nat) (n : N) :
     sem_VAL hn n ->
     n <= len s ->
     adequate (span_eq_take data s n) (take n) (Take hn) data s.
+(* =end= *)
 Proof.
-  intros hn n VALN LE WF res SEM.
+  intros VALN LE WF res SEM.
   next_step SEM. VAL_unif. subst. simpl in *.
   eexists. repeat split.
   - unfold span_data_wf in *. simpl. lia.
@@ -215,12 +260,21 @@ Proof.
     eapply N.leb_le in LE. rewrite LE. reflexivity.
 Qed.
 
-Lemma fail_adequate : forall data s X Y (R : span -> X -> type_to_Type Y -> Prop),
-    adequate R fail Fail data s.
+Section fail_rule.
+
+  Context {X : Type}.
+  Context {Y : type}.
+  Implicit Type R : span -> X -> type_to_Type Y -> Prop.
+
+(* =fail_adequate= *)
+Lemma fail_adequate data s R : adequate R fail Fail data s.
+(* =end_adequate= *)
 Proof.
-  intros data s X Y R WF res SEM.
+  intros WF res SEM.
   next_step SEM. exists O. reflexivity.
 Qed.
+
+End fail_rule.
 
 Lemma lookupN_lt : forall pos X (data : list X),
     pos < lengthN data ->
@@ -238,19 +292,29 @@ Proof.
       rewrite N2Nat.inj_succ. eapply LT.
 Qed.
 
-Definition read_spec (s t : span) x0 (x1 : type_to_Type (NatN 8)) := s = t /\ x0 = x1.
+Section read.
 
-Lemma read_verif_adequate data s : forall ht hn (n : type_to_Type Nat) (t : type_to_Type Span),
-    span_data_wf data t ->
-    sem_VAL ht t ->
-    sem_VAL hn n ->
-    adequate (read_spec s) (read t n)
-      (If hn <! EUna ELen ht
-         Then
-         Read ht hn
-         Else Fail) data s.
+  Implicit Type y : type_to_Type (NatN 8).
+
+(* =read_spec= *)
+Definition read_spec (s t : span) (x : nat8) y := s = t /\ x = y.
+(* =end= *)
+
+Implicit Type n : type_to_Type Nat.
+Implicit Type t : type_to_Type Span.
+
+(* =read_verif_adequate= *)
+Lemma read_verif_adequate data s ht hn n t :
+  span_data_wf data t ->
+  sem_VAL ht t ->
+  sem_VAL hn n ->
+  adequate (read_spec s) (read t n)
+    (If hn <! EUna ELen ht
+     Then Read ht hn
+     Else Fail) data s.
+(* =end= *)
 Proof.
-  intros ht hn n t RS VALR VALn WF res SEM.
+  intros RS VALR VALn WF res SEM.
   eapply ite_helper in SEM as [[b [P0 [P1 P2]]]| [b [P0 [P1 P2]]]].
   - inversion P0. simpl_existT. subst X Y Z. simpl_existT. subst ob0 vv2 vv3 res0. clear P0.
     inversion H7. simpl_existT. subst X Y ou0 vv1 res0. clear H7.
@@ -270,14 +334,16 @@ Proof.
     rewrite H9. reflexivity.
 Qed.
 
-Lemma read_adequate data s : forall ht hn (n : type_to_Type Nat) (t : type_to_Type Span),
-    span_data_wf data t ->
-    sem_VAL ht t ->
-    sem_VAL hn n ->
-    n < len t ->
-    adequate (read_spec s) (read t n) (Read ht hn) data s.
+(* =read_adequate= *)
+Lemma read_adequate data s ht hn n t :
+  span_data_wf data t ->
+  sem_VAL ht t ->
+  sem_VAL hn n ->
+  n < len t ->
+  adequate (read_spec s) (read t n) (Read ht hn) data s.
+(* =end= *)
 Proof.
-  intros ht hn n t RS VALr VALn LT WF res SEM.
+  intros RS VALr VALn LT WF res SEM.
   next_step SEM.
   repeat VAL_unif. subst. eexists. repeat split. simpl in *.
   exists O. unfold run_read. eapply N.ltb_lt in LT. rewrite LT.
@@ -285,13 +351,21 @@ Proof.
   eapply N.ltb_lt in LT. unfold span_data_wf in RS. lia.
 Qed.
 
+End read.
 
-Lemma alt_adequate data s : forall X Y R (e0 : NomG X) e1 (h0 : PHOASV Y) h1,
-    adequate R e0 h0 data s ->
-    adequate R e1 h1 data s ->
-    adequate R (alt e0 e1) (Alt h0 h1) data s.
+Section alt_rule.
+
+  Context {X : Type}.
+  Context {Y : type}.
+
+(* =alt_adequate= *)
+Lemma alt_adequate data s R (e0 : NomG X) e1 (h0 : PHOASV Y) h1 :
+  adequate R e0 h0 data s ->
+  adequate R e1 h1 data s ->
+  adequate R (alt e0 e1) (Alt h0 h1) data s.
+(* =end= *)
 Proof.
-  intros X Y R e0 e1 h0 h1 ADE0 ADE1 WF res SEM.
+  intros ADE0 ADE1 WF res SEM.
   next_step SEM.
   - eapply ADE0 in H2 as [x [RX [fuel0 P0]]]; auto.
     exists x. repeat split; auto. exists fuel0.
@@ -308,6 +382,8 @@ Proof.
       eapply run_fuel_mono in P0. erewrite P0.
       eapply run_fuel_mono in P1. erewrite P1. reflexivity. auto. lia. auto. lia.
 Qed.
+
+End alt_rule.
 
 Definition local_spec {X Y} (R : X -> Y -> Prop) (s t : span) x y :=
   s = t /\ R x y.
@@ -354,6 +430,8 @@ Proof.
   - inversion H5. clear H5. inversion H13. simpl_existT. subst. inversion H17.
 Qed.
 
+Section match_adequate.
+
 Fixpoint case_adequate {X Y} (R : span -> X -> type_to_Type Y -> Prop) (e : N -> NomG X)
   (c : case_switch Y) (l : list N) data s {struct c}: Prop :=
   match c in (case_switch T) return ((span -> X -> type_to_Type T -> Prop) -> Prop) with
@@ -391,17 +469,24 @@ Proof.
   intros. eapply switch_adequate_bis; eauto. intro P. inversion P.
 Qed.
 
-Lemma match_N_adequate data s :
-  forall (hn : VAL Nat) X Y (R : span -> X -> type_to_Type Y -> Prop) cases (e1 : NomG X) e2 n,
-    sem_VAL hn n ->
-    case_adequate R (fun n => match n with
-                              | 0 => e1
-                              | Npos p => e2 p
-                              end) cases nil data s ->
-    adequate R (match n with
-                | 0 => e1
-                | Npos p => e2 p
-                end) (Switch hn cases) data s.
+
+  Context {X : Type}.
+  Context {Y : type}.
+
+(* =match_N_adequate= *)
+Lemma match_N_adequate data s
+  (hn : VAL Nat) n R (cases : case_switch Y)
+  (e1 : NomG X) e2 :
+  sem_VAL hn n ->
+  case_adequate R (fun n => match n with
+                         | 0 => e1
+                         | Npos p => e2 p
+                         end) cases nil data s ->
+  adequate R (match n with
+              | 0 => e1
+              | Npos p => e2 p
+              end) (Switch hn cases) data s.
+(* =end= *)
 Proof.
   intros.
   assert (match n with
@@ -416,7 +501,7 @@ Proof.
 Qed.
 
 Lemma natN_switch_adequate_bis :
-  forall X Y (R : span -> X -> type_to_Type Y -> Prop) cases p (n : natN p)
+  forall (R : span -> X -> type_to_Type Y -> Prop) cases p (n : natN p)
     (hn : VAL Nat) (e1 : NomG X) e2 data l s,
     sem_VAL hn (↓ n) ->
     ↓ n ∉ l ->
@@ -429,7 +514,7 @@ Lemma natN_switch_adequate_bis :
                 | N.pos p => e2 p
                 end) (Switch hn cases) data s.
 Proof.
-  intros X Y R cases p n hn e1 e2 data l s P0 P1 case.
+  intros R cases p n hn e1 e2 data l s P0 P1 case.
   assert (match ↓ n with
           | 0 => e1
           | N.pos p0 => e2 p0
@@ -442,7 +527,7 @@ Proof.
 Qed.
 
 Lemma natN_switch_adequate :
-  forall p (hn : VAL Nat) X Y (R : span -> X -> type_to_Type Y -> Prop) cases (n : natN p)
+  forall p (hn : VAL Nat) (R : span -> X -> type_to_Type Y -> Prop) cases (n : natN p)
     (e1 : NomG X) e2 data s,
     sem_VAL hn (↓ n) ->
     case_adequate R (fun n => match n with
@@ -457,29 +542,44 @@ Proof.
   intros. eapply natN_switch_adequate_bis; eauto. intro P. inversion P.
 Qed.
 
-Lemma LScons_adequate data s : forall n X Y (R : span -> X -> type_to_Type Y -> Prop) cases (e : N -> NomG X) h l,
+(* =LScons_adequate= *)
+Lemma LScons_adequate data s n R cases (e : N -> NomG X) (h : PHOAS Y) l :
     adequate R (e n) h data s ->
     case_adequate R e cases (n :: l) data s ->
     case_adequate R e (LScons n h cases) l data s.
+(* =end= *)
 Proof. simpl. intros. split; auto. Qed.
 
-Lemma LSnil_adequate data s: forall X Y (R : span -> X -> type_to_Type Y -> Prop) (e : N -> NomG X) h l,
+(* =LSnil_adequate= *)
+Lemma LSnil_adequate data s R (e : N -> NomG X) (h : PHOAS Y) l :
     (forall n, n ∉ l -> adequate R (e n) h data s) ->
     case_adequate R e (LSnil h) l data s.
+(* =end= *)
 Proof. simpl. intros. eapply H. eapply H0. Qed.
 
-Lemma ite_adequate data s :
-  forall (hb : VAL Bool) X Y R (b : bool) (et : NomG X) (ht : PHOASV Y) ef hf,
-    sem_VAL hb b ->
-    (b = true -> adequate R et ht data s) ->
-    (b = false -> adequate R ef hf data s) ->
-    adequate R (if b then et else ef) (If hb Then ht Else hf) data s.
+End match_adequate.
+
+Section ite_adequate.
+
+  Context {X : Type}.
+  Context {Y : type}.
+
+(* =ite_adequate= *)
+Lemma ite_adequate data s (hb : VAL Bool) b R
+  (et : NomG X) (ht : PHOASV Y) ef hf :
+  sem_VAL hb b ->
+  (b = true -> adequate R et ht data s) ->
+  (b = false -> adequate R ef hf data s) ->
+  adequate R (if b then et else ef) (If hb Then ht Else hf) data s.
+(* =end= *)
 Proof.
-  intros hb X Y R b et ht ef hf VALb ADET ADEF res WF SEM.
+  intros VALb ADET ADEF res WF SEM.
   eapply ite_helper in SEM as [[b0 [P0 [P1 P2]]] | [b0 [P0 [P1 P2]]]].
   - repeat VAL_unif. subst. eapply ADET; auto.
   - repeat VAL_unif. subst. eapply ADEF; auto.
 Qed.
+
+End ite_adequate.
 
 Definition compt_Some n {X Y} (R : span -> X -> Y -> Prop) (RX : N -> X -> Prop) (RY : N -> Y -> Prop) s x0 x1:=
   R s x0 x1 /\ RX n x0 /\ RY n x1.
@@ -566,15 +666,22 @@ Proof.
   destruct H. auto. intros. repeat split; auto.
 Qed.
 
-Lemma repeat_adequate data s :
-  forall (ho : VAL (Option Nat)) X Y (hb : VAL Y) (R : span -> X -> type_to_Type Y -> Prop) o e b he rb,
-    sem_VAL hb rb ->
-    sem_VAL ho o ->
-    R s b rb ->
-    (forall rv v t, R t v rv -> adequate R (e v) (he rv) data t) ->
-    adequate R (repeat o e b) (Repeat ho he hb) data s.
+Section repeat_rule.
+
+  Context {X : Type}.
+  Context {Y : type}.
+
+(* =repeat_adequate= *)
+Lemma repeat_adequate data s (ho : VAL (Option Nat)) (hb : VAL Y)
+  (R : span -> X -> type_to_Type Y -> Prop) o e b he rb :
+  sem_VAL hb rb ->
+  sem_VAL ho o ->
+  R s b rb ->
+  (forall rv v t, R t v rv -> adequate R (e v) (he rv) data t) ->
+  adequate R (repeat o e b) (Repeat ho he hb) data s.
+(* =end= *)
 Proof.
-  intros ho X Y hb R o e b he rb VALb VALn RB IH WF res SEM.
+  intros VALb VALn RB IH WF res SEM.
   next_step SEM.
   - VAL_unif. subst. revert b RB. induction H7.
     + intros. eapply IH in H; eauto. destruct H as [fuel P0].
@@ -621,6 +728,8 @@ Proof.
     instantiate (1 := Const (ENat n)). repeat econstructor.
     eapply SRepeatS. repeat econstructor. eauto. auto.
 Qed.
+
+End repeat_rule.
 
 Ltac Pos_is_literal p :=
   match p with
