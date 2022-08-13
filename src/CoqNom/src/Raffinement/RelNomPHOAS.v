@@ -917,6 +917,14 @@ Lemma rest_adequate data s :
   adequate (rest_spec data) rest (`rest_adequate_DF) data s.
 Proof. destruct rest_adequate_DF as [p a]. eapply a. Qed.
 
+(* =rest_equiv= *)
+Lemma rest_equiv {var} :
+  { code : @PHOAS var _ | equiv_prog Nil _ (`rest_adequate_DF) code}.
+Proof. eapply exist. repeat econstructor. Qed.
+(* =end= *)
+
+Print rest_equiv.
+
 Definition verify_spec {X Y} (R : span -> X -> type_to_Type Y -> Prop)
   (hb : val Y -> VAL Bool) (b : X -> bool) s x y :=
   R s x y /\ sem_VAL (hb y) true /\ b x = true.
