@@ -28,18 +28,8 @@ Definition foldr {A B} (f : A -> B -> B) (base : B) (res : RadiusDataS A) : B :=
     | Some arr => List.fold_right (fun r l' => Foldable.foldr _ _ f l' r.2) base (values (`arr))
     end.
 
-Definition foldMap {M} `{Monoid.Monoid M} {A} (fold : A -> M) (base : RadiusDataS A) : M :=
-  Monoid.f (fold (authenticator base))
-           match attributes base with
-           | None => Monoid.mempty
-           | Some arr =>
-               List.fold_right (fun r l' => Monoid.f (foldMap _ _ fold r.2) l')
-                               Monoid.mempty
-                               (Vector.values (`arr))
-           end.
-
 Global Instance RadiusData_Foldable : Foldable RadiusDataS :=
-  Build_Foldable _ (@foldr) (@foldMap).
+  Build_Foldable _ (@foldr).
 
 Definition RadiusData := RadiusDataS span.
 

@@ -83,8 +83,27 @@ Qed.
 
 Lemma big_sepL_double : forall (biInd : biIndex) (PROP : bi) X Y (l : list X) f (Q : Y -> monPred biInd PROP),
     ([∗ list] v ∈ l, [∗ list] v' ∈ f v, Q v') ⊢
-                                              [∗ list] v ∈ list.foldr (fun v l => f v ++ l) [] l, Q v.
+      [∗ list] v ∈ list.foldr (fun v l => f v ++ l) [] l, Q v.
 Proof.
   induction l; simpl; iIntros; iNorm.
   iApply big_sepL_app. iFrame. iApply (IHl with "HC").
+Qed.
+
+Lemma big_sepL_fold_mono :
+  forall (biInd : biIndex) (PROP : bi) X Y v (l : list X) f (Q : Y -> monPred biInd PROP),
+    (forall x, exists l', forall l, l' ++ l = f x l) ->
+    ([∗ list] v ∈ list.foldr f v l, Q v) ⊣⊢
+      ([∗ list] v ∈ v, Q v) ∗ ([∗ list] v ∈ list.foldr f [] l, Q v).
+Proof.
+  induction l; simpl; iIntros; iNorm.
+  - iSplit; auto. iIntros "[$ _]".
+  - iSplit.
+    + iIntros "HA". destruct (H a) as [l' P0].
+      do 2 rewrite <- P0. iDestruct (big_sepL_app with "HA") as "[HA HB]".
+      iDestruct (IHl with "HB") as "[HB HC]".
+      eauto. iFrame.
+    + iIntros "[HA HB]". destruct (H a) as [l' P0].
+      do 2 rewrite <- P0. iDestruct (big_sepL_app with "HB") as "[HB HC]".
+      iApply big_sepL_app. iFrame. iApply IHl. auto.
+      iFrame.
 Qed.
