@@ -130,10 +130,14 @@ Fail
 Lemma IsFresh_spec : forall s t, IsFresh s ∗ IsFresh t ⊢ ⌜disjoint s t⌝.
 (* =end= *)
 
+(* =M_to_list= *)
 Definition M_to_list `{Foldable M} {X} (m : M X) : list X :=
   Foldable.foldr _ _ (fun a b => a :: b) [] m.
+(* =end= *)
 
+(* =all_disjointSL= *)
 Definition all_disjointSL (l : list span) := [∗ list] v ∈ l, IsFresh v.
+(* =end= *)
 
 Definition all_disjointMSL `{Foldable M} (m : M span) : iProp :=
   all_disjointSL (M_to_list m).
@@ -153,7 +157,9 @@ Proof.
   iDestruct (IsFresh_spec with "HB HA") as "%". iPureIntro. apply H.
 Qed.
 
+(* =all_disjoint_spec= *)
 Lemma all_disjoint_spec : forall l, all_disjointSL l ⊢ ⌜ all_disjoint l ⌝.
+(* =end= *)
 Proof.
   iIntros. iApply all_disjoint_SL_to_Prop. auto.
 Qed.
@@ -162,6 +168,8 @@ Theorem all_disjointM_SL_to_Prop : forall `{Foldable M} m,
     <absorb> all_disjointMSL m ⊢ ⌜ all_disjointM m ⌝.
 Proof. iIntros "* HA". iApply (all_disjoint_SL_to_Prop with "HA"). Qed.
 
-Theorem all_disjointM_spec : forall `{Foldable M} m,
+(* =all_disjointM_spec= *)
+Theorem all_disjointM_spec `{Foldable M} m :
     all_disjointSL (M_to_list m) ⊢ ⌜ all_disjoint (M_to_list m) ⌝.
+(* =end= *)
 Proof. iIntros "* HA". iApply (all_disjoint_SL_to_Prop with "HA"). Qed.
