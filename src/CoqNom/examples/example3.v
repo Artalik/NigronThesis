@@ -8,6 +8,7 @@ From Formalisation Require Export Span.
 From FreeMonad Require Import FreeMonad.
 From SepLogic Require Import SepSet.
 From Formalisation Require Import IsFresh Inject.
+From Classes Require Import Foldable.
 From Examples Require Import example2.
 
 Open Scope N_scope.
@@ -144,8 +145,11 @@ Arguments mac [S].
 
 Definition packet_SSH := packet_SSHS span.
 
-Definition fold_r {A B} (f : A -> B -> B) (b : B) (p : packet_SSHS A) : B :=
+Definition foldr {A B} (f : A -> B -> B) (b : B) (p : packet_SSHS A) : B :=
   f (payload p) (f (mac p) b).
+
+Local Instance Foldable_SSH : Foldable packet_SSHS :=
+  Build_Foldable _ (@foldr).
 
 Definition decode_next : Decodeur N :=
   let! s := take 1 in
@@ -194,6 +198,29 @@ Definition decode_packet_SSH : Decodeur packet_SSH :=
     ret (mk_ssh packet_length padding_length payload mac)
   else
     fail.
+
+Lemma rule_decode_packet_SSH : {{ emp }} decode_packet_SSH {{ v; <absorb> all_disjointMSL v }}.
+Proof.
+  eapply rule_bind.
+  eapply rule_u32.
+  intro. eapply rule_bind.
+  eapply rule_consequence. eapply rule_frame. eapply rule_next.
+  iIntros "HA". iSplitR; eauto. iApply "HA". eauto.
+  intro. destruct (v0 + 1 <=? v).
+  - eapply rule_bind.
+    eapply rule_consequence. eapply rule_frame. eapply rule_take.
+    iIntros "HA". iSplitR; eauto. iApply "HA". eauto.
+    intro. eapply rule_bind.
+    eapply rule_consequence. eapply rule_frame. eapply rule_take.
+    iIntros "HA". iSplitR; eauto. iApply "HA". eauto.
+    intros. eapply rule_bind.
+    eapply rule_consequence. eapply rule_frame. eapply rule_take.
+    iIntros "HA". iSplitR; eauto. iApply "HA". eauto.
+    intros. eapply rule_ret. iIntros. iNorm.
+    unfold all_disjointMSL, all_disjointSL. simpl. iFrame.
+  - eapply rule_fail.
+Qed.
+
 
 Close Scope free_monad_scope.
 
