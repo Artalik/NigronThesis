@@ -48,8 +48,6 @@ Module Values.
 
   Global Instance Foldable_Values : Foldable values.
   econstructor. intros A B f a. eapply (foldr f a).
-  intros. destruct sg, H. eapply List.fold_left.
-  intros c b. eapply (f c (X b.2)). eapply X0. eapply mempty.
   Defined.
 
 
@@ -224,8 +222,6 @@ Definition ext_eq {X} (comp : ∀ x y : X, {x = y} + {x ≠ y}) (a1 a2 : VECTOR 
 Global Instance Foldable_vector : Foldable VECTOR.
 econstructor. intros A B f a b.
 eapply (List.fold_right (fun a b => f a.2 b) a (vector_to_list b)).
-intros M sg m A f vec. inversion sg. inversion m.
-eapply (List.fold_right (fun a b => f0 (f a.2) b) mempty (vector_to_list vec)).
 Defined.
 
 Close Scope N_scope.

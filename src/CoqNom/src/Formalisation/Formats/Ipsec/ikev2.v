@@ -25,7 +25,7 @@ Record IkeV2HeaderS {S : Type} :=
 Definition IkeV2Header := @IkeV2HeaderS span.
 
 Global Instance Foldable_IkeV2HeaderS : Foldable (@IkeV2HeaderS) :=
-  Build_Foldable _ (fun _ _ _ b _ => b) (fun _ _ _ _ _ _ => Monoid.mempty).
+  Build_Foldable _ (fun _ _ _ b _ => b).
 
 Record IkeV2PayloadHeaderS {S : Type} :=
   mk_payloadheader {
@@ -40,7 +40,7 @@ Arguments mk_payloadheader [S].
 Definition IkeV2PayloadHeader := @IkeV2PayloadHeaderS span.
 
 Global Instance Foldable_IkeV2PayloadHeader : Foldable (@IkeV2PayloadHeaderS) :=
-  Build_Foldable _ (fun _ _ _ b _ => b) (fun _ _ _ _ _ _ => Monoid.mempty).
+  Build_Foldable _ (fun _ _ _ b _ => b).
 
 
 Record IkeV2GenericPayloadS {S : Type} :=
@@ -52,10 +52,9 @@ Record IkeV2GenericPayloadS {S : Type} :=
 Definition IkeV2GenericPayload := @IkeV2GenericPayloadS span.
 
 Definition foldr_genpay A B (f : A -> B -> B) (b : B) ta : B := f (payloadGen ta) b.
-Definition foldMap_genpay M `(Monoid.Monoid M) {A} (f : A -> M) ta : M := f (payloadGen ta).
 
 Global Instance Foldable_IkeV2GenericPayload : Foldable (@IkeV2GenericPayloadS) :=
-  Build_Foldable _ (foldr_genpay) foldMap_genpay.
+  Build_Foldable _ (foldr_genpay).
 
 Record IkeV2ProposalS {S} :=
   mk_proposal {
@@ -77,15 +76,10 @@ Definition foldr_propo A B (f : A -> B -> B) (b : B) ta : B :=
            | Some v => f v b
            | None => b
            end in
-  let s := List.fold_right (fun a l => foldMap (list A) _ (fun v => [v]) (snd a) ++ l)
-                             [] (values (proj1_sig (transforms ta))) in
-  List.fold_right f b s.
-
-Definition foldMap_propo M `(Monoid.Monoid M) {A} (f : A -> M) ta : M :=
-  foldr_propo _ _ (fun a b => Monoid.f (f a) b) Monoid.mempty ta.
+  foldr _ _ (fun va b => foldr _ _ f b va) b (transforms ta).
 
 Global Instance Foldable_IkeV2Proposal : Foldable (@IkeV2ProposalS) :=
-  Build_Foldable _ (foldr_propo) foldMap_propo.
+  Build_Foldable _ foldr_propo.
 
 Record KeyExchangePayloadS {S : Type} :=
   mk_ExcPayload {
@@ -97,7 +91,7 @@ Record KeyExchangePayloadS {S : Type} :=
 Definition KeyExchangePayload := @KeyExchangePayloadS span.
 
 Global Instance Foldable_KeyExchangePayload : Foldable (@KeyExchangePayloadS) :=
-  Build_Foldable _ (fun _ _ f b a => f (kex_data a) b) (fun _ _ _ _ f a => f (kex_data a)).
+  Build_Foldable _ (fun _ _ f b a => f (kex_data a) b).
 
 Record IdentificationType := mk_ident { ident : nat8 }.
 
@@ -112,7 +106,7 @@ Record IdentificationPayloadS {S : Type} :=
 Definition IdentificationPayload := @IdentificationPayloadS span.
 
 Global Instance Foldable_IdentificationPayload : Foldable (@IdentificationPayloadS) :=
-  Build_Foldable _ (fun _ _ f b a => f (ident_data a) b) (fun _ _ _ _ f a => f (ident_data a)).
+  Build_Foldable _ (fun _ _ f b a => f (ident_data a) b).
 
 Record CertificateEncoding := mk_certEnc { val_certEnc : nat8 }.
 
@@ -125,7 +119,7 @@ Record CertificatePayloadS {S : Type} :=
 Definition CertificatePayload := @CertificatePayloadS span.
 
 Global Instance Foldable_CertificatePayload : Foldable (@CertificatePayloadS) :=
-  Build_Foldable _ (fun _ _ f b a => f (cert_data a) b) (fun _ _ _ _ f a => f (cert_data a)).
+  Build_Foldable _ (fun _ _ f b a => f (cert_data a) b).
 
 Record CertificateRequestPayloadS {S : Type} :=
   mk_certReqPayload {
@@ -136,7 +130,7 @@ Record CertificateRequestPayloadS {S : Type} :=
 Definition CertificateRequestPayload := @CertificateRequestPayloadS span.
 
 Global Instance Foldable_CertificateRequestPayload : Foldable (@CertificateRequestPayloadS) :=
-  Build_Foldable _ (fun _ _ f b a => f (ca_dataReq a) b) (fun _ _ _ _ f a => f (ca_dataReq a)).
+  Build_Foldable _ (fun _ _ f b a => f (ca_dataReq a) b).
 
 Record AuthenticationMethod :=
   mk_authMethod {
@@ -159,7 +153,7 @@ Arguments mk_authPayload [S].
 Definition AuthenticationPayload := @AuthenticationPayloadS span.
 
 Global Instance Foldable_AuthenticationPayload : Foldable (@AuthenticationPayloadS) :=
-  Build_Foldable _ (fun _ _ f b a => f (auth_data a) b) (fun _ _ _ _ f a => f (auth_data a)).
+  Build_Foldable _ (fun _ _ f b a => f (auth_data a) b).
 
 Record NoncePayloadS {S : Type} :=
   mk_noncePayload {
@@ -171,7 +165,7 @@ Arguments mk_noncePayload [S].
 Definition NoncePayload := @NoncePayloadS span.
 
 Global Instance Foldable_NoncePayload : Foldable (@NoncePayloadS) :=
-  Build_Foldable _ (fun _ _ f b a => f (nonce_data a) b) (fun _ _ _ _ f a => f (nonce_data a)).
+  Build_Foldable _ (fun _ _ f b a => f (nonce_data a) b).
 
 Record NotifyPayloadS {S : Type} :=
   mk_notifyPayload {
@@ -195,11 +189,8 @@ Definition foldr_notifypay := fun A B (f : A -> B -> B) b a =>
                                      | None => b
                                      end).
 
-Definition foldmap_notify M `(Monoid.Monoid M) {A} (f : A -> M) ta : M :=
-  foldr_notifypay _ _ (fun a b => Monoid.f (f a) b) Monoid.mempty ta.
-
 Global Instance Foldable_NotifyPayload : Foldable (@NotifyPayloadS) :=
-  Build_Foldable _ foldr_notifypay foldmap_notify.
+  Build_Foldable _ foldr_notifypay.
 
 
 Record DeletePayloadS {S : Type} :=
@@ -215,19 +206,17 @@ Arguments mk_deletePayload [S].
 Definition DeletePayload := @DeletePayloadS span.
 
 Global Instance Foldable_DeletePayload : Foldable (@DeletePayloadS) :=
-  Build_Foldable _ (fun _ _ f b a => f (spiDel a) b) (fun _ _ _ _ f a => f (spiDel a)).
+  Build_Foldable _ (fun _ _ f b a => f (spiDel a) b).
 
 Record VendorIDPayloadS {S : Type} :=
-  mk_vendorIdPayload {
-      vendor_id : S
-    }.
+  mk_vendorIdPayload { vendor_id : S }.
 
 Arguments mk_vendorIdPayload [S].
 
 Definition VendorIDPayload := @VendorIDPayloadS span.
 
 Global Instance Foldable_VendorIDPayload : Foldable (@VendorIDPayloadS) :=
-  Build_Foldable _ (fun _ _ f b a => f (vendor_id a) b) (fun _ _ _ _ f a => f (vendor_id a)).
+  Build_Foldable _ (fun _ _ f b a => f (vendor_id a) b).
 
 Record TSType := mk_tstype { val_ts : nat8 }.
 
@@ -247,8 +236,7 @@ Arguments mk_trafficSelec [S].
 Definition TrafficSelector := @TrafficSelectorS span.
 
 Global Instance Foldable_TrafficSelector : Foldable (@TrafficSelectorS) :=
-  Build_Foldable _ (fun _ _ f b a => f (start_addr a) (f (end_addr a) b))
-                 (fun _ _ _ _ f a =>  Monoid.f (f (start_addr a)) (f (end_addr a))).
+  Build_Foldable _ (fun _ _ f b a => f (start_addr a) (f (end_addr a) b)).
 
 Definition ipv4_from_slice (s : span) : NomG Ipv4 :=
   let! a4 := read s 0 in
@@ -311,24 +299,17 @@ Arguments mk_tsp [S].
 Definition TrafficSelectorPayload := @TrafficSelectorPayloadS span.
 
 Definition foldr_trafficselectorpay A B (f : A -> B -> B) b a :=
-  let ts_list := List.fold_right f b (List.fold_right (fun a l => foldMap (list A) _ (fun v => [v]) (snd a) ++ l) [] (Vector.values (proj1_sig (ts a)))) in
-  f (reserved_tsp a) ts_list.
-
-
-Definition foldmap_trafficselectorpay M `(Monoid.Monoid M) {A} (f : A -> M) ta : M :=
-  foldr_trafficselectorpay _ _ (fun a b => Monoid.f (f a) b) Monoid.mempty ta.
-
+  foldr _ _ (fun va b => foldr _ _ f b va) (f (reserved_tsp a) b) (ts a).
 
 Global Instance Foldable_TrafficSelectorPayload : Foldable (@TrafficSelectorPayloadS) :=
-  Build_Foldable _ foldr_trafficselectorpay foldmap_trafficselectorpay.
+  Build_Foldable _ foldr_trafficselectorpay.
 
 Record EncryptedPayloadS {S} := mk_EncPay { spanEncPay : S }.
 
 Definition EncryptedPayload := @EncryptedPayloadS span.
 
 Global Instance Foldable_EncryptedPayload : Foldable (@EncryptedPayloadS) :=
-  Build_Foldable _ (fun _ _ f b a => f (spanEncPay a) b) (fun _ _ _ _ f a => f (spanEncPay a)).
-
+  Build_Foldable _ (fun _ _ f b a => f (spanEncPay a) b).
 
 Inductive IkeV2PayloadContentS {S : Type} :=
 | SA : VECTOR (@IkeV2ProposalS S) -> IkeV2PayloadContentS
@@ -354,7 +335,7 @@ Definition IkeV2PayloadContent := @IkeV2PayloadContentS span.
 Definition foldr_content {A B} (f : A -> B -> B) b ta :=
   match ta with
   | SA l =>
-    List.fold_right f b (List.fold_right (fun a l => foldMap (list A) _ (fun v => [v]) (snd a) ++ l) [] (Vector.values (`l)))
+      foldr _ _ (fun va b => foldr _ _ f b va) b l
   | CertificateRequestPC data | CertificatePC data | IDr data
   | NotifyPC data  | NoncePC data | AuthenticationPC data  | IDi data
   | TSr data | TSi data | VendorIDPC data | DeletePC data | KE data
@@ -363,11 +344,8 @@ Definition foldr_content {A B} (f : A -> B -> B) b ta :=
   | Dummy => b
   end.
 
-Definition foldMap_content M `(Monoid.Monoid M) {A} (f : A -> M) ta : M :=
-  foldr_content (fun a b => Monoid.f (f a) b) Monoid.mempty ta.
-
 Global Instance Foldable_IkeV2PayloadContentS : Foldable (@IkeV2PayloadContentS) :=
-  Build_Foldable _ (@foldr_content) (@foldMap_content).
+  Build_Foldable _ (@foldr_content).
 
 
 Record IkeV2PayloadS {S : Type} :=
@@ -383,11 +361,8 @@ Definition IkeV2Payload := @IkeV2PayloadS span.
 Definition foldr_payload {A B} (f : A -> B -> B) b ta :=
   foldr _ _ f (foldr _ _ f b (hdr ta)) (content ta).
 
-Definition foldMap_payload M `(Monoid.Monoid M) {A} (f : A -> M) ta : M :=
-  foldr_payload (fun a b => Monoid.f (f a) b) Monoid.mempty ta.
-
 Global Instance Foldable_IkeV2PayloadS : Foldable (@IkeV2PayloadS) :=
-  Build_Foldable _ (@foldr_payload) (@foldMap_payload).
+  Build_Foldable _ (@foldr_payload).
 
 Record IkeV2MessageS (S : Type) :=
   mk_message {
@@ -397,16 +372,8 @@ Record IkeV2MessageS (S : Type) :=
 
 Definition IkeV2Message := IkeV2MessageS span.
 
-Global Instance Foldable_IkeV2MessageS : Foldable (@IkeV2MessageS).
-constructor.
-intros A B f b message. destruct message as [hdr pay].
-eapply (@foldr (@IkeV2HeaderS)). eapply Foldable_IkeV2HeaderS. eapply f. 2 : eapply hdr.
-eapply (@foldr VECTOR). eapply Vector.Foldable_vector. 2 : eapply b. 2 : eapply pay.
-intros ike r. eapply (foldr _ _ f r ike).
-intros M sg monoid A app message. destruct message as [hdr pay].
-eapply (Monoid.f).
-eapply (@foldMap (@IkeV2HeaderS)). eapply Foldable_IkeV2HeaderS. auto. eauto. eapply hdr.
-eapply (@foldMap (@VECTOR)). eapply Foldable_vector. auto. 2 : eapply pay. intros ivp.
-eapply (@foldMap (@IkeV2PayloadS)). eapply Foldable_IkeV2PayloadS. auto. eapply app.
-eapply ivp.
-Defined.
+Definition fold_IkeV2Message {A B} (f : A -> B -> B) b (ta : IkeV2MessageS A) :=
+  foldr _ _ (fun va b => foldr _ _ f b va) (foldr _ _ f b (header _ ta)) (payloads _ ta).
+
+Global Instance Foldable_IkeV2MessageS : Foldable (@IkeV2MessageS) :=
+  Build_Foldable _ (@fold_IkeV2Message).
