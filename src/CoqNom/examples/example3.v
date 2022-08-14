@@ -15,19 +15,30 @@ Open Scope N_scope.
 Definition octet := N.
 Definition data := list octet.
 
+(* =DECODE= *)
 Inductive DECODE : Type -> Type :=
 | TakeOp : N -> DECODE span
 | ReadOp : span -> N -> DECODE octet
 | FailOp : forall {X}, DECODE X.
+(* =end= *)
 
+(* =Decodeur= *)
 Definition Decodeur := Free DECODE.
+(* =end= *)
 
+(* =take= *)
 Definition take (n : N) : Decodeur span := syntax_effect (TakeOp n).
+(* =end= *)
 
+(* =read= *)
 Definition read (s : span) (pos : N): Decodeur N := syntax_effect (ReadOp s pos).
+(* =end= *)
 
+(* =fail= *)
 Definition fail {X} : Decodeur X := syntax_effect FailOp.
+(* =end= *)
 
+(* =wp= *)
 Fixpoint wp {X} (m: Decodeur X) (Q : X -> iProp) : iProp :=
   match m with
   | ret v => Q v
@@ -35,6 +46,7 @@ Fixpoint wp {X} (m: Decodeur X) (Q : X -> iProp) : iProp :=
   | op (ReadOp s n) k => ∀ v , wp (k v) Q
   | op FailOp _ => True
   end.
+(* =end= *)
 
 Local Open Scope free_monad_scope.
 
@@ -117,23 +129,31 @@ Section Rules.
     iApply H; auto. iIntros; iFrame.
   Qed.
 
-  Lemma rule_fail H Q : {{ H }} fail {{ v; Q v }}.
-  Proof. auto. Qed.
+(* =rule_fail= *)
+Lemma rule_fail H Q : {{ H }} fail {{ v; Q v }}.
+(* =end= *)
+Proof. auto. Qed.
 
-  Lemma rule_read s res : {{ emp }} read s res {{ _; emp }}.
-  Proof. eauto. Qed.
+(* =rule_read= *)
+Lemma rule_read s res : {{ emp }} read s res {{ _; emp }}.
+(* =end= *)
+Proof. eauto. Qed.
 
-  Lemma rule_take n : {{ emp }} take n {{ v; IsFresh v }}.
-  Proof. simpl. eauto. Qed.
+(* =rule_take= *)
+Lemma rule_take n : {{ emp }} take n {{ v; IsFresh v }}.
+(* =end= *)
+Proof. simpl. eauto. Qed.
 
 End Rules.
 
+(* =packet_SSHS= *)
 Record packet_SSHS (S : Type) :=
   mk_ssh {
       packet_length : N;
       padding_length : N;
       payload : S;
       mac : S; }.
+(* =end= *)
 
 Arguments mk_ssh [S].
 Arguments packet_length [S].
@@ -141,10 +161,14 @@ Arguments padding_length [S].
 Arguments payload [S].
 Arguments mac [S].
 
+(* =packet_SSH= *)
 Definition packet_SSH := packet_SSHS span.
+(* =end= *)
 
-Definition fold_r {A B} (f : A -> B -> B) (b : B) (p : packet_SSHS A) : B :=
+(* =foldr= *)
+Definition foldr {A B} (f : A -> B -> B) (b : B) (p : packet_SSHS A) : B :=
   f (payload p) (f (mac p) b).
+(* =end= *)
 
 (* =decode_next= *)
 Definition decode_next : Decodeur N :=
