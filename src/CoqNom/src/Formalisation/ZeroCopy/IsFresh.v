@@ -7,6 +7,13 @@ Definition iProp := monPred biInd hpropI.
 
 Open Scope N_scope.
 
+Fail
+(* =IsFresh_aux= *)
+Equations IsFresh_aux (pos : N) (len : N): iProp :=
+  IsFresh_aux pos 0 := emp;
+  IsFresh_aux pos len := & pos ∗ IsFresh_aux (succ pos) (pred len).
+(* =end= *)
+
 Equations IsFresh_aux (pos : N) (len : N): iProp by wf (N.to_nat len) lt :=
   IsFresh_aux pos 0 := emp;
   IsFresh_aux pos len :=
@@ -15,7 +22,9 @@ Next Obligation.
   intros. lia.
 Defined.
 
+(* =IsFresh= *)
 Definition IsFresh (s : span) := IsFresh_aux (pos s) (len s).
+(* =end= *)
 
 (* IsFresh facts *)
 
@@ -104,15 +113,22 @@ Lemma IsFresh_spec : forall s0 s1,
     ⊢ IsFresh s0 -∗ IsFresh s1 -∗ ⌜disjoint s0 s1⌝.
 Proof.
   intros [p0 l0]. revert p0. induction l0 using N.peano_ind.
-  - simpl; iIntros. unfold disjoint. rewrite (inject_empty p0); auto. simpl. lia.
+  - simpl; iIntros. unfold disjoint, set_span.
+    rewrite (inject_empty p0); auto. simpl. lia.
   - simpl; iIntros. iNorm. iDestruct (IsFresh_len_succ with "HC") as "[HA HB]".
     iDestruct (single_IsFresh with "HA HE") as "%".
     iDestruct (IHl0 with "HB HE") as "%". simpl in H0. iPureIntro.
-    unfold disjoint; simpl. rewrite <- N.add_succ_comm. rewrite inject_add. 2 : lia.
+    unfold disjoint, set_span; simpl.
+    rewrite <- N.add_succ_comm. rewrite inject_add. 2 : lia.
     apply disjoint_union_l. split.
     + rewrite inject_singleton. apply disjoint_singleton_l. apply H.
     + eapply H0.
 Qed.
+
+Fail
+(* =IsFresh_spec= *)
+Lemma IsFresh_spec : forall s t, IsFresh s ∗ IsFresh t ⊢ ⌜disjoint s t⌝.
+(* =end= *)
 
 Definition M_to_list `{Foldable M} {X} (m : M X) : list X :=
   Foldable.foldr _ _ (fun a b => a :: b) [] m.

@@ -891,7 +891,7 @@ Ltac step := repeat clean_up; (* subst; *)
   | |- adequate _ length _ _ _ => eapply length_adequate
   | |- adequate _ (peek _) _ _ _ => eapply peek_adequate
   | |- adequate _ (ret ?v) _ _ _ =>
-      what_is v ltac:(fun v => eapply (ret_adequate _ _ _ v)); repeat econstructor; eauto
+      what_is v ltac:(fun v => eapply (ret_adequate _ _ _ _ v)); repeat econstructor; eauto
   end.
 
 (* =rest_spec= *)
@@ -939,7 +939,7 @@ Definition verify_adequate_sig {Y} h (hb : val Y -> VAL Bool) :
         adequate (verify_spec R hb b) (verify e b) code data s}.
   eapply exist. intros. unfold verify.
   repeat step. eauto. pose S := H1. eapply H in S. step.
-  eapply (ret_adequate _ _  _ (Var vres)). econstructor.
+  eapply (ret_adequate _ _  _ _ (Var vres)). econstructor.
   repeat split; auto. rewrite -H2. eapply (H vres r t H1).
   step.
 Defined.
@@ -1010,13 +1010,13 @@ Proof.
     repeat econstructor.
   rewrite P0. eapply H2. repeat split; auto. lia.
   intros.
-  eapply (ret_adequate _ _ _
+  eapply (ret_adequate _ _ _ _
             (EBin EPair (EBin EAdd (EUna EFst (Var rv)) (Const (ENat 1))) (Var vres))); repeat econstructor.
   simpl. rewrite P0. reflexivity. simpl. auto. simpl. lia. simpl. lia.
   simpl in *. destruct H3.
   change N with (val Nat) in vres.
   change (val Nat * type_to_Type Y)%type with (val (Pair Nat Y)) in vres.
-  eapply (ret_adequate _ _ _ (EUna ESnd (Var vres))); repeat econstructor. auto.
+  eapply (ret_adequate _ _ _ _ (EUna ESnd (Var vres))); repeat econstructor. auto.
 Defined.
 
 Lemma repeat_compt_Some_adequate (hon : VAL (Option Nat)) {Y} (h : val Nat -> val Y -> PHOASV Y) (hb : VAL Y) :
@@ -1040,7 +1040,7 @@ Definition repeat_compt_adequate_sig (hon : VAL (Option Nat)) {Y} (h : val Nat -
       adequate R (repeat_compt on e b) code data s}.
 Proof.
   eapply exist. intros. unfold repeat_compt.
-  step. eapply (repeat_adequate _ _ hon _ _ (EBin EPair (Const (ENat 0)) hb) _);
+  step. eapply (repeat_adequate _ _ hon (EBin EPair (Const (ENat 0)) hb) _);
     repeat econstructor; eauto.
   simpl. instantiate (1 := fun s x y => x.1 = y.1 /\ R s x.2 y.2). split; auto.
   intros. destruct H3. eapply bind_adequate.
@@ -1048,9 +1048,9 @@ Proof.
   repeat econstructor.
   rewrite H3. eapply H2; eauto.
   intros.
-  eapply (ret_adequate _ _ _ (EBin EPair (EBin EAdd (EUna EFst (Var rv)) (Const (ENat 1))) (Var vres))); repeat econstructor.
+  eapply (ret_adequate _ _ _ _ (EBin EPair (EBin EAdd (EUna EFst (Var rv)) (Const (ENat 1))) (Var vres))); repeat econstructor.
   simpl. lia. simpl. auto.
-  eapply (ret_adequate _ _ _ (EUna ESnd (Var vres))); repeat econstructor. simpl in *.
+  eapply (ret_adequate _ _ _ _ (EUna ESnd (Var vres))); repeat econstructor. simpl in *.
   destruct H3. auto.
 Defined.
 
@@ -1092,7 +1092,7 @@ Definition tag_adequate_sig (hs : VAL String) :
   intros. destruct H0 as [[P5 P6] [P3 P4]]. subst. step.
   eapply read_adequate. auto. eapply SVar. eapply SVar. lia.
   clean_up. subst. eapply string_get_lt in H1. destruct H1. rewrite H0.
-  eapply (ret_adequate _ _ _
+  eapply (ret_adequate _ _ _ _
             (EBin EAnd
                (Var vx)
                (EBin EEq (EUna EVal (Var vres0))
@@ -1101,7 +1101,7 @@ Definition tag_adequate_sig (hs : VAL String) :
   repeat split; auto. clean_up. subst.
   eapply ite_adequate.
   eapply SVar.
-  - intro. eapply (ret_adequate _ _ _ (Var vres)); repeat econstructor. lia.
+  - intro. eapply (ret_adequate _ _ _ _ (Var vres)); repeat econstructor. lia.
   - intro. step.
 Defined.
 
@@ -1158,7 +1158,7 @@ Proof.
   eapply exist. intros. unfold be_u16.
   repeat step; repeat econstructor; eauto.
   1-2 : eapply be_u8_adequate. be_spec_clean. subst.
-  eapply (ret_adequate _ _ _ (EBin EpTo2p (Var vres) (Var vres0)));
+  eapply (ret_adequate _ _ _ _ (EBin EpTo2p (Var vres) (Var vres0)));
   repeat econstructor. lia.
 Defined.
 
@@ -1171,7 +1171,7 @@ Definition be_u32_adequate_sig :
 Proof.
   eapply exist. intros. unfold be_u32. repeat step.
   1-2 : eapply be_u16_adequate. be_spec_clean. subst.
-  eapply (ret_adequate _ _ _ (EBin EpTo2p (Var vres) (Var vres0)));
+  eapply (ret_adequate _ _ _ _ (EBin EpTo2p (Var vres) (Var vres0)));
   repeat econstructor. lia.
 Defined.
 
@@ -1192,7 +1192,7 @@ Proof.
     repeat econstructor; eauto.
   intros. eapply string_get_lt in H2. destruct H2. rewrite H2.
   repeat clean_up. subst.
-  eapply (ret_adequate _ _ _ (EBin EAnd
+  eapply (ret_adequate _ _ _ _ (EBin EAnd
                                 (Var vx)
                                 (EUna ENot
                                    (EBin EEq
@@ -1219,7 +1219,7 @@ Definition is_not_adequate_sig (hs : VAL String) :
           (is_not str) code data s}.
   eapply exist. intros. unfold is_not.
   eapply consequence_adequate. eapply (recognize_adequate Unit).
-  eapply (repeat_adequate _ _ (Const ENone) _ _ (Const EUnit)); repeat econstructor; eauto.
+  eapply (repeat_adequate _ _ (Const ENone) (Const EUnit)); repeat econstructor; eauto.
   intros. step. eapply be_u8_adequate. be_spec_clean. subst.
   repeat step; repeat econstructor; eauto.
   eapply (value_not_in_string_adequate (Var vres) hs); repeat econstructor; eauto.
@@ -1245,7 +1245,7 @@ Definition char_adequate_sig (hn : VAL (NatN 8)) :
   step. eapply be_u8_adequate. be_spec_clean. subst.
   eapply (ite_adequate _ _ (EBin EEq (EUna EVal (Var vres)) (EUna EVal hn)));
     repeat econstructor. auto.
-  - intro. eapply (ret_adequate _ _ _ hn). eauto. split; auto.
+  - intro. eapply (ret_adequate _ _ _ _ hn). eauto. split; auto.
   - intro. step.
 Defined.
 
@@ -1337,8 +1337,8 @@ Definition cond_adequate_sig {Y} (hb : VAL Bool) (h : PHOAS Y) :
   eapply exist. intros. unfold cond.
   eapply (ite_adequate _ _ hb); auto.
   - intro. step. eapply H0. auto.
-    eapply (ret_adequate _ _ _ (EUna ESome (Var vres))); repeat econstructor; eauto.
-  - intro. eapply (ret_adequate _ _ _ (Const ENone)); repeat econstructor; eauto.
+    eapply (ret_adequate _ _ _ _ (EUna ESome (Var vres))); repeat econstructor; eauto.
+  - intro. eapply (ret_adequate _ _ _ _ (Const ENone)); repeat econstructor; eauto.
 Defined.
 
 Lemma cond_adequate {Y} (hb : VAL Bool) h :
@@ -1385,7 +1385,7 @@ Definition many1_adequate_sig {Y} (h : PHOAS Y) :
   eapply (ite_adequate _ _ (EBin EEq (Var vres) (Var vres1))). subst. repeat econstructor.
   - intro. step.
   - intro.
-    eapply (repeat_adequate _ _ (Const ENone) _ _ (EBin EAddVec (EUna EMake (Const (ENat 2))) (Var vres0))).
+    eapply (repeat_adequate _ _ (Const ENone) (EBin EAddVec (EUna EMake (Const (ENat 2))) (Var vres0))).
     1-3 : subst; repeat econstructor; eauto.
     inversion_clear H2.  simpl in *. auto. inversion_clear H3.
     inversion_clear H2.  simpl in *. auto. inversion_clear H3.
@@ -1398,7 +1398,7 @@ Definition many1_adequate_sig {Y} (h : PHOAS Y) :
     eapply bind_adequate. step. intros. repeat clean_up.
     eapply (ite_adequate _ _ (EBin EEq (Var vres2) (Var vres4))). subst. repeat econstructor.
     intro. step.
-    intro. eapply (ret_adequate _ _ _ (EBin EAddVec (Var rv) (Var vres3))).
+    intro. eapply (ret_adequate _ _ _ _ (EBin EAddVec (Var rv) (Var vres3))).
     repeat econstructor; eauto.
     eapply test; auto.
 Defined.

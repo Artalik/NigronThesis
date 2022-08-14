@@ -1,8 +1,13 @@
 From Formalisation Require Import Inject Span.
 
-Definition disjoint (s t : span) :=
-  inject (pos s) (pos s + len s) ## inject (pos t) (pos t + len t).
 
+(* =set_span= *)
+Definition set_span (s : span) := inject (pos s) (pos s + len s).
+(* =end= *)
+
+(* =disjoint= *)
+Definition disjoint (s t : span) : Prop := set_span s ## set_span t.
+(* =end= *)
 
 Lemma disjoint_sym : forall s t, disjoint s t -> disjoint t s.
 Proof. unfold disjoint. intros. apply disjoint_sym. auto. Qed.
