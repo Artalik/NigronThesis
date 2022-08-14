@@ -1,21 +1,40 @@
 Require Import FunctionalExtensionality.
 
-Inductive Free (SIG : Type -> Type) X :=
+(* =Free= *)
+Inductive Free (SIG : Type -> Type) (X : Type) : Type :=
 | ret : X -> Free SIG X
 | op : forall Y, SIG Y -> (Y -> Free SIG X) -> Free SIG X.
+(* =end= *)
 
 Arguments ret [SIG X] _.
 Arguments op [SIG X Y].
 
-Fixpoint bind {SIG X Y} (m: Free SIG X)(f: X -> Free SIG Y): Free SIG Y :=
+Section bind.
+
+  Context {SIG : Type -> Type}.
+  Context {X Y : Type}.
+
+(* =bind= *)
+Fixpoint bind (m : Free SIG X) (f : X -> Free SIG Y) : Free SIG Y :=
   match m with
   | ret v => f v
-  | op e k => op e (fun n => bind (k n) f)
+  | op e k => op e (fun v => bind (k v) f)
   end.
+(* =end= *)
+End bind.
 
 Arguments bind [_][_] [_] m f.
 
-Definition syntax_effect {SIG X} (m : SIG X) : Free SIG X := op m (@ret SIG X).
+Section syntax_effect.
+
+  Context {SIG : Type -> Type}.
+  Context {X : Type}.
+
+(* =syntax_effect= *)
+Definition syntax_effect (m : SIG X) : Free SIG X := op m (@ret SIG X).
+(* =end= *)
+
+End syntax_effect.
 
 Definition bind2 {SIG} {A B C: Type} (x: Free SIG (A * B)) (f: A -> B -> Free SIG C) : Free SIG C :=
   bind x (fun p => f (fst p) (snd p)).
@@ -30,8 +49,10 @@ Notation "'do' X <- A ; B" := (bind A (fun X => B))
 Notation "'do' ( X , Y ) <- A ; B" := (bind2 A (fun X Y => B))
    (at level 200, X name, Y name, A at level 100, B at level 200) : free_monad_scope.
 
-Notation "'let!' x ':=' e1 'in' e2" :=
-  (bind e1 (fun x => e2)) (x name, at level 50) : free_monad_scope.
+(* =notation_bind= *)
+Notation "'let!' x ':=' m 'in' k" := (bind m (fun x => k))
+(* =end= *)
+                                         (x name, at level 50) : free_monad_scope.
 
 Notation "'let!' ( X , Y ) ':=' A 'in' B" := (bind2 A (fun X Y => B))
      (at level 50, X name, Y name): free_monad_scope.

@@ -2,44 +2,70 @@ From iris Require Export bi.bi proofmode.tactics proofmode.monpred.
 
 From stdpp Require Export mapset gmap.
 
-Definition pred_incl {A} (P Q : A -> Prop) := forall x, P x -> Q x.
-
-Definition pred_impl {A} (P Q : A -> Prop) := fun x => P x -> Q x.
-
-Notation "P ==> Q" := (pred_incl P Q).
 
 Section hprop.
 
   (* Operators *)
-  Definition hprop := gset positive -> Prop.
 
-  Definition hand (H1 H2 : hprop) : hprop :=
-    fun h => H1 h /\ H2 h.
+(* =hprop= *)
+Definition hprop := gset positive -> Prop.
+(* =end= *)
 
-  Definition hor (H1 H2 : hprop) : hprop := fun h => H1 h \/ H2 h.
+(* =entails= *)
+Definition entails (P Q : hprop) : Prop := forall h, P h -> Q h.
+(* =end= *)
 
-  Definition hempty : hprop := fun h => h = ∅.
+Notation "P ==> Q" := (entails P Q).
 
-  Definition hsingle `{_ : Countable X} (l : X) : hprop :=
-    fun h =>  h = {[ encode l ]}.
+(* =himpl= *)
+Definition himpl (P Q : hprop) := fun h => P h -> Q h.
+(* =end= *)
 
-  Definition set_ctx (ctx : gset positive) : hprop := fun h => h = ctx.
+(* =hand= *)
+Definition hand (P Q : hprop) : hprop := fun h => P h /\ Q h.
+(* =end= *)
 
-  Definition hstar (H1 H2 : hprop) : hprop :=
-    fun h => exists h1 h2, H1 h1 /\ H2 h2 /\ h1 ## h2 /\ h = h1 ∪ h2.
+(* =hor= *)
+Definition hor (P Q : hprop) : hprop := fun h => P h \/ Q h.
+(* =end= *)
 
-  Definition hexists {A} (J : A -> hprop) : hprop := fun h => exists a, J a h.
-  Definition hforall {A} (J : A -> hprop) : hprop := fun h => forall a, J a h.
+(* =hempty= *)
+Definition hempty : hprop := fun h => h = ∅.
+(* =end= *)
 
-  Definition hpure (P : Prop) : hprop := fun _ => P.
+(* =hsingle= *)
+Definition hsingle `{Countable X} (l : X) : hprop :=
+  fun h =>  h = {[ encode l ]}.
+(* =end= *)
 
-  Definition hpure_aff (P:Prop) : hprop := fun h => P /\ hempty h.
+(* =set_ctx= *)
+Definition set_ctx (ctx : gset positive) : hprop := fun h => h = ctx.
+(* =end= *)
 
-  Definition hwand (H1 H2 : hprop) : hprop :=
-    hexists (fun (H:hprop) => (hstar H (hpure_aff ((hstar H H1) ==> H2)))).
+(* =hstar= *)
+Definition hstar (P Q : hprop) : hprop :=
+  fun h => exists h1 h2, P h1 /\ Q h2 /\ h1 ## h2 /\ h = h1 ∪ h2.
+(* =end= *)
 
-  Definition qwand A (Q1 Q2:A->hprop) :=
-    hforall (fun x => hwand (Q1 x) (Q2 x)).
+(* =hexist= *)
+Definition hexist {A} (J : A -> hprop) : hprop := fun h => exists a, J a h.
+(* =end= *)
+
+(* =hforal= *)
+Definition hforal {A} (J : A -> hprop) : hprop := fun h => forall a, J a h.
+(* =end= *)
+
+(* =hpure= *)
+Definition hpure (P : Prop) : hprop := fun _ => P.
+(* =end= *)
+
+Definition hpure_aff (P:Prop) : hprop := fun h => P /\ hempty h.
+
+Definition hwand (H1 H2 : hprop) : hprop :=
+  hexist (fun (H:hprop) => (hstar H (hpure_aff ((hstar H H1) ==> H2)))).
+
+Definition qwand A (Q1 Q2:A->hprop) :=
+  hforal (fun x => hwand (Q1 x) (Q2 x)).
 
   Lemma hempty_intro : hempty ∅.
   Proof using. reflexivity. Qed.
@@ -48,7 +74,7 @@ Section hprop.
 
   Local Notation "h1 \u h2" := (h1 ∪ h2) (at level 37, right associativity).
 
-  Local Notation "'Hexists' x1 , H" := (hexists (fun x1 => H))
+  Local Notation "'Hexists' x1 , H" := (hexist (fun x1 => H))
                                          (at level 39, x1 name, H at level 50).
   Local Notation "'Hexists' x1 x2 , H" := (Hexists x1, Hexists x2, H)
                                             (at level 39, x1 name, x2 name, H at level 50).
@@ -106,8 +132,8 @@ Section hprop.
 
 
   Program Canonical Structure hpropI : bi :=
-    Bi hprop _ _ pred_incl hempty hpure hand hor
-       pred_impl (@hforall) (@hexists) hstar hwand hpersistent hlater _ _ _ _.
+    Bi hprop _ _ entails hempty hpure hand hor
+       himpl (@hforal) (@hexist) hstar hwand hpersistent hlater _ _ _ _.
   Next Obligation.
     repeat split; try(solve_proper); eauto.
     - intros H h P. assumption.
@@ -134,10 +160,10 @@ Section hprop.
     - intros. inversion_star h P. exists h0, h1. repeat split; auto. apply H; auto. apply H0; auto.
     - rewrite /hwand. repeat intro. destruct H1. inversion_star h P.
       exists x1, h0, h1. destruct P1. repeat split; auto. repeat intro. inversion_star h P.
-      apply H0. apply H2. exists h2, h3. repeat split; auto. apply H. auto.
+      apply H0. apply H2. exists h3, h4. repeat split; auto. apply H. auto.
     - rewrite /hwand. repeat intro. destruct H1. inversion_star h P.
       exists x1, h0, h1. destruct P1. repeat split; auto. repeat intro. inversion_star h P.
-      apply H0. apply H2. exists h2, h3. repeat split; auto. apply H. auto.
+      apply H0. apply H2. exists h3, h4. repeat split; auto. apply H. auto.
     - intro. apply H. apply H0.
     - intro. apply H. apply H0.
     - rewrite /hpure. intros φ P imp h P0. apply imp; auto.
@@ -181,7 +207,7 @@ Section hprop.
     repeat split; try(solve_proper); eauto.
     - intro. apply H. auto.
     - intro. apply H. auto.
-    - intros A Φ h a. rewrite /hlater. unfold hforall in *. unfold hlater in a. apply a.
+    - intros A Φ h a. rewrite /hlater. unfold hforal in *. unfold hlater in a. apply a.
     - intros A Φ h a. rewrite /hor. unfold hlater in *. destruct a. right. exists x. apply H.
     - intros Hp h P. unfold hlater in *. right. intro. apply P.
   Defined.
@@ -210,23 +236,29 @@ Section hprop.
   Local Notation "'&&' l" :=
     (ctx l) (at level 20) : bi_scope.
 
-  Local Notation "'&' l" :=
-    (single l) (at level 20) : bi_scope.
+Local Notation "'&' l" :=
+  (single l) (at level 20) : bi_scope.
 
-  Lemma singleton_neq `{count : Countable X} : forall (l l' : X), ⊢ & l -∗ & l' -∗ ⌜l ≠ l'⌝.
-  Proof.
-    MonPred.unseal. split. MonPred.unseal. repeat red. intros. destruct i. destruct a. clear H0.
-    inv H. exists emp, empty, empty. repeat split; auto.
-    intros h H j C. clear C. clear j. inversion_star h P. clear H. inv P0. clear P2.
-    red in P1. rewrite union_empty_l_L. exists (set_ctx h1), h1, empty.
-    repeat split; eauto. subst. intros h H eq. inversion_star h P. clear H.
-    red in P1. red in P0. subst. erewrite disjoint_singleton_l in P2. apply P2.
-    apply lookup_singleton. apply disjoint_empty_r. rewrite union_empty_r_L. auto.
-    apply disjoint_empty_r. rewrite union_empty_r_L. auto.
-  Qed.
+(* =singleton_neq= *)
+Lemma singleton_neq `{Countable X} : forall (l l' : X), ⊢ & l -∗ & l' -∗ ⌜l ≠ l'⌝.
+(* =end= *)
+Proof.
+  MonPred.unseal. rename H into count.
+  split. MonPred.unseal. repeat red. intros. destruct i. destruct a. clear H0.
+  inv H. exists emp, empty, empty. repeat split; auto.
+  intros h H j C. clear C. clear j. inversion_star h P. clear H. inv P0. clear P2.
+  red in P1. rewrite union_empty_l_L. exists (set_ctx h1), h1, empty.
+  repeat split; eauto. subst. intros h H eq. inversion_star h P. clear H.
+  red in P1. red in P0. subst. erewrite disjoint_singleton_l in P2. apply P2.
+  apply lookup_singleton. apply disjoint_empty_r. rewrite union_empty_r_L. auto.
+  apply disjoint_empty_r. rewrite union_empty_r_L. auto.
+Qed.
 
-  Lemma singleton_neq_2 `{Countable X} : forall (v t : X), & v ∗ & t ⊢ ⌜v ≠ t⌝.
-  Proof. iIntros (v t) "[HA HB]". iApply (singleton_neq with "HA HB"). Qed.
+Fail
+(* =singleton_neq_2= *)
+Lemma singleton_neq `{Countable X} : forall (v t : X), & v ∗ & t ⊢ ⌜v ≠ t⌝.
+(* =end= *)
+(* Proof. iIntros (v t) "[HA HB]". iApply (singleton_neq with "HA HB"). Qed. *)
 
   Lemma emp_trivial : ⊢ (emp : monPred biInd hpropI). simpl. auto. Qed.
 
@@ -266,17 +298,20 @@ Section hprop.
   Lemma soundness_pure_2 h (Φ : Prop) : (⌜ Φ ⌝ : monPred biInd hpropI) () h -> Φ.
   Proof. MonPred.unseal. auto. Qed.
 
-  Lemma soundness_pure h (Φ : Prop) : (&& h ⊢ (⌜ Φ ⌝) : monPred biInd hpropI) -> Φ.
-  Proof.
-    MonPred.unseal=> -[H]. repeat red in H.
-    pose (e := H () h). eapply e. reflexivity.
-  Qed.
+
+(* =soundness_pure= *)
+Lemma soundness_pure h (P : Prop) : (&& h ⊢ ⌜ P ⌝) -> P.
+(* =end= *)
+Proof.
+  MonPred.unseal=> -[H]. repeat red in H.
+  pose (e := H () h). eapply e. reflexivity.
+Qed.
 
 
-  Lemma pure_soundness (Φ : Prop) : (⊢ ⌜ Φ ⌝ : monPred biInd hpropI) -> Φ.
-  Proof.
-    intros. eapply (soundness_pure ∅). iIntros "_". iApply H.
-  Qed.
+Lemma pure_soundness (Φ : Prop) : (⊢ ⌜ Φ ⌝ : monPred biInd hpropI) -> Φ.
+Proof.
+  intros. eapply (soundness_pure ∅). iIntros "_". iApply H.
+Qed.
 
   Definition iProp := monPred biInd hpropI.
 
@@ -294,9 +329,9 @@ Section hprop.
 
   Lemma completeness (Φ : iProp) h : Φ () h -> (⊢&& h -∗ Φ).
   Proof.
-    MonPred.unseal. split. MonPred.unseal. simpl. repeat red. intros. exists emp. exists x; exists empty.
+    MonPred.unseal. split. MonPred.unseal. simpl. repeat red. intros. exists emp. exists h0; exists empty.
     repeat split; auto.
-    intros h0 P0. inversion_star h P. simpl in *. rewrite <- P2 in *. inversion P1.
+    intros h1 P0. inversion_star h P. simpl in *. rewrite <- P2 in *. inversion P1.
     subst. rewrite union_empty_l_L. rewrite <- P2. destruct a. apply H.
     apply disjoint_empty_r. rewrite union_empty_r_L. auto.
   Qed.

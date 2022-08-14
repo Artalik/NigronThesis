@@ -6,37 +6,59 @@ Import N.
 
 Open Scope N_scope.
 
+(* =octet= *)
 Definition octet := N.
+(* =end= *)
 
+(* =data= *)
 Definition data := list octet.
+(* =end= *)
 
+(* =Decodeur= *)
 Definition Decodeur X := data -> option (X * data).
+(* =end= *)
 
+(* =decode= *)
 Definition decode {X} (d : Decodeur X) (l : data) : option X :=
   match d l with
   | None => None
   | Some (v, _) => Some v
   end.
+(* =end= *)
 
-Definition fmap {X Y} (f : X -> Y) (e : Decodeur X) : Decodeur Y :=
-  fun d => match e d with
-           | None => None
-           | Some (v, s) => Some (f v, s)
-           end.
+Section fmap.
 
+  Context {X Y : Type}.
 
+(* =fmap= *)
+Definition fmap (f : X -> Y) (e : Decodeur X) : Decodeur Y :=
+  fun s =>
+    match e s with
+    | None => None
+    | Some (v, s) => Some (f v, s)
+    end.
+(* =end= *)
+
+End fmap.
+
+(* =decode_pair= *)
 Definition decode_pair : Decodeur (octet * octet) :=
   fun d =>
     match d with
     | [_] | [] => None
     | e0 :: e1 :: t => Some ((e0, e1), t)
     end.
+(* =end= *)
 
+(* =decode_add= *)
 Definition decode_add : Decodeur N :=
   fmap (fun v => fst v + snd v) decode_pair.
+(* =end= *)
 
+(* =decode_mult= *)
 Definition decode_mult : Decodeur N :=
   fmap (fun v => fst v * snd v) decode_pair.
+(* =end= *)
 
 Reset decode_pair.
 
@@ -54,16 +76,29 @@ Proof.
   intros. destruct (x x0) as [[v s]|]; reflexivity.
 Qed.
 
-Definition app {X Y} (f : Decodeur (X -> Y)) (x : Decodeur X) : Decodeur Y :=
-  fun s => match f s with
-           | None => None
-           | Some (f,s) => fmap f x s
-           end.
+Section app.
 
-Notation " f '<*>' g" := (app f g)(at level 50).
+  Context {X Y : Type}.
 
+(* =app= *)
+Definition app (f : Decodeur (X -> Y)) (x : Decodeur X) : Decodeur Y :=
+  fun s =>
+    match f s with
+    | None => None
+    | Some (f,s) => fmap f x s
+    end.
+(* =end= *)
+
+End app.
+
+(* =app_notation= *)
+Notation " f '<*>' g" := (app f g)
+(* =end= *)
+                           (at level 50).
+
+(* =pure= *)
 Definition pure {X} : X -> Decodeur X := fun x s => Some (x,s).
-
+(* =end= *)
 
 Lemma app_id : forall X (v : Decodeur X), pure id <*> v = v.
 Proof. intros. unfold app, pure. eapply fmap_id. Qed.
@@ -88,21 +123,34 @@ Proof.
   destruct (w s1) as [[v2 s2]|]; auto.
 Qed.
 
+(* =decode_next= *)
 Definition decode_next : Decodeur octet :=
-  fun d =>
-    match d with
+  fun s =>
+    match s with
     | [] => None
     | h :: t => Some (h, t)
     end.
+(* =end= *)
 
+(* =decode_pair2= *)
 Definition decode_pair : Decodeur (octet * octet) :=
   pure (fun a b => (a,b)) <*> decode_next <*> decode_next.
+(* =end= *)
 
-Definition bind {X Y} (d : Decodeur X) (f : X -> Decodeur Y) : Decodeur Y :=
-  fun s => match d s with
-           | None => None
-           | Some (v,s) => f v s
-           end.
+Section bind.
+
+  Context {X Y : Type}.
+
+(* =bind= *)
+Definition bind (d : Decodeur X) (f : X -> Decodeur Y) : Decodeur Y :=
+  fun s =>
+    match d s with
+    | None => None
+    | Some (v,s) => f v s
+    end.
+(* =end= *)
+
+End bind.
 
 Notation "'let!' v ':=' f 'in' g" := (bind f (fun v => g))(at level 50).
 Notation "'ret!' v" := (pure v)(at level 50).
@@ -126,11 +174,15 @@ Proof.
   intros. destruct (v x) as [[v0 s]|]; reflexivity.
 Qed.
 
+(* =to_u32= *)
 Definition to_u32 (a0 a1 a2 a3 : octet) : N :=
   a0 * (N.pow 2 32) + a1 * (N.pow 2 16) + a2  * (N.pow 2 8) + a3.
+(* =end= *)
 
+(* =decode_packet_length= *)
 Definition decode_packet_length : Decodeur N :=
   pure to_u32 <*> decode_next <*> decode_next <*> decode_next <*> decode_next.
+(* =end= *)
 
 Equations take (n : N) (l : list N): option (list octet * list N) by wf (N.to_nat n) Nat.lt :=
   take 0 l := (ret! []) l;
@@ -147,17 +199,21 @@ Next Obligation.
   lia.
 Defined.
 
-(* Equations take (n : N) : Decodeur data by wf (N.to_nat n) Nat.lt := *)
-(*   take 0 := ret! []; *)
-(*   take n := *)
-(*     let! v := decode_next in *)
-(*     let! vs := take (pred n) in *)
-(*     ret! (v :: vs). *)
-(* Next Obligation. *)
-(* Abort. *)
+Fail
+(* =take= *)
+Equations take (n : N) : Decodeur data :=
+  take 0 := ret! [];
+  take n :=
+    let! v := decode_next in
+    let! vs := take (pred n) in
+    ret! (v :: vs).
+(* =end= *)
 
+(* =fail= *)
 Definition fail {X} : Decodeur X := fun _ => None.
+(* =end= *)
 
+(* =decode_payload_SSH= *)
 Definition decode_payload_SSH : Decodeur data :=
   let! packet_length := decode_packet_length in
   let! padding_length := decode_next in
@@ -168,3 +224,4 @@ Definition decode_payload_SSH : Decodeur data :=
     ret! payload
   else
     fail.
+(* =end= *)

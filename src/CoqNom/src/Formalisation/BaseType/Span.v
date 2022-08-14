@@ -2,7 +2,9 @@ From stdpp Require Import numbers.
 
 Open Scope N_scope.
 
-Record span : Set := mk_span {pos : N; len : N}.
+(* =span= *)
+Record span := mk_span {pos : N; len : N}.
+(* =end= *)
 
 Definition eq_dec (s0 s1 : span) : {s0 = s1} + {s0 <> s1}.
   destruct s0 as [pos0 len0]. destruct s1 as [pos1 len1].
