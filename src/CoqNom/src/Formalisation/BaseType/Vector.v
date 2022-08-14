@@ -92,12 +92,10 @@ Definition lt_dec (n0 n1 : N) : {n0 < n1} + {n1 <= n0}.
   - apply N.ltb_ge in P. right. exact P.
 Defined.
 
+(* =vector= *)
 Record vector A :=
-  mk_vector {
-      capacity : N;
-      size : N;
-      values : values A
-    }.
+  mk_vector { capacity : N; size : N; values : values A }.
+(* =end= *)
 
 Arguments capacity {A}.
 Arguments size {A}.

@@ -2,7 +2,9 @@ From stdpp Require Import numbers.
 From Formalisation Require Import Axioms.
 Open Scope N_scope.
 
+(* =natN= *)
 Record natN (len : N) : Set := mk_natN { val : N ; len_correct : val < 2 ^ len}.
+(* =end= *)
 
 Arguments val [len].
 

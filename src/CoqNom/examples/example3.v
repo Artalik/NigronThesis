@@ -181,7 +181,9 @@ Definition decode_next : Decodeur N :=
   read s 0.
 (* =end= *)
 
+(* =rule_next= *)
 Lemma rule_next : {{ emp }} decode_next {{ _; True }}.
+(* =end= *)
 Proof.
   eapply rule_bind.
   eapply rule_take.
@@ -199,7 +201,9 @@ Definition decode_u32 :=
   ret (to_u32 a b c d).
 (* =end= *)
 
+(* =rule_u32= *)
 Lemma rule_u32 : {{ emp }} decode_u32 {{ _; True }}.
+(* =end= *)
 Proof.
   eapply rule_bind.
   eapply rule_next.
@@ -229,7 +233,10 @@ Definition decode_packet_SSH : Decodeur packet_SSH :=
     fail.
 (* =end= *)
 
-Lemma rule_decode_packet_SSH : {{ emp }} decode_packet_SSH {{ v; <absorb> all_disjointMSL v }}.
+(* =rule_decode_packet_SSH= *)
+Lemma rule_decode_packet_SSH :
+  {{ emp }} decode_packet_SSH {{ v; <absorb> all_disjointMSL v }}.
+(* =end= *)
 Proof.
   eapply rule_bind.
   eapply rule_u32.
@@ -254,7 +261,12 @@ Qed.
 
 Close Scope free_monad_scope.
 
-Fixpoint eval {X} (m : Decodeur X) : DecodeurM X :=
+Section eval.
+
+  Context {X : Type}.
+
+(* =eval= *)
+Fixpoint eval (m : Decodeur X) : DecodeurM X :=
   match m with
   | ret v => ret! v
   | op (TakeOp n) k =>
@@ -263,14 +275,26 @@ Fixpoint eval {X} (m : Decodeur X) : DecodeurM X :=
   | op (ReadOp s pos) k =>
       let! v := readM s pos in
       eval (k v)
-  | op FailOp _ => failM
+  | op FailOp _ =>
+      failM
   end.
+(* =end= *)
 
-Definition decode {X} (d : Decodeur X) (data : data) : option X :=
+End eval.
+
+Section decode.
+
+  Context {X : Type}.
+
+(* =decode= *)
+Definition decode (d : Decodeur X) (data : data) : option X :=
   match eval d data (mk_span 0 (length data)) with
   | Some (v, _) => Some v
   | _ => None
   end.
+(* =end= *)
+
+End decode.
 
 Lemma eval_monotone : forall X (e : Decodeur X) s1 s2 a v,
     eval e a s1 = Some (v, s2) ->
@@ -289,11 +313,13 @@ Proof.
   - inversion H.
 Qed.
 
+(* =soundness= *)
 Lemma soundness : forall X d H (Q : X -> iProp),
     {{ H }} d {{v ; Q v }} ->
     forall data s (v : X) s',
       eval d data s = Some (v, s') ->
       H ∗ injectSL (pos s) (pos s') ⊢ Q v.
+(* =end= *)
 Proof.
   fix IH 2.
   destruct d as [v | Y []]; simpl; intros.
@@ -355,12 +381,17 @@ Proof.
     + iApply (D with "HB").
 Qed.
 
+Section adequacy.
 
-Theorem adequacy : forall X d (Q : X -> Prop),
+  Context {X : Type}.
+
+(* =adequacy= *)
+Theorem adequacy : forall d (Q : X -> Prop),
     {{ emp }} d {{ v; ⌜Q v⌝ }} ->
     forall data v,
       decode d data = Some v ->
       Q v.
+(* =end= *)
 Proof.
   intros. unfold decode in H0.
   destruct (eval d data0) as  [[r s]| ] eqn:?. 2 : inversion H0.
@@ -368,3 +399,5 @@ Proof.
   iIntros "HA". iApply (soundness _ d emp (fun v => ⌜ Q v ⌝)); eauto.
   iSplitR; auto. simpl. iApply lemma_final; eauto.
 Qed.
+
+End adequacy.

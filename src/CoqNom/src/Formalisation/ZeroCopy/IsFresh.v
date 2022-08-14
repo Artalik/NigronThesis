@@ -139,11 +139,15 @@ Definition M_to_list `{Foldable M} {X} (m : M X) : list X :=
 Definition all_disjointSL (l : list span) := [∗ list] v ∈ l, IsFresh v.
 (* =end= *)
 
+(* =all_disjointMSL= *)
 Definition all_disjointMSL `{Foldable M} (m : M span) : iProp :=
   all_disjointSL (M_to_list m).
+(* =end= *)
 
-Definition all_disjointM {M} `{Foldable M} (m : M span) : Prop :=
+(* =all_disjointM= *)
+Definition all_disjointM `{Foldable M} (m : M span) : Prop :=
   all_disjoint (M_to_list m).
+(* =end= *)
 
 Lemma all_disjoint_SL_to_Prop : forall l, <absorb> all_disjointSL l ⊢ ⌜ all_disjoint l ⌝.
 Proof.
@@ -170,6 +174,6 @@ Proof. iIntros "* HA". iApply (all_disjoint_SL_to_Prop with "HA"). Qed.
 
 (* =all_disjointM_spec= *)
 Theorem all_disjointM_spec `{Foldable M} m :
-    all_disjointSL (M_to_list m) ⊢ ⌜ all_disjoint (M_to_list m) ⌝.
+    all_disjointMSL m ⊢ ⌜ all_disjointM m ⌝.
 (* =end= *)
 Proof. iIntros "* HA". iApply (all_disjoint_SL_to_Prop with "HA"). Qed.
