@@ -37,9 +37,7 @@ Variant RadiusAttributeS {S : Type} : Type :=
 | Unknown (_ : nat8) (s : S).
 
 Global Instance RadiusAttribute_Foldable : Foldable (@RadiusAttributeS).
-split.
-- intros. inversion X1; try apply (X s X0); apply X0.
-- intros. inversion X0; try apply (X s); destruct H; apply mempty.
+constructor. intros. inversion X1; try apply (X s X0); apply X0.
 Defined.
 
 Definition RadiusAttribute := @RadiusAttributeS span.

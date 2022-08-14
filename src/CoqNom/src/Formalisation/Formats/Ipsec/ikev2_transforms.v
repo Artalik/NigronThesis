@@ -73,11 +73,5 @@ Local Definition foldr_transform A B (f : A -> B -> B) (b : B) ta : B :=
   | None => b
   end.
 
-Local Definition foldMap_transform M `(Monoid.Monoid M) {A} (f : A -> M) ta : M :=
-  match attributes _ ta with
-  | Some v => f v
-  | None => Monoid.mempty
-  end.
-
 Global Instance Foldable_IkeV2GenericPayload : Foldable (@IkeV2RawTransformS) :=
-  Build_Foldable _ (foldr_transform) foldMap_transform.
+  Build_Foldable _ foldr_transform.
