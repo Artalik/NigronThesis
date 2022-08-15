@@ -180,4 +180,12 @@ Definition take_while_m_n (min max : N) (cond : nat8 -> bool) : NomB span :=
                            else
                              fail) tt).
 
+Definition char_line_ending := String "013" (String "010" EmptyString).
+
+Definition not_line_ending := is_not char_line_ending.
+
+Definition line_ending := is_a char_line_ending.
+
+Definition crlf := tag char_line_ending.
+
 Close Scope combinator_scope.
