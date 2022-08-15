@@ -115,7 +115,7 @@ Proof.
 Qed.
 
 Definition M_to_list `{Foldable M} {X} (m : M X) : list X :=
-  Foldable.foldr _ _ (fun a b => a :: b) [] m.
+  Foldable.foldMap (list X) X (fun s => [s]) m.
 
 Definition all_disjointSL (l : list span) := [∗ list] v ∈ l, IsFresh v.
 
