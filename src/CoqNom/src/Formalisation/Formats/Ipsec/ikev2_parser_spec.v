@@ -51,13 +51,10 @@ Proof.
   - instantiate (1 := fun v => <absorb> Some_span v). simpl. iNorm.
   - simpl. eauto.
   - auto.
-  - unfold all_disjointMSL, all_disjointSL. simpl. iNorm.
+  - simpl. unfold all_disjointMSL, all_disjointSL. simpl. iNorm.
     iDestruct (big_sepL_absorb_out with "HB") as ">HB".
     iDestruct (big_sepL_double with "HB") as "HB".
-    unfold foldMap_propo, foldr_propo; simpl.
-    destruct v7; simpl; iNorm.
-    + rewrite foldr_cons. iSplitR "HD"; iFrame; eauto.
-    + rewrite foldr_cons. iSplitR "HD"; eauto.
+    iModIntro. destruct v7; simpl; iNorm. iFrame.
 Qed.
 
 Lemma parse_ikev2_payload_sa_rule : forall len,
@@ -69,8 +66,8 @@ Proof.
   - unfold all_disjointMSL, all_disjointSL.
     iIntros (v) "[HA _]".
     iDestruct (big_sepL_absorb_out with "HA") as ">HA".
-    iDestruct (big_sepL_double with "HA") as "HA". simpl. unfold foldMap_propo.
-    iModIntro. rewrite foldr_cons. simpl. simpl_list. iApply "HA".
+    iDestruct (big_sepL_double with "HA") as "HA". simpl.
+    iFrame.
 Qed.
 
 Lemma parse_ikev2_payload_kex_rule : forall len,
@@ -140,7 +137,7 @@ Proof.
   - instantiate (1 := fun v => <absorb> Some_span v ∗ Some_span v2). iIntros. iNorm. iFrame.
   - iIntros. iNorm.
   - iIntros. iNorm. unfold all_disjointMSL, all_disjointSL. simpl.
-    unfold foldr_notifypay. destruct v2,v3; simpl; iFrame.
+    iModIntro. simpl. destruct v2, v3; iFrame; auto.
 Qed.
 
 Lemma parse_ikev2_payload_vendor_rule : forall len,
@@ -180,7 +177,7 @@ Proof.
   - iIntros. iNorm. unfold all_disjointMSL, all_disjointSL.
     iDestruct (big_sepL_absorb_out with "HB") as ">HB".
     iDestruct (big_sepL_double with "HB") as "HB".
-    simpl. iFrame. iModIntro. rewrite foldr_cons. simpl_list. iApply "HB".
+    iFrame. auto.
 Qed.
 
 Lemma parse_ikev2_payload_ts_init_rule : forall len,
@@ -232,50 +229,47 @@ Proof.
     Unshelve. all : eauto.
 Qed.
 
-Global Instance Foldable_S_Pair : forall L R, Foldable L -> Foldable R ->
-                                           Foldable (fun X => L X * R X)%type.
-intros L R FL FR. destruct FL, FR. econstructor.
-intros A B f b [la ra]. eapply (foldr _ _ f (foldr0 _ _  f b ra) la).
-intros M sg m A f [la ra]. inversion m. inversion sg.
-eapply f0. eapply (foldMap _ _ m A f la). eapply (foldMap0 _ _ m A f ra).
-Defined.
-
-Definition foldr_comp A B S (FS : Foldable S) (f : A -> B -> B) (b : B) (a : VECTOR (S A)) : B.
-  destruct Foldable_vector. eapply foldr.
-  2-3 : eauto. clear b a. destruct FS. intros sa nb.
-  eapply foldr0. 2 : exact nb. 2 : exact sa. eapply f.
-Defined.
-
-Definition foldMap_comp A S (FS : Foldable S) M (sg : Monoid.Semigroup M)
-           (_ : Monoid.Monoid M) (f : A -> M) (a : VECTOR (S A)) : M.
-  destruct Foldable_vector.
-  eapply foldMap. eapply X. 2 : eauto. intros. destruct FS.
-  eapply foldMap0. eapply X. eapply f. eapply X0.
-Defined.
-
-Global Instance Foldable_vector_S : forall (S : Type -> Type),
-    Foldable S -> Foldable (fun X => VECTOR (S X)).
-intros S FS. econstructor. intros A B f b AS. eapply foldr_comp; eauto.
-intros. eapply foldMap_comp; eauto.
-Defined.
+Lemma all_disjointMSL_vector `{Foldable V} : forall (acc : VECTOR (V span)) (v : V span),
+    all_disjointMSL v ∗ all_disjointMSL acc ⊢ all_disjointMSL (add acc v).
+Proof.
+  intros acc. destruct acc as [[cap size] VEC]. revert cap size VEC.
+  induction values; simpl; intros.
+  - iIntros. iNorm. unfold all_disjointMSL, all_disjointSL.
+    simpl. destruct H. simpl. edestruct add_vector_list.
+    erewrite H. simpl. iFrame. auto.
+  - iIntros. iNorm. unfold all_disjointMSL, all_disjointSL.
+    simpl. destruct H. simpl. edestruct add_vector_list.
+    erewrite H. simpl. rewrite foldr_app. simpl.
+    iDestruct "HC" as "[HC HD]". iFrame. simpl_list.
+    iDestruct (IHvalues with "[HB HD]") as "HB". iFrame.
+    unfold all_disjointMSL, all_disjointSL. simpl.
+    edestruct add_vector_list. erewrite H0. simpl.
+    rewrite foldr_app.
+    simpl. simpl_list. iApply "HB".
+    Unshelve.
+    3 : { constructor. simpl. reflexivity.
+          simpl. reflexivity. }
+Qed.
 
 Lemma parse_ikev2_payload_list_fold_rule : forall acc p,
     {{ IsFresh (payloadGen p) ∗
-       <absorb> [∗ list] v ∈ []↓acc, <absorb> all_disjointMSL v.2 }}
+       <absorb> all_disjointMSL acc }}
       parse_ikev2_payload_list_fold acc p
-      {{ res; <absorb> [∗ list] v ∈ []↓res, <absorb> all_disjointMSL v.2 }}.
+      {{ res; <absorb> all_disjointMSL res }}.
 Proof.
   intros. rewrite parse_ikev2_payload_list_fold_equation_1. WpTac.
   eapply consequence_rule. apply scope_rule. WpTac.
   Frame. eapply parse_ikev2_payload_with_type_rule.
-  all : eauto. simpl. iIntros. iNorm. edestruct add_vector_list.
-  erewrite H. iClear "HB". iModIntro. iSplitL "HH"; iFrame. eauto.
+  all : eauto. simpl. iIntros. iNorm.
+  iModIntro.
+  iApply (all_disjointMSL_vector acc). iFrame.
 Qed.
+
 
 Lemma parse_ikev2_payload_list_rule : forall init,
     {{ emp }}
       parse_ikev2_payload_list init
-      {{ res; <absorb> [∗ list] v ∈ ([]↓res), <absorb> all_disjointMSL v.2 }}.
+      {{ res; <absorb> all_disjointMSL res }}.
 Proof.
   intros. rewrite parse_ikev2_payload_list_equation_1.
   eapply consequence_rule. eapply repeat_rule.
@@ -285,9 +279,8 @@ Proof.
     unfold all_disjointMSL, all_disjointSL. simpl. iNorm.
     iApply "HC".
   - iIntros. iFrame.
-  - iIntros. iModIntro. edestruct add_vector_list. erewrite H. clear H.
-    iSplitL. auto. simpl. iSplit; auto.
-  - eauto.
+  - auto.
+  - auto.
 Qed.
 
 Lemma parse_ikev2_message_rule :
@@ -295,18 +288,8 @@ Lemma parse_ikev2_message_rule :
 Proof.
   unfold parse_ikev2_message.
   WpTac. eapply parse_ikev2_header_rule.
-  Frame. eapply parse_ikev2_payload_list_rule.
-  iIntros. iNorm. iDestruct (big_sepL_absorb_out with "HD") as ">HA".
-  iModIntro. unfold all_disjointMSL, all_disjointSL.
-  iDestruct (big_sepL_double with "HA") as "HA". simpl.
-  unfold foldr_payload. simpl.
-  erewrite foldr_ext.
-  iApply "HA". 2-3 : eauto. intros b a. simpl. unfold foldr_content.
-  destruct (content b.2); simpl; eauto.
-  - repeat rewrite foldr_cons. f_equal. simpl_list. reflexivity.
-  - unfold foldr_notifypay. destruct spiNoti, num_spi; eauto.
-  - unfold foldr_trafficselectorpay. f_equal. repeat rewrite foldr_cons. simpl_list. auto.
-  - unfold foldr_trafficselectorpay. f_equal. repeat rewrite foldr_cons. simpl_list. auto.
+  Frame. eapply parse_ikev2_payload_list_rule. simpl.
+  iIntros. iNorm.
 Qed.
 
 Lemma parse_ikev2_message_rule_pure :

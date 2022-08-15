@@ -67,11 +67,8 @@ Record IkeV2RawTransformS (S : Type) :=
 
 Definition IkeV2RawTransform := @IkeV2RawTransformS span.
 
-Local Definition foldr_transform A B (f : A -> B -> B) (b : B) ta : B :=
-  match attributes _ ta with
-  | Some v => f v b
-  | None => b
-  end.
-
-Global Instance Foldable_IkeV2GenericPayload : Foldable (@IkeV2RawTransformS) :=
-  Build_Foldable _ foldr_transform.
+Global Instance Foldable_IkeV2Transform : Foldable (@IkeV2RawTransformS).
+econstructor.
+intros.
+destruct (attributes _ X0). eapply (X a). eapply Monoid.mempty.
+Defined.

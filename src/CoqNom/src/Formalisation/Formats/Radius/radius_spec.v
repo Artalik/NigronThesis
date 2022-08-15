@@ -9,7 +9,7 @@ Proof.
   - iIntros (v) "HA". instantiate (1 := (fun _ => True)). simpl. eauto.
   - iIntros. iNorm. iFrame. simpl.
     iDestruct (big_sepL_absorb_out with "HB") as ">HB".
-    iModIntro. destruct v3. destruct x. unfold Vector.vector_to_list. simpl.
+    iModIntro. iFrame.
     unfold all_disjointMSL, all_disjointSL.
     iDestruct (big_sepL_double with "HB") as "HB".
     erewrite foldr_ext. iApply "HB".

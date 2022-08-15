@@ -56,6 +56,7 @@ src/CoqNom/src/Formalisation/Formats/Ipsec/ikev2_transforms.v
 src/CoqNom/src/Formalisation/Formats/Ipsec/ikev2_notify.v
 src/CoqNom/src/Formalisation/Formats/Ipsec/ikev2.v
 src/CoqNom/src/Formalisation/Formats/Ipsec/ikev2_parser.v
+src/CoqNom/src/Formalisation/Formats/Ipsec/ikev2_parser_spec.v
 
 -Q ./src/CoqNom/examples/ Examples
 src/CoqNom/examples/example1.v

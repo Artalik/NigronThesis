@@ -145,11 +145,12 @@ Arguments mac [S].
 
 Definition packet_SSH := packet_SSHS span.
 
-Definition foldr {A B} (f : A -> B -> B) (b : B) (p : packet_SSHS A) : B :=
-  f (payload p) (f (mac p) b).
+Definition foldMap M (sg : Monoid.Semigroup M) (m : Monoid.Monoid M)
+  {A} (fold : A -> M) (p : packet_SSHS A) : M :=
+  Monoid.f (fold (payload p)) (fold (mac p)).
 
 Local Instance Foldable_SSH : Foldable packet_SSHS :=
-  Build_Foldable _ (@foldr).
+  Build_Foldable _ (@foldMap).
 
 Definition decode_next : Decodeur N :=
   let! s := take 1 in
@@ -220,7 +221,6 @@ Proof.
     unfold all_disjointMSL, all_disjointSL. simpl. iFrame.
   - eapply rule_fail.
 Qed.
-
 
 Close Scope free_monad_scope.
 
