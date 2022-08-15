@@ -102,9 +102,9 @@ eapply Monoid.f. eapply (f (encr_algs_server_to_client _ v)).
 eapply Monoid.f. eapply (f (mac_algs_client_to_server _ v)).
 eapply Monoid.f. eapply (f (mac_algs_server_to_client _ v)).
 eapply Monoid.f. eapply (f (comp_algs_client_to_server _ v)).
-eapply Monoid.f. eapply (f (encr_algs_server_to_client _ v)).
-eapply Monoid.f. eapply (f (langs_client_to_server _ v)).
-eapply (f (langs_server_to_client _ v)).
+eapply Monoid.f. eapply (f (comp_algs_server_to_client _ v)).
+eapply Monoid.f. eapply (f (langs_server_to_client _ v)).
+eapply (f (langs_client_to_server _ v)).
 Defined.
 
 
@@ -169,6 +169,21 @@ Arguments DiffieHellmanInit [_].
 Arguments DiffieHellmanReply  [_].
 
 Definition SshPacket := SshPacketS span.
+
+Global Instance Foldable_SshPacket : Foldable SshPacketS.
+econstructor.
+intros M sg m A f va. destruct va.
+eapply @foldMap. eapply Foldable_SshPacketDisconnect. eapply m. apply f. eapply d.
+apply (f s).
+eapply Monoid.mempty.
+eapply @foldMap. eapply Foldable_SshPacketDebug. eapply m. apply f. eapply d.
+apply (f s).
+apply (f s).
+eapply @foldMap. eapply Foldable_SshPacketKeyExchange. eapply m. apply f. eapply d.
+eapply Monoid.mempty.
+apply (f s).
+eapply @foldMap. eapply Foldable_SshPacketDhReply. eapply m. apply f. eapply d.
+Defined.
 
 Definition usize_16 := 16.
 
@@ -264,7 +279,7 @@ Definition parse_ssh_packet : NomG (SshPacket * span) :=
                        | 30 => parse_packet_dh_init
                        | 31 => parse_packet_dh_reply
                        | _ => fail
-                       end ) in
+                       end) in
     let! padding := take (val padding_length) in
     ret (payload, padding).
 

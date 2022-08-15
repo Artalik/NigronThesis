@@ -1296,4 +1296,4 @@ let equiv_parse_radius_data_rel =
 (* Il faut déplacer ce fichier dans le dossier du compilateur et l'exécuter pour obtenir le code C. *)
 (* Ne pas oublier de déplacer également les dépendances ! (BinPos seulement dans ce cas) *)
 
-let _ = compile_to "Datatypes.h" "parser_Radius.c" "parse_radius" equiv_parse_radius_data_rel
+let _ = compile_to "Radius.h" "parser_Radius.c" "parse_radius" equiv_parse_radius_data_rel
