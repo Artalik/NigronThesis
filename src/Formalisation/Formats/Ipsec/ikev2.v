@@ -3,11 +3,11 @@ From Formalisation Require Import Nom IpAddr.
 
 Open Scope N_scope.
 
-Record IkeExchangeType := mk_exc { valexc : nat8 }.
+Definition IkeExchangeType := nat8.
 
-Record ProtocolID := mk_prot { valprot : nat8 }.
+Definition ProtocolID := nat8.
 
-Record IkePayloadType := mk_payload_type { valpayload : nat8 }.
+Definition IkePayloadType := nat8.
 
 Record IkeV2HeaderS {S : Type} :=
   mk_header {
@@ -51,8 +51,6 @@ Record IkeV2GenericPayloadS {S : Type} :=
 
 Definition IkeV2GenericPayload := @IkeV2GenericPayloadS span.
 
-Definition foldr_genpay A B (f : A -> B -> B) (b : B) ta : B := f (payloadGen ta) b.
-
 Global Instance Foldable_IkeV2GenericPayload : Foldable (@IkeV2GenericPayloadS) :=
   Build_Foldable _ (fun _ _ _ _ f a => f (payloadGen a)).
 
@@ -90,7 +88,7 @@ Definition KeyExchangePayload := @KeyExchangePayloadS span.
 Global Instance Foldable_KeyExchangePayload : Foldable (@KeyExchangePayloadS).
 econstructor. intros. eapply (X (kex_data X0)). Defined.
 
-Record IdentificationType := mk_ident { ident : nat8 }.
+Definition IdentificationType := nat8.
 
 Record IdentificationPayloadS {S : Type} :=
   mk_IdPayload {
@@ -106,7 +104,7 @@ Global Instance Foldable_IdentificationPayload : Foldable (@IdentificationPayloa
 econstructor. intros. eapply (X (ident_data X0)).
 Defined.
 
-Record CertificateEncoding := mk_certEnc { val_certEnc : nat8 }.
+Definition CertificateEncoding := nat8.
 
 Record CertificatePayloadS {S : Type} :=
   mk_certiPayload {
@@ -132,15 +130,14 @@ Global Instance Foldable_CertificateRequestPayload : Foldable (@CertificateReque
 econstructor. intros. eapply (X (ca_dataReq X0)).
 Defined.
 
-Record AuthenticationMethod :=
-  mk_authMethod {
-      val_authMethod : nat8;
-      is_unassigned : bool :=
-        let v := val val_authMethod in
-        ((4 <=? v) && (v <=? 8)) || ((15 <=? v) && (v <=? 200));
-      is_private_use : bool :=
-        201 <=? val val_authMethod
-    }.
+Definition AuthenticationMethod := nat8.
+
+Definition is_unassigned (n : AuthenticationMethod): bool :=
+  let v := val n in
+  ((4 <=? v) && (v <=? 8)) || ((15 <=? v) && (v <=? 200)).
+
+Definition is_private_use (n : AuthenticationMethod) : bool :=
+  201 <=? val n.
 
 Record AuthenticationPayloadS {S : Type} :=
   mk_authPayload {
@@ -156,18 +153,13 @@ Global Instance Foldable_AuthenticationPayload : Foldable (@AuthenticationPayloa
 econstructor. intros. eapply (X (auth_data X0)).
 Defined.
 
-Record NoncePayloadS {S : Type} :=
-  mk_noncePayload {
-      nonce_data : S
-    }.
-
-Arguments mk_noncePayload [S].
+Definition NoncePayloadS {S : Type} := S.
 
 Definition NoncePayload := @NoncePayloadS span.
 
 Global Instance Foldable_NoncePayload : Foldable (@NoncePayloadS).
-econstructor. intros. eapply (X (nonce_data X0)).
-  Defined.
+econstructor. intros. eapply (X X0).
+Defined.
 
 Record NotifyPayloadS {S : Type} :=
   mk_notifyPayload {
@@ -204,18 +196,16 @@ Global Instance Foldable_DeletePayload : Foldable (@DeletePayloadS).
 econstructor. intros. eapply (X (spiDel X0)).
 Defined.
 
-Record VendorIDPayloadS {S : Type} :=
-  mk_vendorIdPayload { vendor_id : S }.
-
-Arguments mk_vendorIdPayload [S].
+Definition VendorIDPayloadS {S : Type} := S.
 
 Definition VendorIDPayload := @VendorIDPayloadS span.
 
 Global Instance Foldable_VendorIDPayload : Foldable (@VendorIDPayloadS).
-econstructor. intros. eapply (X (vendor_id X0)).
+econstructor. intros. eapply (X X0).
 Defined.
 
-Record TSType := mk_tstype { val_ts : nat8 }.
+
+Definition TSType := nat8.
 
 Record TrafficSelectorS {S} :=
   mk_trafficSelec {
@@ -268,7 +258,7 @@ Definition ipv6_from_slice (s : span) : NomG Ipv6 :=
 Definition get_ts_type (v : TrafficSelector) : TSType := ts_type v.
 
 Definition get_start_addr (v : TrafficSelector) : NomG (option IpAddr) :=
-  match val (val_ts (ts_type v)) with
+  match val (ts_type v) with
   | 7 => let! ipv4 := ipv4_from_slice (start_addr v) in
         ret (Some (V4 ipv4))
   | 8 => let! ipv6 := ipv6_from_slice (start_addr v) in
@@ -278,7 +268,7 @@ Definition get_start_addr (v : TrafficSelector) : NomG (option IpAddr) :=
 
 
 Definition get_end_addr (v : TrafficSelector) : NomG (option IpAddr) :=
-  match val (val_ts (ts_type v)) with
+  match val (ts_type v) with
   | 7 => let! ipv4 := ipv4_from_slice (end_addr v) in
         ret (Some (V4 ipv4))
   | 8 => let! ipv6 := ipv6_from_slice (end_addr v) in
@@ -303,12 +293,12 @@ eapply Monoid.f. eapply (X (reserved_tsp X0)).
 eapply (@foldMap).  eapply Foldable_Vector. eapply H. eapply X. eapply (ts X0).
 Defined.
 
-Record EncryptedPayloadS {S} := mk_EncPay { spanEncPay : S }.
+Definition EncryptedPayloadS {S : Type} := S.
 
 Definition EncryptedPayload := @EncryptedPayloadS span.
 
-Global Instance Foldable_EncryptedPayload : Foldable (@EncryptedPayloadS) .
-econstructor. intros. eapply (X (spanEncPay X0)).
+Global Instance Foldable_EncryptedPayload : Foldable (@EncryptedPayloadS).
+econstructor. intros. eapply (X X0).
 Defined.
 
 Inductive IkeV2PayloadContentS {S : Type} :=
@@ -366,17 +356,17 @@ eapply Foldable_IkeV2PayloadContentS. eapply H. eapply X. eapply (content X0).
 Defined.
 
 
-Record IkeV2MessageS (S : Type) :=
-  mk_message {
-      header : @IkeV2HeaderS S;
-      payloads : VECTOR (@IkeV2PayloadS S)
-    }.
+(* Record IkeV2MessageS (S : Type) := *)
+(*   mk_message { *)
+(*       header : @IkeV2HeaderS S; *)
+(*       payloads : VECTOR (@IkeV2PayloadS S) *)
+(*     }. *)
 
-Definition IkeV2Message := IkeV2MessageS span.
+(* Definition IkeV2Message := IkeV2MessageS span. *)
 
-Global Instance Foldable_IkeV2MessageS : Foldable (@IkeV2MessageS).
-econstructor. intros. eapply Monoid.f. eapply @foldMap.
-eapply Foldable_IkeV2HeaderS. eapply H. eapply X. eapply (header _ X0).
-eapply (@Foldable_Vector). eapply Foldable_IkeV2PayloadS. eapply H. eapply X.
-eapply (payloads _ X0).
-Defined.
+(* Global Instance Foldable_IkeV2MessageS : Foldable (@IkeV2MessageS). *)
+(* econstructor. intros. eapply Monoid.f. eapply @foldMap. *)
+(* eapply Foldable_IkeV2HeaderS. eapply H. eapply X. eapply (header _ X0). *)
+(* eapply (@Foldable_Vector). eapply Foldable_IkeV2PayloadS. eapply H. eapply X. *)
+(* eapply (payloads _ X0). *)
+(* Defined. *)

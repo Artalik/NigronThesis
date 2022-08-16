@@ -30,11 +30,11 @@ Definition parse_ikev2_header : NomG IkeV2Header :=
   else
     let! init_spi := be_u64 in
     let! resp_spi := be_u64 in
-    let! next_payload := map be_u8 mk_payload_type in
+    let! next_payload := be_u8 in
     let! vers := be_u8 in
     let maj_ver : nat8 := vers >> 4 in
     let min_ver := vers & 4 in
-    let! exch_type := map be_u8 mk_exc in
+    let! exch_type := be_u8 in
     let! flags := be_u8 in
     let! msg_id := be_u32 in
     let! length := be_u32 in
@@ -50,17 +50,19 @@ Definition parse_ikev2_header : NomG IkeV2Header :=
            msg_id
            length).
 
-Definition parse_ikev2_payload_generic : NomG IkeV2GenericPayload :=
-  let! next_payload_type := map be_u8 mk_payload_type in
+Definition bits_split_1 : NomG (nat8 * nat8) :=
   let! b := be_u8 in
-  let b1 := b >> 7 in
-  let b2 := b & 7 in
+  ret (b >> 7, b & 7).
+
+Definition parse_ikev2_payload_generic : NomG IkeV2GenericPayload :=
+  let! next_payload_type := be_u8 in
+  let! b := bits_split_1 in
   let! payload_length := verify be_u16 (fun n => 4 <=? val n) in
   let! payload := take (val payload_length - 4) in
   let hdr := mk_payloadheader
                next_payload_type
-               (val b1 =? 1)
-               b2
+               (val b.1 =? 1)
+               b.2
                payload_length in
   ret (mk_genericpayload span hdr payload).
 
@@ -76,7 +78,7 @@ Definition parse_ikev2_transform : NomG IkeV2RawTransform :=
               last
               reserved1
               transform_length
-              (mk_transform transform_type)
+              transform_type
               reserved2
               transform_id
               attributes).
@@ -91,7 +93,7 @@ Definition parse_ikev2_proposal : NomG IkeV2Proposal :=
     let! reserved := be_u8 in
     let! proposal_length := be_u16 in
     let! proposal_num := be_u8 in
-    let! protocol_id := map be_u8 mk_prot in
+    let! protocol_id := be_u8 in
     let! spi_size := be_u8 in
     let! num_transforms := be_u8 in
     let! spi := cond (0 <? val spi_size) (take (val spi_size)) in
@@ -121,7 +123,7 @@ Definition parse_ikev2_payload_kex (length : nat16) : NomG IkeV2PayloadContent :
   then
     fail
   else
-    let! dh_group := map be_u16 mk_transformdh in
+    let! dh_group := be_u16 in
     let! reserved := be_u16 in
     let! kex_data := take (val length - 4) in
     let payload := mk_ExcPayload span dh_group reserved kex_data in
@@ -132,7 +134,7 @@ Definition parse_ikev2_payload_ident_init (length : nat16) : NomG IkeV2PayloadCo
   then
     fail
   else
-    let! id_type := map be_u8 mk_ident in
+    let! id_type := be_u8 in
     let! reserved1 := be_u8 in
     let! reserved2 := be_u16 in
     let! ident_data := take (val length - 4) in
@@ -144,7 +146,7 @@ Definition parse_ikev2_payload_ident_resp (length : nat16) : NomG IkeV2PayloadCo
   then
     fail
   else
-    let! id_type := map be_u8 mk_ident in
+    let! id_type := be_u8 in
     let! reserved1 := be_u8 in
     let! reserved2 := be_u16 in
     let! ident_data := take (val length - 4) in
@@ -156,7 +158,7 @@ Definition parse_ikev2_payload_certificate (length : nat16) : NomG IkeV2PayloadC
   then
     fail
   else
-    let! cert_encoding := map be_u8 mk_certEnc in
+    let! cert_encoding := be_u8 in
     let! cert_data := take (val length - 1) in
     let payload := mk_certiPayload _ cert_encoding cert_data in
     ret (CertificatePC payload).
@@ -166,7 +168,7 @@ Definition parse_ikev2_payload_certificate_request (length : nat16) : NomG IkeV2
   then
     fail
   else
-    let! cert_encoding := map be_u8 mk_certEnc in
+    let! cert_encoding := be_u8 in
     let! ca_data := take (val length - 1) in
     let payload := mk_certReqPayload _ cert_encoding ca_data in
     ret (CertificateRequestPC payload).
@@ -176,21 +178,22 @@ Definition parse_ikev2_payload_authentication (length : nat16) : NomG IkeV2Paylo
   then
     fail
   else
-    let! auth_method := map be_u8 mk_authMethod in
+    let! auth_method := be_u8 in
     let! auth_data := take (val length - 4) in
     let payload := mk_authPayload auth_method auth_data in
     ret (AuthenticationPC payload).
 
 Definition parse_ikev2_payload_nonce (length : nat16) : NomB IkeV2PayloadContent :=
   let! nonce_data := take (val length) in
-  ret (NoncePC (mk_noncePayload nonce_data)).
+  ret (NoncePC nonce_data).
 
 Definition parse_ikev2_payload_notify (length : nat16) : NomG IkeV2PayloadContent :=
-  let! protocol_id := map be_u8 mk_prot in
+  let! protocol_id := be_u8 in
   let! spi_size := be_u8 in
-  let! notify_type := map be_u16 mk_notify in
+  let! notify_type := be_u16 in
   let! spi := cond (0 <? val spi_size) (take (val spi_size)) in
-  let! notify_data := cond (8 + val spi_size <? val length) (take (val length - (8 + val spi_size))) in
+  let! notify_data := cond (8 + val spi_size <? val length)
+                        (take (val length - (8 + val spi_size))) in
   let payload := mk_notifyPayload protocol_id spi_size notify_type spi notify_data in
   ret (NotifyPC payload).
 
@@ -200,14 +203,14 @@ Definition parse_ikev2_payload_vendor_id (length : nat16) : NomB IkeV2PayloadCon
     fail
   else
     let! vendor_id := take (val length - 8) in
-    ret (VendorIDPC (mk_vendorIdPayload vendor_id)).
+    ret (VendorIDPC vendor_id).
 
 Definition parse_ikev2_payload_delete (length : nat16) : NomG IkeV2PayloadContent :=
   if val length <? 8
   then
     fail
   else
-    let! protocol_id := map be_u8 mk_prot in
+    let! protocol_id := be_u8 in
     let! spi_size := be_u8 in
     let! num_spi := be_u16 in
     let! spi := take (val length - 8) in
@@ -215,14 +218,14 @@ Definition parse_ikev2_payload_delete (length : nat16) : NomG IkeV2PayloadConten
     ret (DeletePC payload).
 
 Definition parse_ts_addr (t : TSType) : NomB span :=
-  match val (val_ts t) with
+  match val t with
   | 7 => take 4
   | 8 => take 16
   | _ => fail
   end.
 
 Definition parse_ikev2_ts : NomB TrafficSelector :=
-  let! ts_type := map be_u8 mk_tstype in
+  let! ts_type := be_u8 in
   let! ip_proto_id := be_u8 in
   let! sel_length := be_u16 in
   let! start_port := be_u16 in
@@ -255,14 +258,14 @@ Definition parse_ikev2_payload_ts_resp (length : nat16) : NomB IkeV2PayloadConte
   map (parse_ikev2_payload_ts length) TSr.
 
 Definition parse_ikev2_payload_encrypted (length : nat16) : NomB IkeV2PayloadContent :=
-  map (take (val length)) (fun v => Encrypted (mk_EncPay _ v)).
+  map (take (val length)) (fun v => Encrypted v).
 
 Definition parse_ikev2_payload_unknown (length : nat16) : NomB IkeV2PayloadContent :=
   map (take (val length)) Unknown.
 
 Definition parse_ikev2_payload_with_type (length : nat16)
            (next_payload_type : IkePayloadType) : NomB IkeV2PayloadContent :=
-  map_parser (take (val length)) (match val (valpayload next_payload_type) with
+  map_parser (take (val length)) (match val next_payload_type with
                                   | 33 => parse_ikev2_payload_sa length
                                   | 34 => parse_ikev2_payload_kex length
                                   | 35 => parse_ikev2_payload_ident_init length
@@ -323,7 +326,7 @@ Qed.
                                let! p := parse_ikev2_payload_generic in
                                parse_ikev2_payload_list_fold acc p) acc.
 
-Definition parse_ikev2_message : NomB IkeV2Message :=
+Definition parse_ikev2_message : NomB (IkeV2Header * VECTOR IkeV2Payload) :=
   let! hdr := parse_ikev2_header in
   let len := val (ikev2.length hdr) in
   if len <? 28
@@ -331,10 +334,10 @@ Definition parse_ikev2_message : NomB IkeV2Message :=
     fail
   else
     let! msg := map_parser (take (len - 28)) (parse_ikev2_payload_list (next_payload hdr)) in
-    ret (mk_message _ hdr msg).
+    ret (hdr, msg).
 
 
-Definition parse_ikev2 : nat -> list nat8 -> option IkeV2Message :=
+Definition parse_ikev2 : nat -> list nat8 -> option (IkeV2Header * VECTOR IkeV2Payload) :=
   parse parse_ikev2_message.
 
 #[tactic="NSize"] Equations IKEV2_INIT_REQ : list nat8 :=
@@ -404,7 +407,7 @@ Qed.
 Compute (test_ikev2_payload_sa_suite). (* OK *)
 
 Program Definition test_ikev2_parse_payload_many :=
-  run 100 (@parse_ikev2_payload_list (mk_payload_type (_8 33))) IKEV2_INIT_REQ
+  run 100 (@parse_ikev2_payload_list (_8 33)) IKEV2_INIT_REQ
     (mk_span 28 (N.of_nat (List.length IKEV2_INIT_REQ) - 28)).
 Next Obligation.
   NSize.
