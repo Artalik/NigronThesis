@@ -24,7 +24,7 @@ Local Ltac norm h :=
   let P := reduction.pm_eval (envs_lookup h env) in
   match P with
   | None => fail "assert false"
-  | Some (false, ?P) =>
+  | Some (_,?P) =>
     match P with
     | bi_exist ?Q => let x := fresh "x" in (iDestruct h as (x) h; norm h)
     | bi_sep ?Q ?W =>
@@ -52,7 +52,6 @@ Local Ltac norm h :=
       | _ => idtac
       end
     end
-  | Some (true,?P) => idtac
   end.
 
 (* (List.fold norm) in Ltac *)
