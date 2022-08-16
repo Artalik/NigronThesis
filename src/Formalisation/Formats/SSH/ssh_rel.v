@@ -8,8 +8,7 @@ Definition parse_string_rel :
   eapply exist. unfold parse_string. intros.
   eapply length_data_adequate.
   step. eapply be_u32_adequate.
-  eapply (ret_adequate _ _ _ (EUna EVal (Var vres))). be_spec_clean.
-  econstructor. econstructor. econstructor. be_spec_clean. subst. auto.
+  be_spec_clean. step.
 Defined.
 
 Lemma parse_string_adequate data s :
@@ -86,7 +85,7 @@ Definition parse_packet_key_exchange_rel :
   { code : PHOAS (Unknown "SSHPacket") |
     forall data s, adequate (fun _ _ _ => True%type) parse_packet_key_exchange code data s}.
   eapply exist. unfold parse_packet_key_exchange. intros.
-  step. eapply (take_verif_adequate _ _ (Const (ENat 16))). repeat econstructor.
+  step. unfold usize_16. step.
   step. eapply parse_string_adequate.
   step. eapply parse_string_adequate.
   step. eapply parse_string_adequate.
@@ -127,14 +126,11 @@ Definition parse_ssh_packet_rel :
   eapply exist. intros. unfold parse_ssh_packet.
   step. eapply be_u32_adequate.
   step. eapply be_u8_adequate.
-  eapply (ite_adequate _ _ (EBin ELt (EUna EVal (Var vres)) (EBin EAdd (EUna EVal (Var vres0)) (Const (ENat 1))))). be_spec_clean. subst. repeat econstructor.
-  intro. step.
-  intro. step.
-  eapply map_parser_adequate. eapply consequence_adequate.
-  eapply (take_verif_adequate _ _ (EBin ESub (EBin ESub (EUna EVal (Var vres)) (EUna EVal (Var vres0))) (Const (ENat 1)))). be_spec_clean. subst. repeat econstructor.
-  intros. be_spec_clean. repeat clean_up. subst. repeat econstructor. auto.
-  intros.
-  step. eapply be_u8_adequate.
+  be_spec_clean. step.
+  step. step.
+  eapply map_parser_adequate. eapply consequence_adequate. step.
+  intros. repeat clean_up. subst. repeat econstructor. auto.
+  intros. step. eapply be_u8_adequate.
   eapply (natN_switch_adequate _ (EUna EVal (Var vres1))); repeat econstructor; eauto.
   be_spec_clean. subst. repeat econstructor.
 
