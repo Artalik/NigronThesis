@@ -94,7 +94,7 @@ let construct_type_pair ty1 ty2 =
   else
     "pair_"^
       (if len_ty1 < 10 then "0" else "")^
-        string_of_int len_ty1^ty1^"_"^
+        string_of_int len_ty1^ty1^
             (if len_ty2 < 10 then "0" else "")^
               string_of_int len_ty2^ty2
 
@@ -111,7 +111,7 @@ let deconstruct_type_pair_snd ty =
     let ty = String.sub ty 5 (String.length ty - 5) in
     let s_len_ty1 = String.sub ty 0 2 in
     let len_ty1 = int_of_string s_len_ty1 in
-    let ty = String.sub ty (3 + len_ty1) (String.length ty - len_ty1 - 3) in
+    let ty = String.sub ty (2 + len_ty1) (String.length ty - len_ty1 - 2) in
     let s_len_ty2 = String.sub ty 0 2 in
     let len_ty2 = int_of_string s_len_ty2 in
     String.sub ty 2 len_ty2
