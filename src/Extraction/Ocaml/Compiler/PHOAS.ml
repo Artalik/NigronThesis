@@ -61,11 +61,12 @@ type 'var coq_LIST =
 | CONS of coq_type * 'var coq_VAL * 'var coq_LIST
 
 type 'var coq_PHOAS =
-| Cstruct of string * string * 'var coq_LIST
+| ExternStruct of string * string * 'var coq_LIST
 | Val of coq_type * 'var coq_VAL
 | LetIn of coq_type * 'var coq_PHOAS * coq_type * ('var -> 'var coq_PHOAS)
 | IfThenElse of 'var coq_VAL * coq_type * 'var coq_PHOAS * 'var coq_PHOAS
-| CaseOption of coq_type * 'var coq_VAL * coq_type * 'var coq_PHOAS * ('var -> 'var coq_PHOAS)
+| CaseOption of coq_type * 'var coq_VAL * coq_type * 'var coq_PHOAS
+   * ('var -> 'var coq_PHOAS)
 | Switch of 'var coq_VAL * coq_type * 'var case_switch
 | Fail of coq_type
 | Take of 'var coq_VAL

@@ -162,7 +162,7 @@ let type_of_VAL : type var. string coq_VAL -> string = function
     | EBin (_, _, ty, _, _, _) | Var (ty, _) -> type_to_ctype ty
 
 let rec type_of_PHOAS : string coq_PHOAS -> string = function
-  | Cstruct (ty,_,_) -> type_to_ctype (Unknown ty)
+  | ExternStruct (ty,_,_) -> type_to_ctype (Unknown ty)
   | Fail ty | CaseOption (_, _, ty, _, _) | IfThenElse (_, ty, _, _)
     | LetIn (_, _, ty, _) | Val (ty, _) | Switch (_, ty, _) | Alt (ty, _, _)
     | Local (_, ty, _) | Repeat (_, ty, _, _) ->
@@ -191,7 +191,7 @@ let rec free_variable_LIST : string coq_LIST -> FV.t =
 
 let rec free_variable_PHOAS : string coq_PHOAS -> FV.t =
   function
-  | Cstruct (_,_,l) -> free_variable_LIST l
+  | ExternStruct (_,_,l) -> free_variable_LIST l
   | Val (_, v) -> free_variable_VAL v
   | LetIn (_, e, _, k) ->
      let fv_e = free_variable_PHOAS e in
@@ -431,7 +431,7 @@ let corps_repeat fun_repeat repeat i b res =
 
 
 let rec string_of_PHOAS : string coq_PHOAS -> string ExternFun.t = function
-  | Cstruct (ty, constr, l) ->
+  | ExternStruct (ty, constr, l) ->
      let* s_l = string_of_LIST l in
      let var = gen_var () in
      let* _ = add_env var ty in
