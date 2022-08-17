@@ -1,4 +1,5 @@
-#include "../Datatypes.h"
+#include "Radius.h"
+
 DEFINE_OPTION(span);
 DEFINE_OPTION(uint64_t);
 //DEFINE_OPTION(Vector_radius_attribute);

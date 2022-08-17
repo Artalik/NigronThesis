@@ -119,7 +119,7 @@ Definition ssh_parse_record_rel :
   subst. repeat econstructor.
   step. eapply be_u8_adequate.
   step. eapply be_u8_adequate.
-  be_spec_clean. destruct H as [[P3 P4] P2]. repeat step. subst. econstructor.
+  be_spec_clean. destruct H as [[P3 P4] P2]. repeat step.
   eapply (ret_adequate _ _ _ (EBin EPair (EBin EPair (Var vres) (Var vres0)) (Var vres1)));
     subst; repeat econstructor.
 Defined.

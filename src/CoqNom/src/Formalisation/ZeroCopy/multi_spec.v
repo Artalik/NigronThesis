@@ -6,11 +6,7 @@ Section multi_spec.
 
   Definition NomG := @NomG atom.
 
-  Variable X : Type.
-  Variable e : NomG X.
-  Variable Q : X -> iProp.
-
-  Lemma many0_rule :
+  Lemma many0_rule X (e : NomG X) (Q : X -> iProp) :
     {{ emp }} e {{ v; Q v }} ->
     {{ emp }} many0 e {{ res; [∗ list] v ∈ []↓ res, Q v.2 }}.
   Proof.
@@ -26,7 +22,7 @@ Section multi_spec.
     - auto.
   Qed.
 
-  Lemma many1_rule :
+  Lemma many1_rule X (e : NomG X) (Q : X -> iProp) :
     {{ emp }} e {{ v; Q v }} ->
     {{ emp }} many1 e {{ res; [∗ list] v ∈ []↓ res, Q v.2 }}.
   Proof.
@@ -48,7 +44,7 @@ Section multi_spec.
         erewrite H. iFrame. auto.
   Qed.
 
-  Lemma many1_rule' : forall (Qres : VECTOR X -> iProp),
+  Lemma many1_rule' X (e : NomG X) (Q : X -> iProp) : forall (Qres : VECTOR X -> iProp),
       {{ emp }} e {{ v; Q v }} ->
       (forall arr, ⊢ ([∗ list] v ∈ []↓arr, Q v.2) ∗-∗ Qres arr) ->
       {{ emp }} many1 e {{ res; Qres res }}.
@@ -57,7 +53,7 @@ Section multi_spec.
     iIntros (v) "HA". iApply H0. iFrame.
   Qed.
 
-  Lemma count_rule : forall n Qres,
+  Lemma count_rule X (e : NomG X) (Q : X -> iProp) : forall n Qres,
       {{ emp }} e {{ v; Q v }} ->
       (forall arr, Qres arr ⊣⊢ [∗ list] v ∈ []↓arr, Q v.2) ->
       {{ emp }} count n e {{ v; Qres v }}.
@@ -68,6 +64,16 @@ Section multi_spec.
     edestruct (add_vector_list X v) as [x EQ].
     erewrite EQ. iApply big_sepL_app. simpl. iFrame. iApply (IH with "HB").
     iIntros. iApply IH. auto.
+  Qed.
+
+  Lemma length_data_rule (e : NomG N) Q :
+    {{ emp }} e {{ v; Q v }} ->
+    {{ emp }} length_data e {{ v; <absorb> IsFresh v }}.
+  Proof.
+    intro. unfold length_data.
+    iBind. eapply H. eapply consequence_rule. eapply frame_rule. eapply take_rule.
+    iIntros "HA". iSplitR; eauto. iApply "HA".
+    intros. iIntros. iNorm.
   Qed.
 
 End multi_spec.

@@ -94,7 +94,7 @@ let construct_type_pair ty1 ty2 =
   else
     "pair_"^
       (if len_ty1 < 10 then "0" else "")^
-        string_of_int len_ty1^ty1^"_"^
+        string_of_int len_ty1^ty1^
             (if len_ty2 < 10 then "0" else "")^
               string_of_int len_ty2^ty2
 
@@ -111,7 +111,7 @@ let deconstruct_type_pair_snd ty =
     let ty = String.sub ty 5 (String.length ty - 5) in
     let s_len_ty1 = String.sub ty 0 2 in
     let len_ty1 = int_of_string s_len_ty1 in
-    let ty = String.sub ty (3 + len_ty1) (String.length ty - len_ty1 - 3) in
+    let ty = String.sub ty (2 + len_ty1) (String.length ty - len_ty1 - 2) in
     let s_len_ty2 = String.sub ty 0 2 in
     let len_ty2 = int_of_string s_len_ty2 in
     String.sub ty 2 len_ty2
@@ -162,7 +162,7 @@ let type_of_VAL : type var. string coq_VAL -> string = function
     | EBin (_, _, ty, _, _, _) | Var (ty, _) -> type_to_ctype ty
 
 let rec type_of_PHOAS : string coq_PHOAS -> string = function
-  | Cstruct (ty,_,_) -> type_to_ctype (Unknown ty)
+  | ExternStruct (ty,_,_) -> type_to_ctype (Unknown ty)
   | Fail ty | CaseOption (_, _, ty, _, _) | IfThenElse (_, ty, _, _)
     | LetIn (_, _, ty, _) | Val (ty, _) | Switch (_, ty, _) | Alt (ty, _, _)
     | Local (_, ty, _) | Repeat (_, ty, _, _) ->
@@ -191,7 +191,7 @@ let rec free_variable_LIST : string coq_LIST -> FV.t =
 
 let rec free_variable_PHOAS : string coq_PHOAS -> FV.t =
   function
-  | Cstruct (_,_,l) -> free_variable_LIST l
+  | ExternStruct (_,_,l) -> free_variable_LIST l
   | Val (_, v) -> free_variable_VAL v
   | LetIn (_, e, _, k) ->
      let fv_e = free_variable_PHOAS e in
@@ -431,7 +431,7 @@ let corps_repeat fun_repeat repeat i b res =
 
 
 let rec string_of_PHOAS : string coq_PHOAS -> string ExternFun.t = function
-  | Cstruct (ty, constr, l) ->
+  | ExternStruct (ty, constr, l) ->
      let* s_l = string_of_LIST l in
      let var = gen_var () in
      let* _ = add_env var ty in
