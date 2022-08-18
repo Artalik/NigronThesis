@@ -18,15 +18,18 @@ Definition entails (P Q : hprop) : Prop := forall h, P h -> Q h.
 Notation "P ==> Q" := (entails P Q).
 
 (* =himpl= *)
-Definition himpl (P Q : hprop) := fun h => P h -> Q h.
+Definition himpl (P Q : hprop) := (* P -> Q *)
+  fun h => P h -> Q h.
 (* =end= *)
 
 (* =hand= *)
-Definition hand (P Q : hprop) : hprop := fun h => P h /\ Q h.
+Definition hand (P Q : hprop) : hprop := (* P /\ Q *)
+  fun h => P h /\ Q h.
 (* =end= *)
 
 (* =hor= *)
-Definition hor (P Q : hprop) : hprop := fun h => P h \/ Q h.
+Definition hor (P Q : hprop) : hprop := (* P \/ Q *)
+  fun h => P h \/ Q h.
 (* =end= *)
 
 (* =hempty= *)
@@ -48,11 +51,13 @@ Definition hstar (P Q : hprop) : hprop :=
 (* =end= *)
 
 (* =hexist= *)
-Definition hexist {A} (J : A -> hprop) : hprop := fun h => exists a, J a h.
+Definition hexist {A} (J : A -> hprop) : hprop := (* ∃ a, J *)
+  fun h => exists a, J a h.
 (* =end= *)
 
 (* =hforal= *)
-Definition hforal {A} (J : A -> hprop) : hprop := fun h => forall a, J a h.
+Definition hforal {A} (J : A -> hprop) : hprop := (* forall a, J *)
+  fun h => forall a, J a h.
 (* =end= *)
 
 (* =hpure= *)
