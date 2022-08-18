@@ -1,6 +1,6 @@
 From Classes Require Import Foldable.
 From Equations Require Import Equations.
-From stdpp Require Import numbers.
+From stdpp Require Import numbers list.
 
 Module Values.
 
@@ -43,11 +43,10 @@ Module Values.
       + simpl. rewrite <- N.max_assoc. f_equal. apply IHvs.
   Defined.
 
-  Definition foldr {A B} (f : A -> B -> B) b (a: values A) :=
-    List.fold_right (fun a b => f (snd a) b) b a.
 
   Global Instance Foldable_Values : Foldable values.
-  econstructor. intros A B f a. eapply (foldr f a).
+  econstructor. intros. destruct sg, H.
+  eapply list.foldr. intros c b. eapply (f b (X c.2)). eapply mempty. eapply X0.
   Defined.
 
 
@@ -218,8 +217,17 @@ Definition ext_eq {X} (comp : ∀ x y : X, {x = y} + {x ≠ y}) (a1 a2 : VECTOR 
     false.
 
 Global Instance Foldable_vector : Foldable VECTOR.
-econstructor. intros A B f a b.
-eapply (List.fold_right (fun a b => f a.2 b) a (vector_to_list b)).
+econstructor.
+intros M sg m A f vec. destruct sg. destruct m.
+eapply foldr. intros a b. eapply (f0 (f a.2) b). eapply mempty. eapply (vector_to_list vec).
+Defined.
+
+Global Instance Foldable_Vector `{Foldable M}: Foldable (fun X => VECTOR (M X)).
+econstructor.
+intros M0 sg m0 A f vec. destruct H. destruct sg.
+destruct Foldable_vector.
+eapply foldMap0. eapply m0.
+intros ma. eapply foldMap. eapply m0. eapply f. eapply ma. eapply vec.
 Defined.
 
 Close Scope N_scope.

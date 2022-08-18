@@ -430,8 +430,9 @@ Qed.
         simpl in P; rewrite <- P; apply eval_Esizeof.
     - iPureIntro. subst. destruct dst; simpl in *; auto; repeat eexists; repeat split; auto;
                            pose (P := comp_env_preserved); simpl in P; rewrite <- P; constructor.
-    - iStopProof. iIntros "#>[_ [% %]]". iPureIntro. subst. repeat split; auto. constructor. apply H.
-    - iStopProof. iIntros "#>[_ [% %]]". iPureIntro. subst. repeat split; auto.
+    - iStopProof. iIntros "[#>[_ [% %]] _]". iPureIntro.
+      subst. repeat split; auto. constructor. apply H.
+    - iStopProof. iIntros "[#>[_ [% %]] _]". iPureIntro. subst. repeat split; auto.
       apply eval_Evar_global; auto. rewrite symbols_preserved; auto.
     - subst. iPureIntro. repeat split. rewrite typeof_Ederef'. auto. apply eval_Ederef'; auto.
     - subst. iPureIntro. repeat split. rewrite <- comp_env_preserved in *.

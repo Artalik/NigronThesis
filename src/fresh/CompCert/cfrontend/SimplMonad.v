@@ -27,9 +27,9 @@ Inductive MON : Type -> Type :=
 Definition mon := Free MON.
 (* =end= *)
 
-Definition error {X} (e : Errors.errmsg) : mon X := syntax_effect (errorOp e).
-Definition gensym (t : type) : mon ident := syntax_effect (gensymOp t).
-Definition trail (_ : unit): mon (list (ident * type)) := syntax_effect (trailOp tt).
+Definition error {X} (e : Errors.errmsg) : mon X := gen (errorOp e).
+Definition gensym (t : type) : mon ident := gen (gensymOp t).
+Definition trail (_ : unit): mon (list (ident * type)) := gen (trailOp tt).
 
 (* =wp= *)
 Fixpoint wp {X} (e1 : mon X) (Q : X -> iProp) : iProp :=

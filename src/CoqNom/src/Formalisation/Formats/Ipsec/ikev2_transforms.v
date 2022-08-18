@@ -2,57 +2,53 @@ From Formalisation Require Import Nom SizeNat.
 
 Open Scope N_scope.
 
-Record IkeTransformType := mk_transform {iketransformtype : nat8}.
+Definition IkeTransformType := nat8.
 
-Record IkeTransformEncType :=
-  mk_transformEnc {
-      iketransformenctype : nat16;
-      is_aead : bool :=
-      match val iketransformenctype with
-      | 14 | 15 | 16 | 18 | 19 | 20 | 25 | 26 | 27 | 28 => true
-      | _ => false
-      end;
-      is_unassigned_enc : bool :=
-        let v := val iketransformenctype in
-        (23 <=? v) && (v <=? 1023);
-      is_private_use_enc : bool :=
-        1024 <=? val iketransformenctype
-    }.
+Definition IkeTransformEncType := nat16.
 
-Record IkeTransformPRFType :=
-  mk_transformprf {
-      iketransformprftype : nat16;
-      is_unassigned_prf :=
-        let v := val iketransformprftype in
-        (23 <=? v) && (v <=? 1023);
-      is_private_use_prf :=
-        val iketransformprftype <=? 1024
-    }.
+Definition is_aead (n : IkeTransformEncType) : bool :=
+  match val n with
+  | 14 | 15 | 16 | 18 | 19 | 20 | 25 | 26 | 27 | 28 => true
+  | _ => false
+  end.
+
+Definition is_unassigned_enc (n : IkeTransformEncType): bool :=
+  let v := val n in
+  (23 <=? v) && (v <=? 1023).
+
+Definition is_private_use_enc (n : IkeTransformEncType): bool :=
+  1024 <=? val n.
+
+Definition IkeTransformPRFType := nat16.
+
+Definition is_unassigned_prf (n : IkeTransformPRFType) : bool :=
+  let v := val n in
+  (23 <=? v) && (v <=? 1023).
+
+Definition is_private_use_prf (n : IkeTransformPRFType) : bool :=
+  val n <=? 1024.
 
 
-Record IkeTransformAuthType :=
-  mk_transformauth {
-      iketransformauthtype : nat16;
-      is_unassigned_auth :=
-        let v := val iketransformauthtype in
-        (15 <=? v) && (v <=? 1023);
-      is_private_use_auth :=
-        let v := val iketransformauthtype in
-        v <=? 1024
-    }.
+Definition IkeTransformAuthType := nat16.
 
-Record IkeTransformDHType :=
-  mk_transformdh {
-      iketransformdhtype : nat16;
-      is_unassigned_dh :=
-        let v := val iketransformdhtype in
-        (15 <=? v) && (v <=? 1023);
-      is_private_use_dh :=
-        val iketransformdhtype <=? 1024
-    }.
+Definition is_unassigned_auth (n : IkeTransformAuthType) : bool :=
+  let v := val n in
+  (15 <=? v) && (v <=? 1023).
 
-Record IkeTransformESNType :=
-  mk_transformesn { iketransformesntype : nat16 }.
+Definition is_private_use_auth (n : IkeTransformAuthType) : bool :=
+  let v := val n in
+  v <=? 1024.
+
+Definition IkeTransformDHType := nat16.
+
+Definition is_unassigned_dh (n : IkeTransformDHType) : bool :=
+  let v := val n in
+  (15 <=? v) && (v <=? 1023).
+
+Definition is_private_use_dh (n : IkeTransformDHType) : bool :=
+  val n <=? 1024.
+
+Definition IkeTransformESNType := nat16.
 
 Record IkeV2RawTransformS (S : Type) :=
   mk_raw {
@@ -67,11 +63,8 @@ Record IkeV2RawTransformS (S : Type) :=
 
 Definition IkeV2RawTransform := @IkeV2RawTransformS span.
 
-Local Definition foldr_transform A B (f : A -> B -> B) (b : B) ta : B :=
-  match attributes _ ta with
-  | Some v => f v b
-  | None => b
-  end.
-
-Global Instance Foldable_IkeV2GenericPayload : Foldable (@IkeV2RawTransformS) :=
-  Build_Foldable _ foldr_transform.
+Global Instance Foldable_IkeV2Transform : Foldable (@IkeV2RawTransformS).
+econstructor.
+intros.
+destruct (attributes _ X0). eapply (X a). eapply Monoid.mempty.
+Defined.

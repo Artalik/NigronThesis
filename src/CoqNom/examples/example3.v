@@ -28,15 +28,15 @@ Definition Decodeur := Free DECODE.
 (* =end= *)
 
 (* =take= *)
-Definition take (n : N) : Decodeur span := syntax_effect (TakeOp n).
+Definition take (n : N) : Decodeur span := gen (TakeOp n).
 (* =end= *)
 
 (* =read= *)
-Definition read (s : span) (pos : N): Decodeur N := syntax_effect (ReadOp s pos).
+Definition read (s : span) (pos : N): Decodeur N := gen (ReadOp s pos).
 (* =end= *)
 
 (* =fail= *)
-Definition fail {X} : Decodeur X := syntax_effect FailOp.
+Definition fail {X} : Decodeur X := gen FailOp.
 (* =end= *)
 
 (* =wp= *)
@@ -168,12 +168,13 @@ Definition packet_SSH := packet_SSHS span.
 
 
 (* =foldr= *)
-Definition foldr {A B} (f : A -> B -> B) (b : B) (p : packet_SSHS A) : B :=
-  f (payload p) (f (mac p) b).
+Definition foldMap M (sg : Monoid.Semigroup M) (m : Monoid.Monoid M)
+  {A} (fold : A -> M) (p : packet_SSHS A) : M :=
+  Monoid.f (fold (payload p)) (fold (mac p)).
 (* =end= *)
 
 Local Instance Foldable_SSH : Foldable packet_SSHS :=
-  Build_Foldable _ (@foldr).
+  Build_Foldable _ (@foldMap).
 
 (* =decode_next= *)
 Definition decode_next : Decodeur N :=
@@ -257,7 +258,6 @@ Proof.
     unfold all_disjointMSL, all_disjointSL. simpl. iFrame.
   - eapply rule_fail.
 Qed.
-
 
 Close Scope free_monad_scope.
 

@@ -132,7 +132,7 @@ Lemma IsFresh_spec : forall s t, IsFresh s ∗ IsFresh t ⊢ ⌜disjoint s t⌝.
 
 (* =M_to_list= *)
 Definition M_to_list `{Foldable M} {X} (m : M X) : list X :=
-  Foldable.foldr _ _ (fun a b => a :: b) [] m.
+  Foldable.foldMap (list X) X (fun s => [s]) m.
 (* =end= *)
 
 (* =all_disjointSL= *)

@@ -787,6 +787,24 @@ Ltac what_is e k :=
       | H : sem_VAL ?h e |- _  => k h
       | H : ?v = e |- _  =>  is_var v; k (@Var val _ v)
       | H : e = ?v |- _  =>  is_var v; k (@Var val _ v)
+      (* les fonctions injectives : f v = f y -> v = y *)
+      | H : SizeNat.val ?v = SizeNat.val e |- _  => is_var v; k (@Var val _ v)
+      | H : SizeNat.val e = SizeNat.val ?v |- _  => is_var v; k (@Var val _ v)
+      | H : Some e = Some ?v |- _  => is_var v; k (@Var val _ v)
+      | H : Some ?v = Some e |- _  => is_var v; k (@Var val _ v)
+      | H : negb e = negb ?v |- _  => is_var v; k (@Var val _ v)
+      | H : negb ?v = negb e |- _  => is_var v; k (@Var val _ v)
+      | H : inl e = inl ?v |- _  => is_var v; k (@Var val _ v)
+      | H : inl ?v = inl e |- _  => is_var v; k (@Var val _ v)
+      | H : inr e = inr ?v |- _  => is_var v; k (@Var val _ v)
+      | H : inr ?v = inr e |- _  => is_var v; k (@Var val _ v)
+      (* les autres *)
+
+      | H : fst ?v = e |- _  =>  is_var v; k (@EUna val _ _ EFst (@Var val _ v))
+      | H : e = fst ?v |- _  =>  is_var v; k (@EUna val _ _ EFst (@Var val _ v))
+      | H : snd ?v = e |- _  =>  is_var v; k (@EUna val _ _ ESnd (@Var val _ v))
+      | H : e = snd ?v |- _  =>  is_var v; k (@EUna val _ _ ESnd (@Var val _ v))
+
       | H : string_get ?n ?s = Some e |- _ =>
           what_is n ltac:(fun n => what_is s ltac:(fun s => k (@EBin val _ _ _ EStringGet n s)))
       end
@@ -857,7 +875,7 @@ Ltac clean_up :=
       let P0 := fresh "P" in
       let P1 := fresh "P" in
       destruct H as [P0 P1]
-  | H : local_spec _ _ _  |- _ =>
+  | H : local_spec _ _ _ _ _ |- _ =>
       let P0 := fresh "P" in
       let P1 := fresh "P" in
       destruct H as [P0 P1]
@@ -868,6 +886,7 @@ Ltac clean_up :=
       destruct H as [P0 [P1 P2]]
   end.
 
+Ltac finish_me := subst; repeat econstructor; eauto.
 
 Ltac step := repeat clean_up; (* subst; *)
   match goal with
@@ -875,23 +894,34 @@ Ltac step := repeat clean_up; (* subst; *)
       eapply bind_adequate; [ idtac | intros ]
   | |- adequate _ (take ?e) _ _ _ =>
       what_is e ltac:(fun v => eapply (take_adequate _ _ v));
-      [subst; repeat econstructor| lia]
+      [finish_me | lia]
   | |- adequate _ (take ?e) _ _ _ =>
-      what_is e ltac:(fun v => eapply (take_verif_adequate _ _ v)); repeat econstructor
+      what_is e ltac:(fun v => eapply (take_verif_adequate _ _ v)); finish_me
   | |- adequate _ (read ?s ?n) _ _ _ =>
       what_is s ltac:(fun s => what_is n ltac:(fun n => eapply (read_adequate _ _ s n)));
-      [repeat split; eauto | repeat econstructor | repeat econstructor | lia]
+      [subst; eauto | finish_me | finish_me | lia]
   | |- adequate _ (read ?s ?n) _ _ _ =>
-      what_is s ltac:(fun s => what_is n ltac:(fun n => eapply (read_verif_adequate _ _ s n)))(* ; *)
-      (* [repeat split; eauto | repeat econstructor | repeat econstructor | eauto] *)
+      what_is s ltac:(fun s => what_is n ltac:(fun n => eapply (read_verif_adequate _ _ s n)));
+      [subst; eauto | finish_me | finish_me]
   | |- adequate _ (if ?b then ?et else ?ef) _ _ _ =>
       what_is b ltac:(fun s => eapply (ite_adequate _ _ s));
-      [subst; repeat econstructor; auto | intro | intro ]
+      [finish_me | intro | intro ]
   | |- adequate _ fail _ _ _ => eapply fail_adequate
   | |- adequate _ length _ _ _ => eapply length_adequate
   | |- adequate _ (peek _) _ _ _ => eapply peek_adequate
+  | |- adequate _ (scope ?range _) _ _ _ =>
+      what_is range ltac:(fun range => eapply (scope_adequate _ _ range));
+      [idtac | finish_me | subst; eauto]
+  | |- adequate _ (repeat (Some ?range) _ ?b) _ _ _ =>
+      what_is (Some range)
+        ltac:(fun ho => what_is b ltac:(fun vb => eapply (repeat_Some_adequate ho _ vb)));
+      [finish_me | finish_me | repeat split; finish_me | intros]
+  | |- adequate _ (repeat ?o _ ?b) _ _ _ =>
+      what_is o
+        ltac:(fun ho => what_is b ltac:(fun vb => eapply (repeat_adequate _ _ ho _ _ vb)));
+      [finish_me | finish_me | finish_me | intros]
   | |- adequate _ (ret ?v) _ _ _ =>
-      what_is v ltac:(fun v => eapply (ret_adequate _ _ _ _ v)); repeat econstructor; eauto
+      what_is v ltac:(fun v => eapply (ret_adequate _ _ _ _ v)); finish_me
   end.
 
 (* =rest_spec= *)
@@ -997,15 +1027,14 @@ Definition repeat_compt_Some_adequate_sig (hon : VAL (Option Nat)) {Y} (h : val 
       adequate R (repeat_compt (Some c) e b) code data s}.
 Proof.
   eapply exist. intros. unfold repeat_compt.
-  step.
-  eapply (repeat_Some_adequate hon _ (EBin EPair (Const (ENat 0)) hb));
-    repeat econstructor; simpl; eauto.
+  repeat step.
+  eapply (repeat_Some_adequate hon _ (EBin EPair (Const (ENat 0)) hb)).
+  repeat econstructor; simpl; eauto. eauto.
+  repeat econstructor; simpl; eauto.
   instantiate (1 := (fun s x y => x.1 = y.1 /\ R s x.2 y.2 )). simpl. split; auto.
   instantiate (1 := (fun n x => n = x.1)). simpl. reflexivity.
   instantiate (1 := (fun n x => n = x.1)). simpl. reflexivity.
-  intros. destruct H3 as [[P0 P3] [P1 P2]]. subst. eapply bind_adequate.
-  change N with (val Nat) in rv.
-  change (val Nat * type_to_Type Y)%type with (val (Pair Nat Y)) in rv.
+  intros. destruct H3 as [[P0 P3] [P1 P2]]. step.
   eapply (decompose_app2_adequate _ (EUna EFst (Var rv)) _ (EUna ESnd (Var rv)));
     repeat econstructor.
   rewrite P0. eapply H2. repeat split; auto. lia.
@@ -1024,10 +1053,11 @@ Lemma repeat_compt_Some_adequate (hon : VAL (Option Nat)) {Y} (h : val Nat -> va
       sem_VAL hon (Some c) ->
       sem_VAL hb vb ->
       R s b vb ->
-      (forall n vx x t,
+      (forall (vn : val Nat) n vx x t,
+          vn = n ->
           compt_Some n R (fun _ _ => True%type) (fun _ _ => True%type) t x vx ->
           n < c ->
-          adequate R (e n x) (h n vx) data t) ->
+          adequate R (e n x) (h vn vx) data t) ->
       adequate R (repeat_compt (Some c) e b) (proj1_sig (repeat_compt_Some_adequate_sig hon h hb)) data s.
 Proof. intros. destruct repeat_compt_Some_adequate_sig as [a p]. eapply p; eauto. Qed.
 
@@ -1043,7 +1073,7 @@ Proof.
   step. eapply (repeat_adequate _ _ hon (EBin EPair (Const (ENat 0)) hb) _);
     repeat econstructor; eauto.
   simpl. instantiate (1 := fun s x y => x.1 = y.1 /\ R s x.2 y.2). split; auto.
-  intros. destruct H3. eapply bind_adequate.
+  intros. destruct H3. step.
   eapply (decompose_app2_adequate _ (EUna EFst (Var rv)) _ (EUna ESnd (Var rv)));
   repeat econstructor.
   rewrite H3. eapply H2; eauto.
@@ -1083,26 +1113,14 @@ Definition tag_adequate_sig (hs : VAL String) :
   {code : PHOAS Span | forall str, sem_VAL hs str -> forall data s,
           adequate (tag_spec str s) (tag str) code data s}.
   eapply exist. intros. unfold tag.
-  step.
-  eapply take_verif_adequate. eapply SUna. eapply H. eapply (SStringLenOK str).
-  step.
+  repeat step.
   eapply (repeat_compt_Some_adequate (EUna ESome (EUna EStringLen hs)) _ (Const (EBool true)));
     repeat econstructor; eauto.
   instantiate (1 := fun t0 x y => t = t0 /\ x = y). split; auto.
   intros. destruct H0 as [[P5 P6] [P3 P4]]. subst. step.
   eapply read_adequate. auto. eapply SVar. eapply SVar. lia.
-  clean_up. subst. eapply string_get_lt in H1. destruct H1. rewrite H0.
-  eapply (ret_adequate _ _ _ _
-            (EBin EAnd
-               (Var vx)
-               (EBin EEq (EUna EVal (Var vres0))
-                  (EUna EVal (EBin EStringGet (Var n) hs))))).
-  repeat econstructor; eauto.
-  repeat split; auto. clean_up. subst.
-  eapply ite_adequate.
-  eapply SVar.
-  - intro. eapply (ret_adequate _ _ _ _ (Var vres)); repeat econstructor. lia.
-  - intro. step.
+  clean_up. subst. eapply string_get_lt in H2. destruct H2. rewrite H0.
+  step. repeat step.
 Defined.
 
 Lemma tag_adequate (hs : VAL String) :
@@ -1114,14 +1132,10 @@ Definition recognize_adequate_sig {X} (h : PHOASV X) :
   {code | forall e data s, adequate (fun _ => eq) e h data s ->
                       adequate (fun _ => span_eq data) (recognize e) code data s}.
   eapply exist. intros. unfold recognize.
-  step. step. clean_up. subst s. eapply bind_adequate.
-  eapply peek_adequate. eapply bind_adequate. eapply H.
-  intros. eapply consequence_adequate. eapply length_adequate.
+  repeat step. subst. eapply H.
+  eapply consequence_adequate. step.
   intros t1 v hv [P2 [P3 P4]]. subst. instantiate (1 := eq). reflexivity.
-  intros. destruct H0. eapply consequence_adequate.
-  eapply (take_verif_adequate _ _ (EBin ESub (Var vres) (Var vres0)));
-    repeat econstructor; eauto.
-  subst. econstructor.
+  clean_up. eapply consequence_adequate. step.
   intros. clean_up. subst. split; auto.
 Defined.
 
@@ -1143,9 +1157,8 @@ Definition be_u8_adequate_sig :
   {code | forall data s, adequate (be_spec 1 s) be_u8 code data s}.
   eapply exist. intros. unfold be_u8.
   repeat step; repeat econstructor; eauto.
-  clean_up. subst. eapply consequence_adequate.
-  eapply (read_adequate _ _ (Var vres) (Const (ENat 0))); repeat econstructor; auto. lia.
-  intros t0 v hv [P3 P4]. subst. split; auto.
+  eapply consequence_adequate. step.
+  intros t0 v hv [P3 P4]. repeat clean_up. subst. repeat split; auto.
 Defined.
 
 Definition be_u8_adequate :
@@ -1190,17 +1203,8 @@ Proof.
   eapply exist. intros. subst. unfold value_not_in_string.
   eapply (repeat_compt_Some_adequate (EUna ESome (EUna EStringLen hs)) _ (Const (EBool true)));
     repeat econstructor; eauto.
-  intros. eapply string_get_lt in H2. destruct H2. rewrite H2.
-  repeat clean_up. subst.
-  eapply (ret_adequate _ _ _ _ (EBin EAnd
-                                (Var vx)
-                                (EUna ENot
-                                   (EBin EEq
-                                      (EUna EVal hv)
-                                      (EUna EVal
-                                         (EBin EStringGet
-                                         (Var n)
-                                         hs)))))); repeat econstructor; eauto.
+  intros. eapply string_get_lt in H3. destruct H3. rewrite H3.
+  repeat clean_up. subst. step.
 Defined.
 
 Lemma value_not_in_string_adequate : forall (hv : VAL (NatN 8)) (hs : VAL String),
@@ -1242,11 +1246,7 @@ Definition char_adequate_sig (hn : VAL (NatN 8)) :
         adequate (fun t (x : nat8) (y : type_to_Type (NatN 8)) => len t = len s - 1 /\ x = y)
           (char n) code data s}.
   eapply exist. intros. unfold char.
-  step. eapply be_u8_adequate. be_spec_clean. subst.
-  eapply (ite_adequate _ _ (EBin EEq (EUna EVal (Var vres)) (EUna EVal hn)));
-    repeat econstructor. auto.
-  - intro. eapply (ret_adequate _ _ _ _ hn). eauto. split; auto.
-  - intro. step.
+  repeat step. eapply be_u8_adequate. be_spec_clean. repeat step.
 Defined.
 
 Lemma char_adequate : forall (hn : VAL (NatN 8)) ,
@@ -1260,8 +1260,8 @@ Definition length_data_adequate_sig (h : PHOAS Nat) :
       adequate (fun _ => eq) e h data s ->
       adequate (fun _ => span_eq data) (length_data e) code data s}.
   eapply exist. intros. unfold length_data.
-  step. eapply H. simpl in H0. eapply consequence_adequate.
-  eapply (take_verif_adequate _ _ (Var vres)). subst. econstructor.
+  repeat step. eapply H.
+  eapply consequence_adequate. simpl in H0. step.
   intros t0 v hv [[P0 P1] [P3 P2]]. split; auto.
 Defined.
 
@@ -1276,11 +1276,9 @@ Definition map_parser_adequate_sig (hc1 : PHOAS Span) {X} (hc2 : PHOAS X) :
       (forall r res, span_data_wf data r -> r = res -> adequate (fun _ => R') c2 hc2 data res) ->
       adequate (fun _ => R') (map_parser c1 c2) code data s}.
   eapply exist. intros. unfold map_parser.
-  step. eauto. clean_up. subst.
-  eapply consequence_adequate. eapply scope_adequate.
-  eapply consequence_adequate. eapply H0. eauto. reflexivity.
-  intros. eapply H1. 2 : eauto. eapply SVar. auto.
-  intros t0 v hv [P1 P2]. auto.
+  step. eauto. simpl in H1. eapply consequence_adequate. step.
+  eapply H0. eauto. reflexivity.
+  intros. eapply H2.
 Defined.
 
 Lemma map_parser_adequate hc1 {X} (hc2 : PHOASV X) :

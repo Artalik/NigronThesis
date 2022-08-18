@@ -21,15 +21,15 @@ Arguments length [S].
 Arguments authenticator [S].
 Arguments attributes [S].
 
-Definition foldr {A B} (f : A -> B -> B) (base : B) (res : RadiusDataS A) : B :=
-  f (authenticator res)
+Definition foldMap `{Monoid.Monoid M} {A} (fold : A -> M) (res : RadiusDataS A) : M :=
+  Monoid.f (fold (authenticator res))
     match attributes res with
-    | None => base
-    | Some arr => List.fold_right (fun r l' => Foldable.foldr _ _ f l' r.2) base (values (`arr))
+    | None => Monoid.mempty
+    | Some arr => foldMap _ _ fold arr
     end.
 
 Global Instance RadiusData_Foldable : Foldable RadiusDataS :=
-  Build_Foldable _ (@foldr).
+  Build_Foldable _ (@foldMap).
 
 Definition RadiusData := RadiusDataS span.
 
