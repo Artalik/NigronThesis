@@ -33,19 +33,19 @@ Global Arguments ALT [X].
 Global Arguments LOCAL _ [X].
 Global Arguments REPEAT _ [X].
 
-Definition fail {X} : NomG X := syntax_effect FAIL.
+Definition fail {X} : NomG X := gen FAIL.
 
-Definition length : NomG N := syntax_effect LENGTH.
+Definition length : NomG N := gen LENGTH.
 
-Definition take (n : N) : NomG span := syntax_effect (TAKE n).
+Definition take (n : N) : NomG span := gen (TAKE n).
 
-Definition read (s : span) (pos : N): NomG atom := syntax_effect (READ s pos).
+Definition read (s : span) (pos : N): NomG atom := gen (READ s pos).
 
-Definition alt {X} (c1 : NomG X) (c2 : NomG X) : NomG X := syntax_effect (ALT c1 c2).
+Definition alt {X} (c1 : NomG X) (c2 : NomG X) : NomG X := gen (ALT c1 c2).
 
 (* =local= *)
 Definition local (s : option span) {X} (e : NomG X) : NomG X :=
-  syntax_effect (LOCAL s e).
+  gen (LOCAL s e).
 
 Definition scope (s : span) {X} (e : NomG X) := local (Some s) e.
 
@@ -54,7 +54,7 @@ Definition peek {X} (e : NomG X) : NomG X := local None e.
 
 (* =repeat= *)
 Definition repeat (n : option N) {X} (e : X -> NomG X) (base : X): NomG X :=
-  syntax_effect (REPEAT n e base).
+  gen (REPEAT n e base).
 
 Definition repeat_n (n : N) {X} (e : X -> NomG X) (base : X): NomG X :=
   repeat (Some n) e base.
