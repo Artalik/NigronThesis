@@ -3,7 +3,7 @@ From FreeMonad Require Export FreeMonad.
 Inductive Fresh : Type -> Type :=
 | gensymOp : unit -> Fresh nat.
 
-Definition gensym (tt: unit): Free Fresh nat := syntax_effect (gensymOp tt).
+Definition gensym (tt: unit): Free Fresh nat := gen (gensymOp tt).
 
 Require Import tree.
 

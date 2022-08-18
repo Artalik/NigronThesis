@@ -24,11 +24,11 @@ Inductive DECODE : Type -> Type :=
 
 Definition Decodeur := Free DECODE.
 
-Definition take (n : N) : Decodeur span := syntax_effect (TakeOp n).
+Definition take (n : N) : Decodeur span := gen (TakeOp n).
 
-Definition read (s : span) (pos : N): Decodeur N := syntax_effect (ReadOp s pos).
+Definition read (s : span) (pos : N): Decodeur N := gen (ReadOp s pos).
 
-Definition fail {X} : Decodeur X := syntax_effect FailOp.
+Definition fail {X} : Decodeur X := gen FailOp.
 
 Fixpoint wp {X} (m: Decodeur X) (Q : X -> iProp) : iProp :=
   match m with

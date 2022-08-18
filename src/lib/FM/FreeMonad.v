@@ -15,7 +15,7 @@ Fixpoint bind {SIG X Y} (m: Free SIG X)(f: X -> Free SIG Y): Free SIG Y :=
 
 Arguments bind [_][_] [_] m f.
 
-Definition syntax_effect {SIG X} (m : SIG X) : Free SIG X := op m (@ret SIG X).
+Definition gen {SIG X} (m : SIG X) : Free SIG X := op m (@ret SIG X).
 
 Definition bind2 {SIG} {A B C: Type} (x: Free SIG (A * B)) (f: A -> B -> Free SIG C) : Free SIG C :=
   bind x (fun p => f (fst p) (snd p)).
