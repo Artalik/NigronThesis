@@ -31,7 +31,7 @@ Section syntax_effect.
   Context {X : Type}.
 
 (* =syntax_effect= *)
-Definition gen {SIG X} (m : SIG X) : Free SIG X := op m (@ret SIG X).
+Definition gen (m : SIG X) : Free SIG X := op m (@ret SIG X).
 (* =end= *)
 
 End syntax_effect.
