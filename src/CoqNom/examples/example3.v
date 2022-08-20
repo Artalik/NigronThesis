@@ -167,11 +167,16 @@ Definition packet_SSH := packet_SSHS span.
 (* =end= *)
 
 
+Import Monoid.
+
+Section foldr.
+
 (* =foldr= *)
-Definition foldMap M (sg : Monoid.Semigroup M) (m : Monoid.Monoid M)
-  {A} (fold : A -> M) (p : packet_SSHS A) : M :=
-  Monoid.f (fold (payload p)) (fold (mac p)).
+Definition foldMap `{Monoid M} {A} (m : A -> M) (p : packet_SSHS A) : M :=
+  Monoid.f (m (payload p)) (m (mac p)).
 (* =end= *)
+
+End foldr.
 
 Local Instance Foldable_SSH : Foldable packet_SSHS :=
   Build_Foldable _ (@foldMap).
