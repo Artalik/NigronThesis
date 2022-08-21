@@ -92,7 +92,6 @@ Implicit Type Q: X -> iProp.
 
 (* =rule_consequence= *)
 Lemma rule_consequence: forall P P' Q Q' m,
-
   ({{ P' }} m {{ v; Q' v }}) ->
   (P ⊢ P') ->
   (forall v, Q' v ⊢ Q v) ->
@@ -111,7 +110,6 @@ Proof. iIntros "* $". Qed.
 
 (* =rule_frame= *)
 Lemma frame: forall P Q P' m,
-
   ({{ P }} m {{ v; Q v }}) ->
   (*----------------------------*)
   {{ P ∗ P' }} m {{ v; Q v ∗ P' }}.

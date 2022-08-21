@@ -128,8 +128,9 @@ Ltac Frame := eapply intro_true_r; eapply frame.
 (** Effects rules *)
 (* =gensym_spec= *)
 Lemma rule_gensym t : {{ emp }} gensym t {{ l; & l }}.
-Proof. simpl; auto. Qed.
 (* =end= *)
+Proof. simpl; auto. Qed.
+
 
 Section error_rule.
 
@@ -139,15 +140,17 @@ Section error_rule.
 
 (* =error_spec= *)
 Lemma rule_error P Q e : {{ P }} error e {{ v; Q v }}.
-Proof. auto. Qed.
 (* =end= *)
+Proof. auto. Qed.
+
 
 End error_rule.
 
 (* =trail_spec= *)
 Lemma rule_trail  : {{ emp }} trail tt {{ _; emp  }}.
-Proof. auto. Qed.
 (* =end= *)
+Proof. auto. Qed.
+
 
 Definition inject_aux n :=
   List.map Pos.of_nat
@@ -213,7 +216,7 @@ Fixpoint eval {X} (m : mon X) : generator -> res (generator * X) :=
       fun s =>
         let h := gen_trail s in
         let n := gen_next s in
-        eval (f n) (mkgenerator (Pos.succ n) ((n,ty) :: h))
+        eval (f n) (mkgenerator (n + 1) ((n,ty) :: h))
   | op (trailOp _) f =>
       fun s =>
         let h := gen_trail s in

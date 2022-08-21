@@ -210,11 +210,13 @@ Definition make_assign_value (bf: bitfield) (r: expr): expr :=
   assignment.  In this case, [a] is meaningless.
 *)
 
-(* =destination= *)
+(* =set_destination= *)
 Inductive set_destination : Type :=
   | SDbase (tycast ty: type) (tmp: ident)
   | SDcons (tycast ty: type) (tmp: ident) (sd: set_destination).
+(* =end= *)
 
+(* =destination= *)
 Inductive destination : Type :=
   | For_val
   | For_effects
