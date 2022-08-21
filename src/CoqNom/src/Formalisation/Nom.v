@@ -196,7 +196,7 @@ Definition data := list atom.
 
 (* =Result= *)
 Inductive Result X :=
-| Res (x :X)
+| Res (x : X)
 | NoRes
 | NoFuel.
 (* =end= *)
@@ -207,29 +207,61 @@ Global Arguments NoFuel {X}.
 
 (* =MonSem= *)
 Definition MonSem X := span -> Result (span * X).
+(* =end= *)
 
-Definition run_ret {X} (x : X) : MonSem X := fun s => Res (s, x).
+Section run_ret.
 
-Definition run_bind {X} (e : MonSem X) {Y} (f : X -> MonSem Y) : MonSem Y :=
+  Context {X : Type}.
+
+(* =run_ret= *)
+Definition run_ret (x : X) : MonSem X := fun s => Res (s, x).
+(* =end= *)
+End run_ret.
+
+Section run_bind.
+
+  Context {X Y : Type}.
+
+(* =run_bind= *)
+Definition run_bind (e : MonSem X) (f : X -> MonSem Y) : MonSem Y :=
   fun s =>
     match e s with
     | NoRes => NoRes
     | NoFuel => NoFuel
     | Res (s, x) => f x s
     end.
+(* =end= *)
+
+End run_bind.
 
 Notation "'let*' x ':=' e1 'in' e2" :=
   (run_bind e1 (fun x => e2)) (x name, at level 50).
 
+(* =run_fail= *)
 Definition run_fail {X} : MonSem X := fun _ => NoRes.
-Definition run_try_with {X} (e : MonSem X) (f: MonSem X): MonSem X :=
+(* =end= *)
+
+Section run_try_with.
+
+  Context {X : Type}.
+
+(* =run_try_with= *)
+Definition run_try_with (e : MonSem X) (f : MonSem X): MonSem X :=
   fun s =>
     match e s with
     | NoFuel => NoFuel
     | NoRes => f s
     | Res (s,v) => Res (s,v)
     end.
+(* =end= *)
+
+End run_try_with.
+
+(* =run_get= *)
 Definition run_get : MonSem span := fun s => Res (s,s).
+(* =end= *)
+
+(* =run_set= *)
 Definition run_set (s : span) : MonSem unit := fun _ => Res (s,tt).
 (* =end= *)
 
@@ -261,23 +293,35 @@ Defined.
 
 
 (* =run_read= *)
-Definition run_read (arg1 : span) (arg2 : N) (a : data) : MonSem atom :=
-  if arg2 <? len arg1
+Definition run_read (range : span) (n : N) (a : data) : MonSem atom :=
+  if n <? len range
   then
-    lookupN a (pos arg1 + arg2)
+    lookupN a (pos range + n)
   else
     run_fail.
 (* =end= *)
 
+Section run_alt.
+
+  Context {X : Type}.
+  Implicit Type e f : @NomG atom X.
+
 (* =run_alt= *)
-Definition run_alt (run : forall {X}, NomG X -> data -> MonSem X) {X}
-  (e1 e2 : @NomG atom X) (data : data) : MonSem X :=
-  run_try_with (run e1 data) (run e2 data).
+Definition run_alt (run : forall {X}, NomG X -> data -> MonSem X)
+  e f (data : data) : MonSem X :=
+  run_try_with (run e data) (run f data).
 (* =end= *)
 
+End run_alt.
+
+Section run_local.
+
+  Context {X : Type}.
+  Implicit Type e : @NomG atom X.
+
 (* =run_local= *)
-Definition run_local (run : forall {X}, NomG X -> data -> MonSem X) {X}
-  (range : option span) (e : @NomG atom X)  (data : data) : MonSem X :=
+Definition run_local (run : forall {X}, NomG X -> data -> MonSem X)
+  (range : option span) e (data : data) : MonSem X :=
   let* save := run_get in
   let* _ := match range with
             | Some range => run_set range
@@ -287,6 +331,8 @@ Definition run_local (run : forall {X}, NomG X -> data -> MonSem X) {X}
   let* _ := run_set save in
   run_ret v.
 (* =end= *)
+
+End run_local.
 
 Fixpoint run (fuel : nat) {X} (m : NomG X) (data : data) {struct m} : MonSem X :=
   match m with
@@ -327,23 +373,23 @@ with run_op (fuel : nat) {X} (m : NOM X) (data : data) : MonSem X :=
 
 Fail
 (* =run_repeat_n= *)
-Equations run_repeat_n {run : forall X, @NomG atom X -> list atom -> MonSem X}
-  (n : N) {X} (e : X -> @NomG atom X) (b : X) (d: list atom) : MonSem X :=
+Equations run_repeat_n {run : forall X, NomG X -> list atom -> MonSem X}
+  (n : N) (e : X -> NomG X) (b : X) (d: list atom) : MonSem X :=
   run_repeat_n 0 e b d := run_ret b;
   run_repeat_n n e b d :=
-    let* v := run _ (e b) d in
-    run_repeat_n (N.pred n) e v d.
+    let* v := run (e b) d in
+    run_repeat_n (n - 1) e v d.
 (* =end= *)
 
 Fail
 (* =run_many= *)
-Equations run_many {run : forall X, @NomG atom X -> list atom -> MonSem X}
-  (fuel : N) {X} (e : X -> @NomG atom X) (b : X) (d: list atom) : MonSem X :=
+Equations run_many {run : forall X, NomG X -> list atom -> MonSem X}
+  (fuel : N) (e : X -> NomG X) (b : X) (d: list atom) : MonSem X :=
   run_many 0 e b d := fun _ => NoFuel;
   run_many fuel e b d :=
     run_try_with
-      (let* v := run _ (e b) d in
-       run_many (N.pred fuel) e v d)
+      (let* v := run (e b) d in
+       run_many (fuel - 1) e v d)
       (run_ret b).
 (* =end= *)
 
@@ -378,14 +424,20 @@ with run_op (fuel : nat) {X} (m : NOM X) (data : data) : MonSem X :=
     lengthN nil := 0;
     lengthN (_ :: t) := N.succ (lengthN t).
 
+Section parse.
+
+  Context {X : Type}.
+
 (* =parse= *)
-Definition parse {X} (m : NomG X) (nb_iter_max : nat) data : option X :=
+Definition parse (m : NomG X) (nb_iter_max : nat) data : option X :=
   let len := lengthN data in
   match run nb_iter_max m data (mk_span 0 len) with
   | Res (_, v) => Some v
   | _ => None
   end.
 (* =end= *)
+
+End parse.
 
 End NomG_sem.
 
