@@ -161,7 +161,7 @@ Proof.
   unfold inject_aux. rewrite PeanoNat.Nat.sub_diag. simpl. reflexivity.
 Qed.
 
-Definition inject n : (@gset ident positive_eq_dec pos_countable) :=
+Definition inject n : gset ident :=
   list_to_set (inject_aux n).
 
 Lemma unused_map : inject (first_unused_ident ()) = ∅.
