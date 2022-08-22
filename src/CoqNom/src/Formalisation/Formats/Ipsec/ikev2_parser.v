@@ -367,7 +367,7 @@ Definition parse_ikev2 : nat -> list nat8 -> option (IkeV2Header * VECTOR IkeV2P
   ].
 
 Definition test_ikev2_init_req := run 57 parse_ikev2_header IKEV2_INIT_REQ (mk_span 0 28).
-Compute (test_ikev2_init_req). (* OK *)
+(* Compute (test_ikev2_init_req). *) (* OK *)
 
 #[tactic="NSize"] Equations IKEV2_PAYLOAD_SA : list nat8 :=
   IKEV2_PAYLOAD_SA :=
@@ -379,7 +379,7 @@ Compute (test_ikev2_init_req). (* OK *)
 
 Definition test_ikev2_payload_sa :=
   run 9 parse_ikev2_payload_generic IKEV2_PAYLOAD_SA (mk_span 0 (N.of_nat (List.length IKEV2_PAYLOAD_SA))).
-Compute (test_ikev2_payload_sa). (* OK *)
+(* Compute (test_ikev2_payload_sa). *) (* OK *)
 
 Program Definition test_ikev2_payload_sa_suite : Result (span * IkeV2PayloadContent) :=
   match test_ikev2_payload_sa with
@@ -404,7 +404,7 @@ Next Obligation.
   intros. simpl. lia.
 Qed.
 
-Compute (test_ikev2_payload_sa_suite). (* OK *)
+(* Compute (test_ikev2_payload_sa_suite). *) (* OK *)
 
 Program Definition test_ikev2_parse_payload_many :=
   run 100 (@parse_ikev2_payload_list (_8 33)) IKEV2_INIT_REQ
@@ -413,8 +413,8 @@ Next Obligation.
   NSize.
 Qed.
 
-Compute (test_ikev2_parse_payload_many). (* A verifier mais semble OK *)
+(* Compute (test_ikev2_parse_payload_many). *) (* A verifier mais semble OK *)
 
-Compute (run 1000 parse_ikev2_message
-             IKEV2_INIT_REQ
-             (mk_span 0 (N.of_nat (List.length IKEV2_INIT_REQ)))).
+(* Compute (run 1000 parse_ikev2_message *)
+(*              IKEV2_INIT_REQ *)
+(*              (mk_span 0 (N.of_nat (List.length IKEV2_INIT_REQ)))). *)
