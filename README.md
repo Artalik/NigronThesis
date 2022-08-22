@@ -5,7 +5,9 @@ Ce dépot contient les différents travaux présentés dans le manuscrit.
 
 ## Installation
 
-Les dépendances des travaux peuvent être installé ainsi avec opam sur la version 4.13.0 de OCaml :
+Les dépendances des travaux peuvent être installées ainsi avec opam sur la version 4.13.0 de OCaml :
+
+`opam repo add coq-released https://coq.inria.fr/opam/released`
 
 `opam install coq.8.15.2 coq-iris.4.0.0 coq-equations.1.3+8.15`
 
