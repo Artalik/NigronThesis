@@ -154,13 +154,13 @@ Global Transparent set.
 
 Definition test_perf0 := make N 10.
 
-Compute test_perf0.
+(* Compute test_perf0. *)
 
 Definition test_perf_test :=
   let vec := make N 10 in
   set vec 10000 10.
 
-Compute test_perf_test.
+(* Compute test_perf_test. *)
 
 Definition add {A} (vec : VECTOR A) (v : A) : VECTOR A := set vec (size (`vec)) v.
 
@@ -168,7 +168,7 @@ Definition add {A} (vec : VECTOR A) (v : A) : VECTOR A := set vec (size (`vec)) 
 Definition test_perf_test_suite :=
   add (add (add test_perf_test 10) 8) 0.
 
-Compute test_perf_test_suite.
+(* Compute test_perf_test_suite. *)
 
 Definition get {A} (vec : VECTOR A) (pos : N) : option A := lookup (values (`vec)) pos.
 
