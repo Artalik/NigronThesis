@@ -49,8 +49,10 @@ Les fichiers nommées `*_rel.v` contiennent le raffinement des décodeurs.
 
 Radius possède deux versions du raffinement, celle dans le dossier `src/fresh/CoqNom/src/Formalisation/Formats/Radius/versionUnknown` appelle directement des structures C pré-existantes.
 
+SSH contient deux versions différentes : `parser.v` a été adapté depuis suricata alors `ssh.v` a été adapté de rusticata.
+
 Ipsec n'a pas été raffiné, la version de rusticata se heurtent aux limitations décrites dans le manuscrit.
 
 La version C de Radius (obtenu par extraction puis avec le compilateur) est disponible ici : `src/fresh/CoqNom/src/Extraction/C/RadiusC/parser_Radius.c`
 
-La version C de SSH est disponible ici : `src/fresh/CoqNom/src/Extraction/C/SSHC/parser_ssh.c`
+La version C de SSH vient de `ssh.v` et est disponible ici : `src/fresh/CoqNom/src/Extraction/C/SSHC/parser_ssh.c`
