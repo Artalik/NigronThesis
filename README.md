@@ -5,7 +5,7 @@ Ce dépot contient les différents travaux présentés dans le manuscrit.
 
 ## Installation
 
-Les dépendances des travaux peuvent être installé ainsi :
+Les dépendances des travaux peuvent être installé ainsi avec opam sur la version 4.13.0 de OCaml :
 
 `opam install coq.8.15.2 coq-iris.4.0.0 coq-equations.1.3+8.15`
 
@@ -45,7 +45,7 @@ Les fichiers nommées `*_spec.v` contiennent les preuves relatives au zéro-copi
 
 Les fichiers nommées `*_rel.v` contiennent le raffinement des décodeurs.
 
-Radius possède deux versions du raffinement, celle dans le dossier `src/fresh/CoqNom/src/Formalisation/Formats/Radius/versionUnknown` appelle directement des structures C pré-existantes. 
+Radius possède deux versions du raffinement, celle dans le dossier `src/fresh/CoqNom/src/Formalisation/Formats/Radius/versionUnknown` appelle directement des structures C pré-existantes.
 
 Ipsec n'a pas été raffiné, la version de rusticata se heurtent aux limitations décrites dans le manuscrit.
 
