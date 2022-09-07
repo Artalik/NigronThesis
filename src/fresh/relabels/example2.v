@@ -113,7 +113,7 @@ Qed.
 (* =rule_fresh= *)
 Lemma rule_gensym: forall k,
     (*-------------------------------------------------------*)
-    {{ fun n => n = k }} gensym tt {{fun v n' => v = k /\ n' = 1+k}}.
+    {{ fun n => n = k }} gensym tt {{ fun v n' => v = k /\ n' = 1+k }}.
 (* =end= *)
 Proof.
   intros. simpl. repeat split; auto.
