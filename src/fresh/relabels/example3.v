@@ -109,10 +109,10 @@ Lemma frame_bind : forall (P : iProp), ⊢ P -∗ emp ∗ P.
 Proof. iIntros "* $". Qed.
 
 (* =rule_frame= *)
-Lemma frame: forall P Q P' m,
+Lemma rule_frame: forall P Q R m,
   ({{ P }} m {{ v; Q v }}) ->
   (*----------------------------*)
-  {{ P ∗ P' }} m {{ v; Q v ∗ P' }}.
+  {{ P ∗ R }} m {{ v; Q v ∗ R }}.
 (* =end= *)
 Proof.
   intros. iIntros "[HA HC]". iApply (wp_consequence with "[HA]").
