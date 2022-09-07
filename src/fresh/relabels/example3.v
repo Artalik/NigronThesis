@@ -129,7 +129,7 @@ Proof.
 Qed.
 
 (* =rule_fresh= *)
-Lemma rule_gensym : {{ emp }} gensym tt {{ ident; & ident }}.
+Lemma rule_gensym: {{ emp }} gensym tt {{ ident; & ident }}.
 (* =end= *)
 Proof. simpl.  iIntros "H" (v) "H2". iFrame. Qed.
 
