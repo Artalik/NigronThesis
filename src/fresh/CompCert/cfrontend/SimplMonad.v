@@ -26,13 +26,20 @@ Definition error {X} (e : Errors.errmsg) : mon X := gen (errorOp e).
 Definition gensym (t : type) : mon ident := gen (gensymOp t).
 Definition trail (_ : unit): mon (list (ident * type)) := gen (trailOp tt).
 
-Fixpoint wp {X} (e1 : mon X) (Q : X -> iProp) : iProp :=
-  match e1 with
-  | ret v => Q v
-  | op (errorOp e) _ => True
-  | op (gensymOp _) f => ∀ l, & l -∗ wp (f l) Q
-  | op (trailOp _) f => ∀ l, wp (f l) Q
-  end.
+Definition wp {X} (e : mon X) (Q : X -> iProp) : iProp.
+  revert X e Q. fix wp 2. intros X e Q. destruct e as [T x|T e|T1 T2 m f].
+  (* ret *)
+  - eapply (Q x).
+  - destruct e.
+    (* error *)
+    + eapply True.
+    (* gensym *)
+    + eapply (∀ l, & l -∗ Q l).
+    (* trail *)
+    + eapply (∀ l, Q l).
+  (* bind *)
+  - eapply (wp T1 m (fun x => wp T2 (f x) Q)).
+Defined.
 
 Notation "'{{' P } } e {{ v ; Q } }" := (P ⊢ wp e (fun v => Q))
                                           (at level 20,
@@ -40,28 +47,22 @@ Notation "'{{' P } } e {{ v ; Q } }" := (P ⊢ wp e (fun v => Q))
 
 (** triple rules *)
 
-Lemma wp_bind {X Y} (e : mon X) (f :  X → mon Y) (Q : Y -> iProp)  (Q' : X -> iProp) :
-  wp e Q' ⊢ (∀ v,  Q' v -∗ wp (f v) Q ) -∗ wp (bind e f) Q %I.
-Proof.
-  iIntros "HA HB". revert e. fix e 1.
-  destruct e0 as [v | _ []].
-  - iApply "HB". iApply "HA".
-  - simpl. auto.
-  - simpl. iIntros (l) "HC". iDestruct ("HA" with "HC") as "HA".
-    iPoseProof "HB" as "HB". apply e.
-  - simpl. iIntros (l). iDestruct ("HA" $! l) as "HA".
-    iPoseProof "HB" as "HB". apply e.
-Qed.
-
 Lemma wp_consequence : forall {X} (P Q : X -> iProp) (f : mon X),
     ⊢ wp f P -∗
       (∀ x, P x -∗ Q x) -∗
       wp f Q.
 Proof.
-  induction f as [v | Y []]; simpl; intros; auto.
+  induction f as [v | Y [] |]; simpl; intros; auto.
   - iIntros "HA HB". iApply ("HB" with "HA").
-  - iIntros "HA * HB * HC". iApply (H with "[HA HC] HB"). iApply ("HA" with "HC").
-  - iIntros "HA HB *". iApply (H with "HA HB").
+  - iIntros "HA * HB * HC". iApply "HB". iApply ("HA" with "HC").
+  - iIntros "HA HB *". iApply "HB". iApply "HA".
+  - iIntros "HA HB". iApply (IHf with "HA"). iIntros (x) "HA". iApply (H with "HA HB").
+Qed.
+
+Lemma wp_bind {X Y} (e : mon X) (f :  X → mon Y) (Q : Y -> iProp)  (Q' : X -> iProp) :
+  wp e Q' ⊢ (∀ v,  Q' v -∗ wp (f v) Q ) -∗ wp (bind e f) Q %I.
+Proof.
+  iIntros "HA HB". simpl. iApply (wp_consequence with "HA"). auto.
 Qed.
 
 Lemma ret_spec {X} (v : X) H (Q : X -> iProp) :
@@ -88,7 +89,6 @@ Proof.
   intros. iIntros "HA". iDestruct (H2 with "HA") as "HA".
   iDestruct (H0 with "HA") as "HA". iApply (wp_consequence with "HA"). iIntros "*". iApply H1.
 Qed.
-
 
 Lemma frame_bind : forall (P : iProp), ⊢ P -∗ emp ∗ P.
 Proof. iIntros "* $". Qed.
@@ -184,20 +184,20 @@ Proof.
   constructor.
 Qed.
 
-Fixpoint eval {X} (m : mon X) : generator -> res (generator * X) :=
-  match m with
-  | ret v => fun s => OK (s, v)
-  | op (errorOp e) _ => fun s => Error e
-  | op (gensymOp ty) f =>
-      fun s =>
-        let h := gen_trail s in
-        let n := gen_next s in
-        eval (f n) (mkgenerator (Pos.succ n) ((n,ty) :: h))
-  | op (trailOp _) f =>
-      fun s =>
-        let h := gen_trail s in
-        eval (f h) s
-  end.
+Definition eval {X} (m : mon X) : generator -> res (generator * X).
+  revert X m. fix eval 2. intros X m. destruct m as [T x|T e|T1 T2 m f].
+  - apply (fun s => OK (s, x)).
+  - destruct e as [err | ty | ].
+    + eapply (fun s => Error err).
+    + eapply (fun s =>
+                let h := gen_trail s in
+                let n := gen_next s in
+                OK (mkgenerator (Pos.succ n) ((n,ty) :: h), n)).
+    + eapply (fun s => OK (s, gen_trail s)).
+  - intro s. destruct (eval T1 m s) as [[g v]| err].
+    + eapply (eval T2 (f v) g).
+    + eapply (Error err).
+Defined.
 
 Definition run {X} (m: mon X): res X :=
   match eval m (initial_generator tt) with
@@ -205,6 +205,22 @@ Definition run {X} (m: mon X): res X :=
   | Error e => Error e
   end.
 
+Open Scope positive_scope.
+
+Lemma eval_mono : forall X (m : mon X) g_init g_res res,
+    eval m g_init = OK (g_res, res) ->
+    gen_next g_init <= gen_next g_res.
+Proof.
+  induction m as [T x|T [err | ty |]|T1 T2 m f]; intros.
+  - inversion H. lia.
+  - inversion H.
+  - inversion H. simpl in *. lia.
+  - inversion H. lia.
+  - simpl in H0. destruct (eval m g_init) as [[g_int v]| ] eqn:?.
+    eapply H in H0. eapply f in Heqr. lia. inversion H0.
+Qed.
+
+Close Scope positive_scope.
 
 Section Eval_Adequacy.
   Variable X: Type.
@@ -219,18 +235,24 @@ Section Eval_Adequacy.
       eval m g_init = OK (g_res, v) ->
       (Q v) () (inject (gen_next g_res)).
   Proof.
-    fix ind 1.
-    destruct m as [v| Y []]; intros.
+    revert X.
+    fix ind 2.
+    destruct m as [v| Y []|]; intros.
     - inversion H1; subst. apply soundness. iApply H0.
     - inversion H1.
-    - simpl in *. eapply ind.
-      3 : apply H1.
-      + simpl. lia.
-      + iIntros "HA". simpl. rewrite inject_last_set; auto.
-        iDestruct (heap_ctx_split_sing with "HA") as "[HA HB]".
-        apply inject_disjoint; auto. iDestruct (H0 with "HA") as "HA".
-        iApply ("HA" with "HB").
-    - simpl in *. eapply ind; eauto. iIntros "HA". iApply (H0 with "HA").
+    - apply soundness. inversion_clear H1. simpl in *.
+      iIntros "HA". rewrite inject_last_set; auto.
+      iDestruct (heap_ctx_split_sing with "HA") as "[HA HB]".
+      apply inject_disjoint; auto. iDestruct (H0 with "HA") as "HA".
+      iApply ("HA" with "HB").
+    - simpl in *. inversion H1. subst. apply soundness.
+      iIntros "HA". iApply (H0 with "HA").
+    - simpl in *. destruct (eval m g_init) as [[g_int v_int]| err] eqn:eval_m.
+      + eapply ind in H0; eauto.
+        eapply ind. 3 : eapply H1.
+        etransitivity. eapply H. eapply eval_mono; eauto.
+        iIntros "HA". eapply completeness in H0. iApply (H0 with "HA").
+      + inversion H1.
   Qed.
 
   Lemma adequacy_init : forall e Q g v,
