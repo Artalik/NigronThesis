@@ -148,7 +148,7 @@ Fixpoint inject n : gset positive :=
   | S m => {[ encode m ]} ∪ (inject m)
   end.
 
-Lemma ord_disjoint : forall n v, v >= n -> encode v ∉ (inject n).
+Lemma ord_disjoint : forall n v, v >= n -> encode v ∉ inject n.
 Proof.
   induction n; simpl.
   - intros. intro P. inversion P.
@@ -159,19 +159,19 @@ Proof.
     + eapply IHn. 2 : eauto. lia.
 Qed.
 
-Lemma next_disjoint : forall n, (inject n) ## {[ encode n ]}.
+Lemma next_disjoint : forall n, inject n ## {[ encode n ]}.
 Proof.
   intro. apply disjoint_singleton_r. apply ord_disjoint. auto.
 Qed.
 
-Lemma adequacy_aux {X} : forall (e : Free Fresh X) (Q : X -> iProp) n n' v,
-    (ctx (inject n) ⊢ wp e Q ) ->
+Lemma soundness {X} : forall (e : Free Fresh X) (Q : X -> iProp) n n' v,
+    {{ && (inject n) }} e {{ v; Q v }} ->
     eval e n = (v, n') ->
-    (Q v) () (inject n').
+    && (inject n') ⊢ Q v .
 Proof.
   fix e 1.
   destruct e0 as [v | Y [] k]; intros.
-  - inversion H0; subst. apply soundness. iApply H.
+  - inversion H0; subst. iApply H.
   - simpl in *. eapply e.
     2 : apply H0.
     + iIntros "HA". simpl.
@@ -188,10 +188,9 @@ Lemma adequacy : forall {X} {m: Free Fresh X} {Q},
 Proof.
 intros. unfold run.
 apply (soundness_pure (inject (eval m 0).2)).
-iApply completeness.
-eapply (adequacy_aux m (fun v => ⌜Q v⌝) 0); eauto.
-2: apply surjective_pairing.
+eapply (soundness m (fun v => ⌜Q v⌝) 0).
 iIntros "_"; iApply H; auto.
+apply surjective_pairing.
 Qed.
 
 (****************************************************************)
