@@ -149,8 +149,9 @@ Fixpoint inject (n : nat) : gset positive :=
   end.
 (* =end= *)
 
+Lemma ord_disjoint :
 (* =ord_disjoint= *)
-Lemma ord_disjoint : forall n v, v >= n -> encode v ∉ inject n.
+  forall n v, v >= n -> encode v ∉ inject n.
 (* =end= *)
 Proof.
   induction n; simpl.
@@ -171,7 +172,7 @@ Qed.
 Lemma soundness {X} : forall (e : Free Fresh X) (Q : X -> iProp) n n' v,
     {{ && (inject n) }} e {{ v; Q v }} ->
     eval e n = (v, n') ->
-    && (inject n') ⊢ Q v .
+    && (inject n') ⊢ Q v.
 (* =end= *)
 Proof.
   fix e 1.
