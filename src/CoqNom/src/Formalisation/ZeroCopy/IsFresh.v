@@ -40,9 +40,11 @@ Proof.
     rewrite N.succ_pos_spec. rewrite N.pred_succ. simpl.
     iDestruct (big_sepS_union with "HA") as "[HA HB]".
     + repeat intro. apply elem_of_list_to_set in H0. apply elem_of_list_In in H0.
-      eapply in_seq in H0. eapply elem_of_singleton_1 in H. lia.
+      eapply in_seq in H0 as [m [P0 P1]]. eapply elem_of_singleton_1 in H. subst.
+      rewrite decode_encode in P1. inversion P1. lia.
     + iSplitL "HA".
-      * iApply big_sepS_singleton. iApply "HA".
+      * iDestruct encode_singleton as "[HB _]". iApply "HB".
+        iApply big_sepS_singleton. iFrame.
       * iApply IHn. iApply "HB".
 Qed.
 

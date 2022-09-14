@@ -61,10 +61,10 @@ Section adequacy.
     intros. simpl in *. iIntros "HA HB". iApply "HA".
   Qed.
 
-  Lemma incl_exists : forall (s1 s2 : gset N),
+  Lemma incl_exists `{count : Countable X} : forall (s1 s2 : gset X),
       s1 ⊆ s2 -> ∃ s3, s1 ∪ s3 = s2 /\ s1 ## s3.
   Proof.
-    induction s1 as [| y X not_in IH] using set_ind_L.
+    induction s1 as [| y Y not_in IH] using set_ind_L.
     - intros. exists s2. split. rewrite union_empty_l_L. reflexivity. apply disjoint_empty_l.
     - intros. apply union_subseteq in H as [P0 P1].
       apply IH in P1 as [s3 P2].
@@ -111,7 +111,7 @@ Section adequacy.
     eapply run_mono in RUN. apply inject_mono_r. lia.
   Qed.
 
-  Lemma inject_incl : forall (s1 s2 : gset N),
+  Lemma inject_incl `{count : Countable X}: forall (s1 s2 : gset X),
       s1 ⊆ s2 -> ⊢ ([∗ set] n ∈ s2, & n) -∗
                   ([∗ set] n ∈ s1, & n) ∗ ([∗ set] n ∈ (s2 ∖ s1), & n).
   Proof.
@@ -385,40 +385,6 @@ Section adequacy.
     eapply consequence_rule; eauto. eauto. iFrame.
   Qed.
 
-  Definition injectPos (start : N) (fin : N) : gset positive :=
-    set_map encode (inject start fin).
-
-  Lemma encode_disj : forall (B : gset N) n,
-      n ∉ B -> ({[encode n]} : gset positive) ## set_map encode B.
-  Proof.
-    induction B as [ | n0 set not_in IH] using set_ind_L; simpl; intros.
-    - rewrite set_map_empty. eapply disjoint_empty_r.
-    - repeat intro. apply elem_of_singleton_1 in H0. subst.
-      rewrite set_map_union_L in H1. apply elem_of_union in H1.
-      destruct H1.
-      + apply H. rewrite set_map_singleton_L in H0. apply elem_of_singleton in H0.
-        apply elem_of_union. left. apply elem_of_singleton. apply encode_inj. apply H0.
-      + assert (n ∉ set). intro. apply H. apply elem_of_union. right. apply H1.
-        apply IH in H1.
-        edestruct H1. eapply elem_of_singleton. reflexivity. eapply H0.
-  Qed.
-
-
-  Lemma lemma_final : forall start fin, && injectPos start fin ⊢ injectSL start fin.
-  Proof.
-    iIntros (start fin).
-    unfold injectPos, injectSL.
-    induction (inject start fin) as [ | A B C D] using set_ind_L; iIntros "HA".
-    - rewrite set_map_empty. iApply big_sepS_empty. auto.
-    - rewrite set_map_union_L. iDestruct (heap_ctx_split with "HA") as "[HA HB]".
-      rewrite set_map_singleton. eapply encode_disj. eauto.
-      iApply big_sepS_union. apply disjoint_singleton_l. auto.
-      iSplitL "HA".
-      + rewrite set_map_singleton_L. iApply big_sepS_singleton. iFrame.
-      + iApply (D with "HB").
-  Qed.
-
-
   Corollary adequacy_pure_run : forall X e (Q : X -> Prop) fuel,
       {{ emp }} e {{ v; ⌜Q v⌝ }} ->
       forall (a : list atom) (v : X) s' s,
@@ -427,7 +393,7 @@ Section adequacy.
   Proof.
     intros. eapply SepSet.soundness_pure.
     iIntros "HA". iApply soundness_pure; eauto.
-    iSplitR; auto. iApply lemma_final; eauto.
+    iSplitR; auto. iApply big_op_ctx. iApply "HA".
   Qed.
 
   Corollary adequacy_pure : forall X e (Q : X -> Prop) fuel,

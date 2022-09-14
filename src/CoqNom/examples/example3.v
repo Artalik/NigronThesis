@@ -292,40 +292,6 @@ Proof.
   - inversion H1.
 Qed.
 
-Definition injectPos (start : N) (fin : N) : gset positive :=
-  set_map encode (inject start fin).
-
-Lemma encode_disj : forall (B : gset N) n,
-    n ∉ B -> ({[encode n]} : gset positive) ## set_map encode B.
-Proof.
-  induction B as [ | n0 set not_in IH] using set_ind_L; simpl; intros.
-  - rewrite set_map_empty. eapply disjoint_empty_r.
-  - repeat intro. apply elem_of_singleton_1 in H0. subst.
-    rewrite set_map_union_L in H1. apply elem_of_union in H1.
-    destruct H1.
-    + apply H. rewrite set_map_singleton_L in H0. apply elem_of_singleton in H0.
-      apply elem_of_union. left. apply elem_of_singleton. apply encode_inj. apply H0.
-    + assert (n ∉ set). intro. apply H. apply elem_of_union. right. apply H1.
-      apply IH in H1.
-      edestruct H1. eapply elem_of_singleton. reflexivity. eapply H0.
-Qed.
-
-
-Lemma lemma_final : forall start fin, && injectPos start fin ⊢ injectSL start fin.
-Proof.
-  iIntros (start fin).
-  unfold injectPos, injectSL.
-  induction (inject start fin) as [ | A B C D] using set_ind_L; iIntros "HA".
-  - rewrite set_map_empty. iApply big_sepS_empty. auto.
-  - rewrite set_map_union_L. iDestruct (heap_ctx_split with "HA") as "[HA HB]".
-    rewrite set_map_singleton. eapply encode_disj. eauto.
-    iApply big_sepS_union. apply disjoint_singleton_l. auto.
-    iSplitL "HA".
-    + rewrite set_map_singleton_L. iApply big_sepS_singleton. iFrame.
-    + iApply (D with "HB").
-Qed.
-
-
 Theorem adequacy : forall X d (Q : X -> Prop),
     {{ emp }} d {{ v; ⌜Q v⌝ }} ->
     forall data v,
@@ -336,5 +302,5 @@ Proof.
   destruct (eval d data0) as  [[r s]| ] eqn:?. 2 : inversion H0.
   injection H0. intro. subst. eapply soundness_pure.
   iIntros "HA". iApply (soundness _ d emp (fun v => ⌜ Q v ⌝)); eauto.
-  iSplitR; auto. simpl. iApply lemma_final; eauto.
+  iSplitR; auto. simpl. iApply big_op_ctx. eauto.
 Qed.
