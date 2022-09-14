@@ -20,7 +20,7 @@ Section hprop.
 
   Definition hempty : hprop := fun h => h = ∅.
 
-  Definition hsingle `{_ : Countable X} (l : X) : hprop :=
+  Definition hsingle `{Countable X} (l : X) : hprop :=
     fun h =>  h = {[ encode l ]}.
 
   Definition set_ctx (ctx : gset positive) : hprop := fun h => h = ctx.
@@ -336,6 +336,36 @@ Section hprop.
                                              (⊢&& ({[ l ]} \u h) -∗ && h ∗ & l).
   Proof.
     iIntros (?) "HA". iApply heap_ctx_split; auto. rewrite union_comm_L. auto.
+  Qed.
+
+  Lemma heap_ctx_split_sing_2 (h : gset positive) l : h ## ({[ l ]}) ->
+                                             (&& h ∗ & l ⊢&& ({[ l ]} \u h) ).
+  Proof.
+    iIntros (?) "[HA HB]". iApply heap_ctx_split_2; auto. iFrame.
+  Qed.
+
+
+  Lemma big_op_ctx h : && h ⊣⊢ [∗ set] v ∈ h, & v.
+  Proof.
+    induction h as [| y h not_in IH] using set_ind_L.
+    - iSplit; auto. iIntros "HA". iDestruct (big_sepS_empty with "HA") as "_". iApply init_heap.
+    - iSplit; auto.
+      + iIntros "HA". iDestruct (heap_ctx_split_sing with "HA") as "[HA HB]". set_solver.
+        iApply big_sepS_union. set_solver.
+        iSplitL "HB". iApply (big_sepS_singleton with "HB").
+        iApply (IH with "HA").
+      +  iIntros "HA". iDestruct (big_sepS_union with "HA") as "[HA HB]". set_solver.
+        iApply heap_ctx_split_sing_2. set_solver.
+        iSplitL "HB". iApply (IH with "HB"). iApply big_sepS_singleton. iFrame.
+  Qed.
+
+  Lemma encode_singleton `{Countable X}: forall (v :X), & (encode v) ⊣⊢ & v.
+  Proof.
+    split. repeat red. intros. split; intros.
+    - unfold hpropI in *. simpl in *. unfold hsingle in *.
+      unfold pos_countable in *. unfold encode in *. simpl in *. auto.
+    - unfold hpropI in *. simpl in *. unfold hsingle in *.
+      unfold pos_countable in *. unfold encode in *. simpl in *. auto.
   Qed.
 
 End hprop.
