@@ -1,5 +1,5 @@
 From Formalisation Require Import radius radius_attr radius_attr_spec.
-From Formalisation Require Import ProgramLogic tactics combinator adequacy.
+From Formalisation Require Import ProgramLogic tactics combinator adequacy ZeroCopy Nom_ZeroCopy.
 
 Lemma parse_radius_data_spec :
   {{ emp }} parse_radius_data {{ v; <absorb> all_disjointMSL v }}.
@@ -33,4 +33,10 @@ Proof.
   eapply adequacy_pure.
   eapply parse_radius_data_spec_pure.
   eapply PARSE.
+Qed.
+
+Lemma parse_radius_zerocopy : parse_ZC parse_radius_data.
+Proof.
+  eapply parse_is_ZC.
+  eapply parse_radius_data_spec.
 Qed.

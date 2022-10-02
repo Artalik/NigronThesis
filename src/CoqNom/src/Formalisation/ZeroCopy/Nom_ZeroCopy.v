@@ -1,4 +1,4 @@
-From Formalisation Require Import Span Inject ProgramLogic Monotone adequacy FuelMono ZC.
+From Formalisation Require Import Span Inject ProgramLogic Monotone adequacy FuelMono ZeroCopy.
 Require Import Coq.Program.Equality.
 From Equations Require Import Equations.
 
@@ -6,7 +6,9 @@ Section ZC.
 
   Context {atom : Type}.
 
-  Lemma Fresh_ZC_aux {X} `{Foldable X}: forall e s n s_res,
+  Open Scope N_scope.
+
+  Lemma Fresh_ZC_aux `{Foldable X}: forall e s n s_res,
       {{ injectSL n (pos s) }} e {{ res; <absorb> all_disjointMSL res }} ->
       forall (data : list atom) fuel  (res : X span),
         n <= pos s ->
@@ -191,15 +193,47 @@ Section ZC.
              ++ inversion H2.
   Qed.
 
-  Lemma Fresh_ZC {X} `{Foldable X}: forall e s s_res v,
+  Lemma Fresh_ZC `{Foldable X} e :
       {{ emp }} e {{ res; <absorb> all_disjointMSL res }} ->
-      forall (data : list atom) fuel (res : X span),
+      forall (data : list atom) fuel (res : X span) s s_res,
         run fuel e data s = Res (s_res, res) ->
-          v ∈ M_to_list res ->
+        forall v, v ∈ M_to_list res ->
           scope_in v s.
   Proof.
     intros. eapply Fresh_ZC_aux. iIntros "HA". iApply H0.
     iApply (injectSL_emp with "HA"). lia. lia. eauto. auto.
   Qed.
 
+  Definition Res_to_option {X Y} (r: Result (X * Y)) : option Y :=
+    match r with
+    | Res (_, r) => Some r
+    | _ => None
+    end.
+
+  Lemma Fresh_is_ZC `{fold:Foldable M} (e : @NomG atom (M span)) :
+    {{ emp }} e {{ res; <absorb> all_disjointMSL res }} ->
+    forall data fuel, WeakZC (fun s => Res_to_option (run fuel e data s)).
+  Proof.
+    unfold WeakZC. intros TRIPLE data fuel s res PARSE v IN.
+    destruct (run fuel) as [[x r]| |] eqn:?. inversion PARSE. subst.
+    eapply Fresh_ZC. eapply TRIPLE. eapply Heqm. eapply IN.
+    inversion PARSE. inversion PARSE.
+  Qed.
+
+  Definition parse_ZC `{Foldable M} (e : @NomG atom (M span)) := forall fuel data res,
+      parse e fuel data = Some res ->
+      Result_in res (mk_span 0 (lengthN data)).
+
+  Lemma parse_is_ZC `{Foldable M} (e : @NomG atom (M span)) :
+    {{ emp }} e {{ res; <absorb> all_disjointMSL res }} ->
+    parse_ZC e.
+  Proof.
+    unfold parse_ZC. intros TRIPLE fuel data res PARSE v IN.
+    eapply Fresh_is_ZC. eapply TRIPLE. eapply PARSE. eapply IN.
+  Qed.
+
+  Close Scope N_scope.
+
 End ZC.
+
+Print Assumptions parse_ZC.

@@ -116,10 +116,49 @@ Proof.
     + eapply H0.
 Qed.
 
+Lemma IsFresh_aux_inject_incl :
+  ∀ len pos h,
+    IsFresh_aux pos len () h → inject pos (pos + len) ⊆ h.
+Proof.
+  induction len using N.peano_ind; intros pos h IS.
+  -- rewrite inject_empty. 2 : lia. set_solver.
+  -- rewrite <- N.succ_pos_spec in IS.
+     rewrite IsFresh_aux_equation_2 in IS.
+     rewrite N.succ_pos_spec in IS. rewrite N.pred_succ in IS.
+     eapply (monPred_at_sep tt (& pos)) in IS.
+     unfold hpropI in IS. simpl in *.
+     unfold bi_sep in IS. inversion_star h P. clear IS.
+     inversion P0. subst. clear P0. eapply IHlen in P1.
+     rewrite inject_aux_add_head.
+     assert (N.succ pos + len = pos + N.succ len) by lia. rewrite <- H.
+     set_solver. lia.
+Qed.
+
 Definition M_to_list `{Foldable M} {X} (m : M X) : list X :=
   Foldable.foldMap (list X) X (fun s => [s]) m.
 
 Definition all_disjointSL (l : list span) := [∗ list] v ∈ l, IsFresh v.
+
+Lemma all_disjointSL_incl : forall l v,
+  v ∈ l ->
+  ∀ h, all_disjointSL l () h →
+       inject (pos v) (pos v + len v) ⊆ h.
+Proof.
+  induction l; intros v P; inversion P; subst; intros h ALL.
+  - clear IHl. unfold all_disjointSL in ALL. simpl in *.
+    eapply (monPred_at_sep tt (IsFresh a)) in ALL.
+    unfold hpropI in ALL. simpl in *.
+    unfold bi_sep in ALL. inversion_star h P.
+    unfold IsFresh in P1. destruct a. simpl in *. rewrite P0.
+    eapply IsFresh_aux_inject_incl in P1. set_solver.
+  - unfold all_disjointSL in ALL. simpl in *.
+    eapply (monPred_at_sep tt (IsFresh a)) in ALL.
+    unfold hpropI in ALL. simpl in *.
+    unfold bi_sep in ALL. inversion_star h P.
+    rewrite P0. transitivity h1. 2 : set_solver.
+    eapply IHl; auto.
+Qed.
+
 
 Definition all_disjointMSL `{Foldable M} (m : M span) : iProp :=
   all_disjointSL (M_to_list m).
