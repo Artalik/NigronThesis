@@ -44,7 +44,7 @@ Fixpoint wp {X} (m: Decodeur X) (Q : X -> iProp) : iProp :=
   match m with
   | ret v => Q v
   | op (TakeOp n) k => ∀ v, IsFresh v -∗ wp (k v) Q
-  | op (ReadOp s n) k => ∀ v , wp (k v) Q
+  | op (ReadOp s n) k => ∀ v, wp (k v) Q
   | op FailOp _ => True
   end.
 (* =end= *)
@@ -82,14 +82,32 @@ Notation "{{ P }} m {{ v ; Q }}" := (P ⊢ wp m (fun v => Q))
                                       (at level 20,
                                         format "'[hv' {{  P  }}  '/  ' m  '/'  {{  v ;  Q  }} ']'").
 
-Lemma rule_ret {X} (v : X) H (Q : X -> iProp) :
-  (H ⊢ Q v) -> {{ H }} (ret v : Decodeur X) {{ v'; Q v' }}.
+Section rule_ret.
+
+  Context {X : Type}.
+  Implicit Type Q : X -> iProp.
+(* =rule_ret= *)
+Lemma rule_ret v H Q:
+ (H ⊢ Q v) ->
+ {{ H }} ret v {{ v'; Q v' }}.
+(* =end= *)
 Proof. simpl; iIntros. iApply H0; auto. Qed.
 
-Lemma rule_bind {X Y} (e : Decodeur X) (f : X -> Decodeur Y) Q Q' (H : iProp) :
-  ({{ H }} e {{ v; Q' v }}) ->
-  (∀ v, {{ Q' v }} f v {{ v'; Q v' }}) ->
-  {{ H }} do v <- e; f v {{ v; Q v}}.
+End rule_ret.
+
+Section rule_bind.
+
+  Context {X : Type}.
+  Context {Y : Type}.
+Implicit Type e : Decodeur X.
+Implicit Type f : X -> Decodeur Y.
+
+(* =rule_bind= *)
+Lemma rule_bind e f Q Q' H :
+ {{ H }} e {{ v; Q' v }} ->
+ (∀ v, {{ Q' v }} f v {{ v'; Q v' }}) ->
+ {{ H }} do v <- e; f v {{ v; Q v}}.
+(* =end= *)
 Proof.
   intros. iIntros "HA".
   iApply (wp_bind e f _ Q' with "[HA]").
@@ -97,28 +115,31 @@ Proof.
   - iIntros (v) "HC". iApply (H1 with "[HC]"); auto.
 Qed.
 
+End rule_bind.
+
 Section Rules.
 
   Variable X: Type.
   Implicit Type P: iProp.
   Implicit Type Q: X -> iProp.
 
-  Lemma rule_consequence: forall P P' Q Q' m,
+(* =rule_consequence= *)
+Lemma rule_consequence P P' Q Q' m :
+ {{ P' }} m {{ v; Q' v }} ->
+ (P ⊢ P') ->
+ (forall v, Q' v ⊢ Q v) ->
+ (*-----------------------*)
+ {{ P }} m {{ v; Q v }}.
+(* =end= *)
+Proof.
+  intros. iIntros "HA". iDestruct (H0 with "HA") as "HA".
+  iDestruct (H with "HA") as "HA". iApply (wp_consequence with "HA").
+  iIntros "*". iApply H1.
+Qed.
 
-      ({{ P' }} m {{ v; Q' v }}) ->
-      (P ⊢ P') ->
-      (forall v, Q' v ⊢ Q v) ->
-      (*-----------------------*)
-      {{ P }} m {{ v; Q v }}.
-  Proof.
-    intros. iIntros "HA". iDestruct (H0 with "HA") as "HA".
-    iDestruct (H with "HA") as "HA". iApply (wp_consequence with "HA").
-    iIntros "*". iApply H1.
-  Qed.
 
-
-  Lemma frame_bind : forall (P : iProp), ⊢ P -∗ emp ∗ P.
-  Proof. iIntros "* $". Qed.
+Lemma frame_bind : forall (P : iProp), ⊢ P -∗ emp ∗ P.
+Proof. iIntros "* $". Qed.
 
   Lemma rule_frame: forall P Q P' m,
 
@@ -172,7 +193,7 @@ Import Monoid.
 Section foldr.
 
 (* =foldr= *)
-Definition foldMap `{Monoid M} {A} (m : A -> M) (p : packet_SSHS A) : M :=
+Definition foldMap `{Monoid M} {S} (m : S -> M) (p : packet_SSHS S) : M :=
   Monoid.f (m (payload p)) (m (mac p)).
 (* =end= *)
 
@@ -392,10 +413,10 @@ Section adequacy.
 
 (* =adequacy= *)
 Theorem adequacy : forall d (Q : X -> Prop),
-    {{ emp }} d {{ v; ⌜Q v⌝ }} ->
-    forall data v,
-      decode d data = Some v ->
-      Q v.
+  {{ emp }} d {{ v; ⌜Q v⌝ }} ->
+  forall data v,
+   decode d data = Some v ->
+   Q v.
 (* =end= *)
 Proof.
   intros. unfold decode in H0.
