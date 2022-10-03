@@ -34,30 +34,7 @@ Section ZC.
         transitivity (inject n (Span.pos s_res)).
         2 : { eapply inject_mono_r. lia. }
         rewrite P4. transitivity h. 2 : set_solver. clear P2 P4. unfold all_disjointMSL in P1.
-        revert h P1. induction (M_to_list res); inversion H3; subst; intros.
-        * clear IHl. unfold set_span. unfold all_disjointSL in P1. simpl in *.
-          eapply (monPred_at_sep tt (IsFresh a)) in P1.
-          unfold hpropI in P1. simpl in *.
-          unfold bi_sep in P1. inversion_star h P. clear P1 P2 P3.
-          unfold IsFresh in P0. destruct a. simpl in *. rewrite P. clear P H3.
-          revert pos h0 P0. induction len using N.peano_ind; intros.
-          -- rewrite inject_empty. 2 : lia. set_solver.
-          -- rewrite <- N.succ_pos_spec in P0.
-             rewrite IsFresh_aux_equation_2 in P0.
-             rewrite N.succ_pos_spec in P0. rewrite N.pred_succ in P0.
-             eapply (monPred_at_sep tt (& pos)) in P0.
-             unfold hpropI in P0. simpl in *.
-             unfold bi_sep in P0. inversion_star h P. clear P0.
-             inversion P1. subst. clear P1. eapply IHlen in P2.
-             rewrite inject_aux_add_head.
-             assert (N.succ pos + len = pos + N.succ len) by lia. rewrite <- H0.
-             set_solver. lia.
-        * unfold all_disjointSL in P1. simpl in *.
-          eapply (monPred_at_sep tt (IsFresh a)) in P1.
-          unfold hpropI in P1. simpl in *.
-          unfold bi_sep in P1. inversion_star h P. clear P1.
-          rewrite P. transitivity h1. 2 : set_solver.
-          eapply IHl; auto.
+        eapply (all_disjointSL_incl _ _ H3 _ P1).
     - destruct n; simpl in *.
       + inversion H2.
       + unfold_MonSem. eapply IH; eauto.
@@ -197,10 +174,9 @@ Section ZC.
       {{ emp }} e {{ res; <absorb> all_disjointMSL res }} ->
       forall (data : list atom) fuel (res : X span) s s_res,
         run fuel e data s = Res (s_res, res) ->
-        forall v, v ∈ M_to_list res ->
-          scope_in v s.
+        Result_in res s.
   Proof.
-    intros. eapply Fresh_ZC_aux. iIntros "HA". iApply H0.
+    unfold Result_in. intros. eapply Fresh_ZC_aux. iIntros "HA". iApply H0.
     iApply (injectSL_emp with "HA"). lia. lia. eauto. auto.
   Qed.
 

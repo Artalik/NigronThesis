@@ -1,5 +1,5 @@
 From stdpp Require Import numbers countable.
-From Formalisation Require Import Span SizeNat Inject IsFresh.
+From Formalisation Require Import Span SizeNat Inject IsFresh ZeroCopy.
 From Classes Require Import Foldable.
 Require Import Vector.
 From Equations Require Import Equations.
@@ -50,10 +50,6 @@ Fixpoint Result_to_list (t: Result) : list span :=
 Definition Decodeur := span -> option Result.
 
 Open Scope N_scope.
-
-Definition set_span (s : span) := inject (pos s) (pos s + len s).
-
-Definition scope_in (s t : span) := set_span s ⊆ set_span t.
 
 Fixpoint ResultWeakZC (s : span) (r : Result) : Prop :=
   match r with
