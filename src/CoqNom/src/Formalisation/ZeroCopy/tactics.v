@@ -8,7 +8,7 @@ Ltac WpTac :=
   | |- {{ _ }} ret _ {{ _; _ }} => eapply ret_rule
 
   (* Bind *)
-  | |- {{ _ }} let! _ := _ in _ {{ _; _ }} => iBind; WpTac
+  | |- {{ _ }} let! _ := _ in _ {{ _; _ }} => iBind
 
   (* Fail *)
   | |- {{ _ }} fail {{ _; _ }} => eapply fail_rule
@@ -24,15 +24,15 @@ Ltac WpTac :=
 
 
   (* Alt *)
-  | |- {{ _ }} alt _ _ {{ _; _ }} => eapply alt_rule; WpTac
+  | |- {{ _ }} alt _ _ {{ _; _ }} => eapply alt_rule
 
   (* Map_parser *)
-  | |- {{ emp }} map_parser _ _ {{ _; _ }} => eapply map_parser_rule; [Frame | idtac]; WpTac
-  | |- {{ _ }} map_parser _ _ {{ _; _ }} => eapply map_parser_rule; WpTac
+  | |- {{ emp }} map_parser _ _ {{ _; _ }} => eapply map_parser_rule; [Frame | idtac]
+  | |- {{ _ }} map_parser _ _ {{ _; _ }} => eapply map_parser_rule
 
   (* Many1 *)
-  | |- {{ emp }} many1 _ {{ _; _ }} => eapply many1_rule; WpTac
-  | |- {{ _ }} many1 _ {{ _; _ }} => Frame_emp many1_rule; WpTac
+  | |- {{ emp }} many1 _ {{ _; _ }} => eapply many1_rule
+  | |- {{ _ }} many1 _ {{ _; _ }} => Frame_emp many1_rule
 
   (* rest *)
   | |- {{ emp }} rest {{ _; _ }} => eapply rest_rule
@@ -55,13 +55,13 @@ Ltac WpTac :=
   | |- {{ _ }} be_u64 {{ _; _ }} => Frame_emp u64_rule
 
   (* verify *)
-  | |- {{ _ }} verify _ _ {{ _; _ }} => eapply verify_rule; WpTac
+  | |- {{ _ }} verify _ _ {{ _; _ }} => eapply verify_rule
 
   (* map *)
-  | |- {{ _ }} combinator.map _ _ {{ _; _ }} => eapply map_rule; WpTac
+  | |- {{ _ }} combinator.map _ _ {{ _; _ }} => iBind(*eapply map_rule *)
 
   (* cond *)
-  | |- {{ _ }} cond _ _ {{ _; _ }} => eapply cond_rule; [WpTac | idtac]
+  | |- {{ _ }} cond _ _ {{ _; _ }} => eapply cond_rule; [idtac | idtac]
 
   (* get_ipv4 *)
   | |- {{ emp }} get_ipv4 {{ _; _ }} => eapply get_ipv4_rule
@@ -73,18 +73,16 @@ Ltac WpTac :=
 
 
   (* count *)
-  | |- {{ emp }} count _ {{ _; _ }} => eapply count_rule; WpTac
-  | |- {{ _ }} count _ _ {{ _; _ }} => Frame_emp count_rule; WpTac
+  | |- {{ emp }} count _ {{ _; _ }} => eapply count_rule
+  | |- {{ _ }} count _ _ {{ _; _ }} => Frame_emp count_rule
 
   (* pattern matching*)
-  | |- {{ _ }} match ?x with _ => _ end {{ _; _ }} => destruct x; WpTac
-  | |- {{ _ }} match ?x with _ => _ end _ {{ _; _ }} => destruct x; WpTac
-  | |- {{ _ }} match ?x with _ => _ end _ _ {{ _; _ }} => destruct x; WpTac
-  | |- {{ _ }} match ?x with _ => _ end _ _ _ {{ _; _ }} => destruct x; WpTac
-  | |- {{ _ }} match ?x with _ => _ end _ _ _ _ {{ _; _ }} => destruct x; WpTac
-  | |- {{ _ }} match ?x with _ => _ end _ _ _ _ _ {{ _; _ }} => destruct x; WpTac
-  | |- {{ _ }} match ?x with _ => _ end _ _ _ _ _ _ {{ _; _ }} => destruct x; WpTac
-  | |- {{ _ }} match ?x with _ => _ end _ _ _ _ _ _ _ {{ _; _ }} => destruct x; WpTac
-
-  | _ => idtac
+  | |- {{ _ }} match ?x with _ => _ end {{ _; _ }} => destruct x
+  | |- {{ _ }} match ?x with _ => _ end _ {{ _; _ }} => destruct x
+  | |- {{ _ }} match ?x with _ => _ end _ _ {{ _; _ }} => destruct x
+  | |- {{ _ }} match ?x with _ => _ end _ _ _ {{ _; _ }} => destruct x
+  | |- {{ _ }} match ?x with _ => _ end _ _ _ _ {{ _; _ }} => destruct x
+  | |- {{ _ }} match ?x with _ => _ end _ _ _ _ _ {{ _; _ }} => destruct x
+  | |- {{ _ }} match ?x with _ => _ end _ _ _ _ _ _ {{ _; _ }} => destruct x
+  | |- {{ _ }} match ?x with _ => _ end _ _ _ _ _ _ _ {{ _; _ }} => destruct x
   end.

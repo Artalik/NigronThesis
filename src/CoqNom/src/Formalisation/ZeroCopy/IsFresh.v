@@ -1,7 +1,7 @@
 From SepLogic Require Export SepBasicCore SepSet.
 From Classes Require Import Foldable.
 From Equations Require Import Equations.
-From Formalisation Require Import Span Inject disjoint.
+From Formalisation Require Import Span Vector Inject disjoint.
 
 Definition iProp := monPred biInd hpropI.
 
@@ -190,3 +190,26 @@ Proof. iIntros "* HA". iApply (all_disjoint_SL_to_Prop with "HA"). Qed.
 Theorem all_disjointM_spec : forall `{Foldable M} m,
     all_disjointSL (M_to_list m) ⊢ ⌜ all_disjoint (M_to_list m) ⌝.
 Proof. iIntros "* HA". iApply (all_disjoint_SL_to_Prop with "HA"). Qed.
+
+
+Lemma all_disjointMSL_vector `{Foldable V} : forall (acc : VECTOR (V span)) (v : V span),
+    all_disjointMSL v ∗ all_disjointMSL acc ⊢ all_disjointMSL (add acc v).
+Proof.
+  intros acc. destruct acc as [[cap size] VEC]. revert cap size VEC.
+  induction values; simpl; intros.
+  - iIntros. iNorm. unfold all_disjointMSL, all_disjointSL.
+    simpl. destruct H. simpl. edestruct add_vector_list.
+    erewrite H. simpl. iFrame. auto.
+  - iIntros. iNorm. unfold all_disjointMSL, all_disjointSL.
+    simpl. destruct H. simpl. edestruct add_vector_list.
+    erewrite H. simpl. rewrite foldr_app. simpl.
+    iDestruct "HC" as "[HC HD]". iFrame. simpl_list.
+    iDestruct (IHvalues with "[HB HD]") as "HB". iFrame.
+    unfold all_disjointMSL, all_disjointSL. simpl.
+    edestruct add_vector_list. erewrite H0. simpl.
+    rewrite foldr_app.
+    simpl. simpl_list. iApply "HB".
+    Unshelve.
+    3 : { constructor. simpl. reflexivity.
+          simpl. reflexivity. }
+Qed.

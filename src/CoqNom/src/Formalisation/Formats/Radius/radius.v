@@ -1,19 +1,19 @@
 From Formalisation Require Import SizeNat Vector radius_attr Nom.
 From Formalisation Require Import bin_combinators combinator multi.
 
-(* https://github.com/rusticata/radius-parser/blob/master/src/radius_attr.rs *)
+(* https://github.com/rusticata/radius-parser/blob/master/src/radius.rs *)
 
 (* Radius Packet *)
 
 Record RadiusCode := mk_code {radiuscode : nat8}.
 
-Record RadiusDataS (S : Type) : Type := mk_radiusdata
-                       { code : RadiusCode;
-                         identifier : nat8;
-                         length : nat16;
-                         authenticator : S;
-                         attributes : option (VECTOR (@RadiusAttributeS S))
-                       }.
+Record RadiusDataS (S : Type) : Type :=
+  mk_radiusdata {
+      code : RadiusCode;
+      identifier : nat8;
+      length : nat16;
+      authenticator : S;
+      attributes : option (VECTOR (@RadiusAttributeS S)) }.
 
 Arguments code [S].
 Arguments identifier [S].
@@ -36,7 +36,7 @@ Definition RadiusData := RadiusDataS span.
 Definition sizeu16 : N := 16.
 
 Definition parse_radius_data : NomG RadiusData :=
-  let! code := map be_u8 mk_code  in
+  let! code := map be_u8 mk_code in
   let! identifier := be_u8 in
   let! length := be_u16 in
   let! authenticator := take sizeu16 in

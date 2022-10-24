@@ -18,9 +18,9 @@ Record FramedProtocol := mk_protocol { protocol : nat32 }.
 Record FramedCompression := mk_compression { compression : nat32 }.
 
 Variant RadiusAttributeS {S : Type} : Type :=
-| UserName (s : S)
-| UserPassword (s : S)
-| ChapPassword (_ : nat8) (s : S)
+| UserName (_ : S)
+| UserPassword (_ : S)
+| ChapPassword (_ : nat8) (_ : S)
 | NasIPAddress (_ : Ipv4)
 | NasPort (_ : nat32)
 | Service (s : ServiceType)
@@ -28,13 +28,13 @@ Variant RadiusAttributeS {S : Type} : Type :=
 | FramedIPAddress (_ : Ipv4)
 | FramedIPNetmask (_ : Ipv4)
 | Routing (_ : FramedRouting)
-| FilterId (s : S)
+| FilterId (_ : S)
 | FramedMTU (_ : nat32)
 | Compression (_ : FramedCompression)
-| VendorSpecific (_ : nat32) (s : S)
-| CalledStationId (s : S)
-| CallingStationId (s : S)
-| Unknown (_ : nat8) (s : S).
+| VendorSpecific (_ : nat32) (_ : S)
+| CalledStationId (_ : S)
+| CallingStationId (_ : S)
+| Unknown (_ : nat8) (_ : S).
 
 Global Instance RadiusAttribute_Foldable : Foldable (@RadiusAttributeS).
 constructor. intros. inversion X0; try apply (X s); destruct H; apply mempty.

@@ -1,4 +1,4 @@
-From Formalisation Require Export ProgramLogic multi.
+From Formalisation Require Export ProgramLogic multi Vector.
 
 Section multi_spec.
 

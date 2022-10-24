@@ -5,17 +5,17 @@ Lemma parse_radius_data_spec :
   {{ emp }} parse_radius_data {{ v; <absorb> all_disjointMSL v }}.
 Proof.
   unfold parse_radius_data.
-  WpTac; try eapply parse_radius_attribute_spec; eauto.
-  - iIntros (v) "HA". instantiate (1 := (fun _ => True)). simpl. eauto.
+  repeat WpTac; eauto.
+  - iIntros "HA". instantiate (1 := (fun _ => True)). iApply "HA".
+  - eapply parse_radius_attribute_spec.
   - iIntros. iNorm. iFrame. simpl.
     iDestruct (big_sepL_absorb_out with "HB") as ">HB".
     iModIntro. iFrame.
     unfold all_disjointMSL, all_disjointSL.
     iDestruct (big_sepL_double with "HB") as "HB".
     erewrite foldr_ext. iApply "HB".
-    simpl. intros. destruct (b.2) eqn:P; rewrite P; reflexivity.
-    reflexivity. reflexivity.
-  - iIntros. iNorm. iFrame. simpl. eauto.
+    simpl. intros. all : reflexivity.
+  - iIntros. iNorm. iFrame. eauto.
 Qed.
 
 Lemma parse_radius_data_spec_pure :
