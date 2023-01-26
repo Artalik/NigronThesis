@@ -53,7 +53,7 @@ int main (void){
         printf("Cas %d : %ld ms\n", j, diff/1000);
         all = all + diff;
     }
-    printf("Millisecond moyen : %ld\n", all / (ite * 1000));
+    printf("SSH - New Keys : %ld ms\n", all / (ite * 1000));
     assert(rdata.snd.length == 10);
     printf ("NewKeys :");
     for(int i = 0; i < 10; i++){

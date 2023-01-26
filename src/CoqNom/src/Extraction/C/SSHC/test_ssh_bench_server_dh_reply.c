@@ -53,7 +53,7 @@ int main (void){
         printf("Cas %d : %ld ms\n", j, diff/1000);
         all = all + diff;
     }
-    printf("Millisecond moyen : %ld\n", all / (ite * 1000));
+    printf("SSH - Server DH Reply : %ld ms\n", all / (ite * 1000));
     uint8_t pubkey[104] =
         {0x00, 0x00, 0x00, 0x13, 0x65, 0x63, 0x64, 0x73,
          0x61, 0x2d, 0x73, 0x68, 0x61, 0x32, 0x2d, 0x6e,

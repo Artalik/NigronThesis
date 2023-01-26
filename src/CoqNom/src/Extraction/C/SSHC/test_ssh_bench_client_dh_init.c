@@ -53,7 +53,7 @@ int main (void){
         printf("Cas %d : %ld ms\n", j, diff/1000);
         all = all + diff;
     }
-    printf("Millisecond moyen : %ld\n", all / (ite * 1000));
+    printf("SSH - Client DH Init : %ld ms\n", all / (ite * 1000));
     uint8_t dh[65] =
         {0x04, 0xe7, 0x59, 0x2a, 0xe1, 0xb9, 0xb6, 0xbe,
          0x7c, 0x81, 0x5f, 0xc8, 0x3d, 0x55, 0x7b, 0x8f,
