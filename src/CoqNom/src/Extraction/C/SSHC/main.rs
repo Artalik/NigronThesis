@@ -2,10 +2,11 @@ extern crate ssh_parser;
 use ssh_parser::*;
 use std::time::{Instant};
 
-static IKEV2_INIT_RESP: &'static [u8] = include_bytes!("../assets/dh_reply.raw");
+static CLIENT_DH_INIT: &'static [u8] = include_bytes!("../assets/dh_init.raw");
+static SERVER_DH_REPLY: &'static [u8] = include_bytes!("../assets/dh_reply.raw");
+static NEW_KEYS: &'static [u8] = include_bytes!("../assets/new_keys.raw");
 
-fn main() {
-    let bytes = IKEV2_INIT_RESP;
+fn bench (bytes : &'static [u8], name_test : &str){
     let mut res = parse_ssh_packet(&bytes);
     for _i in 0..100000 {
         res = parse_ssh_packet(&bytes);
@@ -20,6 +21,12 @@ fn main() {
         let elapsed_time = now.elapsed();
         all = all + elapsed_time.as_millis();
     }
-    println!("Temps moyen pour 100 000 000 parsing :  {} ms.", all / ite);
+    println!("{} : {} ms.", name_test,all / ite);
     println!("{:?}",res);
+}
+
+fn main() {
+    bench(NEW_KEYS, "SSH - New Keys");
+    bench(CLIENT_DH_INIT, "SSH - Client DH Init");
+    bench(SERVER_DH_REPLY, "SSH - Server DH Reply");
 }
