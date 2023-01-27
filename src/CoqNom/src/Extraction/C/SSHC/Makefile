@@ -5,3 +5,6 @@ all :
 	./bench_new_keys
 	./bench_client
 	./bench_server
+	rm bench_new_keys
+	rm bench_client
+	rm bench_server

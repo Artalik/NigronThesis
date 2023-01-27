@@ -1,0 +1,5 @@
+PATH-TEST = src/CoqNom/src/Extraction/C
+
+test:
+	$(MAKE) -C $(PATH-TEST)/RadiusC/ all
+	$(MAKE) -C $(PATH-TEST)/SSHC/ all

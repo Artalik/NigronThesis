@@ -39,6 +39,7 @@ int main (void){
         parse_ssh_packet(&bin, &rdata);
         bin = save;
     }
+    printf("Test de performance sur SSH - New Keys :\n");
     long all = 0;
     int ite = 10;
     clock_t start,diff,end;
@@ -50,17 +51,14 @@ int main (void){
         }
         end = clock();
         diff = end - start;
-        printf("Cas %d : %ld ms\n", j, diff/1000);
+        printf(" Cas %d : %ld ms\n", j, diff/1000);
         all = all + diff;
     }
     printf("SSH - New Keys : %ld ms\n", all / (ite * 1000));
     assert(rdata.snd.length == 10);
-    printf ("NewKeys :");
     for(int i = 0; i < 10; i++){
         assert (rdata.snd.pos[i] == 0);
-        printf ("%d ",rdata.snd.pos[i]);
     }
-    printf("\n");
     assert (rdata.fst.key == 21);
     return 0;
 }

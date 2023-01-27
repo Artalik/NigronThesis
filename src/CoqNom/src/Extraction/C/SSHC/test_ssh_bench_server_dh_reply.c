@@ -39,6 +39,7 @@ int main (void){
         parse_ssh_packet(&bin, &rdata);
         bin = save;
     }
+    printf("Test de performance sur SSH - Server DH Reply :\n");
     long all = 0;
     int ite = 10;
     clock_t start,end,diff;
@@ -50,7 +51,7 @@ int main (void){
         }
         end = clock ();
         diff = end - start;
-        printf("Cas %d : %ld ms\n", j, diff/1000);
+        printf(" Cas %d : %ld ms\n", j, diff/1000);
         all = all + diff;
     }
     printf("SSH - Server DH Reply : %ld ms\n", all / (ite * 1000));

@@ -37,6 +37,7 @@ int main (void){
         free(rdata.attributes.val.data);
         bin = save;
     }
+    printf("Test de performance sur Radius :\n");
     long all = 0;
     int ite = 10;
     clock_t start,end,diff;
@@ -49,7 +50,7 @@ int main (void){
         }
         end = clock ();
         diff = end - start;
-        printf("Cas %d : %ld ms\n", j, diff/1000);
+        printf(" Cas %d : %ld ms\n", j, diff/1000);
         all = all + diff;
     }
     printf("Millisecond moyen : %ld\n", all / (ite * 1000));
@@ -58,7 +59,8 @@ int main (void){
         printf("UnMapping Failed\n");
         return 1;
     }
-    printf("code : %d \n identifier : %d \n length : %d \n",
-           rdata.code, rdata.identifier, rdata.length);
+    assert(rdata.code == 1);
+    assert(rdata.identifier == 103);
+    assert(rdata.length == 87);
     return 0;
 }
