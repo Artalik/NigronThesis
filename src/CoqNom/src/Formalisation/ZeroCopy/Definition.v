@@ -55,49 +55,37 @@ Definition set_span (s : span) := inject (pos s) (pos s + len s).
 
 Definition scope_in (s t : span) := set_span s ⊆ set_span t.
 
-Fixpoint ResultWeakZC (s : span) (r : Result) : Prop :=
+Fixpoint ResultSafe (s : span) (r : Result) : Prop :=
   match r with
   | Value _ => True
   | Span v => scope_in v s
-  | Struct ft => forall e, ResultWeakZC s (ft e)
+  | Struct ft => forall e, ResultSafe s (ft e)
   end.
 
-Definition DecodeurWeakZC (d: Decodeur) :=
+Definition DecodeurSafe (d: Decodeur) :=
   forall s ft,
     d s = Some ft ->
-    ResultWeakZC s ft.
-
-Fixpoint ResultZC (s : span) (r : Result) : Prop :=
-  match r with
-  | Value _ => False
-  | Span v => scope_in v s
-  | Struct ft => forall e, ResultZC s (ft e)
-  end.
-
-Definition DecodeurZC (d : Decodeur) :=
-  forall s ft,
-    d s = Some ft ->
-    ResultZC s ft.
+    ResultSafe s ft.
 
 (** Version tous les spans de la structures sont disjointes deux à deux **)
 
-Definition Result_safe (r : Result) : Prop :=
+Definition ResultZC (r : Result) : Prop :=
   forall s t, s <> t -> s ∈ Result_to_list r -> t ∈ Result_to_list r -> disjoint s t.
 
 (** Version SL **)
 
-Definition Result_safeSL (r : Result) : iProp :=
+Definition ResultZCSL (r : Result) : iProp :=
   [∗ list] v ∈ Result_to_list r, IsFresh v.
 
-Theorem safe_bridge : forall (r : Result), Result_safeSL r ⊢ ⌜ Result_safe r ⌝.
+Theorem safe_bridge : forall (r : Result), ResultZCSL r ⊢ ⌜ ResultZC r ⌝.
 Proof.
-  unfold Result_safe. induction r; simpl; intros.
+  unfold ResultZC. induction r; simpl; intros.
   - iIntros "HA". iPureIntro. intros s t NEQ F. inversion F.
   - iIntros "HA". iPureIntro. intros t0 t1 NEQ INt0 INt1.
     eapply elem_of_list_singleton in INt0. eapply elem_of_list_singleton in INt1.
     subst. contradiction.
   - iIntros "HA" (s t NEQ INs INt).
-    unfold Result_safeSL. simpl.
+    unfold ResultZCSL. simpl.
     eapply elem_of_list_lookup_1 in INs as [Is Ps].
     eapply elem_of_list_lookup_1 in INt as [It Pt].
     iDestruct (big_sepL_delete with "HA") as "[Hs HA]". eapply Ps.
@@ -107,5 +95,5 @@ Proof.
     + iClear "HA". iApply (IsFresh_spec with "Hs Ht").
 Qed.
 
-Definition DecodeurZC_safe (d : Decodeur) :=
-  forall s ft, d s = Some ft -> Result_safe ft.
+Definition DecodeurZC (d : Decodeur) :=
+  forall s ft, d s = Some ft -> ResultZC ft.
