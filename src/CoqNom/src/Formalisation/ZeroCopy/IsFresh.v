@@ -1,7 +1,7 @@
 From SepLogic Require Export SepBasicCore SepSet.
 From Classes Require Import Foldable.
 From Equations Require Import Equations.
-From Formalisation Require Import Span Inject disjoint.
+From Formalisation Require Import Span Vector Inject disjoint.
 
 Definition iProp := monPred biInd hpropI.
 
@@ -49,9 +49,11 @@ Proof.
     rewrite N.succ_pos_spec. rewrite N.pred_succ. simpl.
     iDestruct (big_sepS_union with "HA") as "[HA HB]".
     + repeat intro. apply elem_of_list_to_set in H0. apply elem_of_list_In in H0.
-      eapply in_seq in H0. eapply elem_of_singleton_1 in H. lia.
+      eapply in_seq in H0 as [m [P0 P1]]. eapply elem_of_singleton_1 in H. subst.
+      rewrite decode_encode in P1. inversion P1. lia.
     + iSplitL "HA".
-      * iApply big_sepS_singleton. iApply "HA".
+      * iDestruct encode_singleton as "[HB _]". iApply "HB".
+        iApply big_sepS_singleton. iFrame.
       * iApply IHn. iApply "HB".
 Qed.
 
@@ -109,8 +111,9 @@ Proof.
     + apply (H H2).
 Qed.
 
-Lemma IsFresh_spec : forall s0 s1,
-    ⊢ IsFresh s0 -∗ IsFresh s1 -∗ ⌜disjoint s0 s1⌝.
+(* =IsFresh_spec= *)
+Lemma IsFresh_spec : forall s t, IsFresh s ∗ IsFresh t ⊢ ⌜disjoint s t⌝.
+(* =end= *)
 Proof.
   intros [p0 l0]. revert p0. induction l0 using N.peano_ind.
   - simpl; iIntros. unfold disjoint, set_span.
@@ -125,10 +128,23 @@ Proof.
     + eapply H0.
 Qed.
 
-Fail
-(* =IsFresh_spec= *)
-Lemma IsFresh_spec : forall s t, IsFresh s ∗ IsFresh t ⊢ ⌜disjoint s t⌝.
-(* =end= *)
+Lemma IsFresh_aux_inject_incl :
+  ∀ len pos h,
+    IsFresh_aux pos len () h → inject pos (pos + len) ⊆ h.
+Proof.
+  induction len using N.peano_ind; intros pos h IS.
+  -- rewrite inject_empty. 2 : lia. set_solver.
+  -- rewrite <- N.succ_pos_spec in IS.
+     rewrite IsFresh_aux_equation_2 in IS.
+     rewrite N.succ_pos_spec in IS. rewrite N.pred_succ in IS.
+     eapply (monPred_at_sep tt (& pos)) in IS.
+     unfold hpropI in IS. simpl in *.
+     unfold bi_sep in IS. inversion_star h P. clear IS.
+     inversion P0. subst. clear P0. eapply IHlen in P1.
+     rewrite inject_aux_add_head.
+     assert (N.succ pos + len = pos + N.succ len) by lia. rewrite <- H.
+     set_solver. lia.
+Qed.
 
 (* =M_to_list= *)
 Definition M_to_list `{Foldable M} {X} (m : M X) : list X :=
@@ -138,6 +154,26 @@ Definition M_to_list `{Foldable M} {X} (m : M X) : list X :=
 (* =all_disjointSL= *)
 Definition all_disjointSL (l : list span) := [∗ list] v ∈ l, IsFresh v.
 (* =end= *)
+
+Lemma all_disjointSL_incl : forall l v,
+  v ∈ l ->
+  ∀ h, all_disjointSL l () h →
+       inject (pos v) (pos v + len v) ⊆ h.
+Proof.
+  induction l; intros v P; inversion P; subst; intros h ALL.
+  - clear IHl. unfold all_disjointSL in ALL. simpl in *.
+    eapply (monPred_at_sep tt (IsFresh a)) in ALL.
+    unfold hpropI in ALL. simpl in *.
+    unfold bi_sep in ALL. inversion_star h P.
+    unfold IsFresh in P1. destruct a. simpl in *. rewrite P0.
+    eapply IsFresh_aux_inject_incl in P1. set_solver.
+  - unfold all_disjointSL in ALL. simpl in *.
+    eapply (monPred_at_sep tt (IsFresh a)) in ALL.
+    unfold hpropI in ALL. simpl in *.
+    unfold bi_sep in ALL. inversion_star h P.
+    rewrite P0. transitivity h1. 2 : set_solver.
+    eapply IHl; auto.
+Qed.
 
 (* =all_disjointMSL= *)
 Definition all_disjointMSL `{Foldable M} (m : M span) : iProp :=
@@ -177,3 +213,26 @@ Theorem all_disjointM_spec `{Foldable M} m :
     all_disjointMSL m ⊢ ⌜ all_disjointM m ⌝.
 (* =end= *)
 Proof. iIntros "* HA". iApply (all_disjoint_SL_to_Prop with "HA"). Qed.
+
+
+Lemma all_disjointMSL_vector `{Foldable V} : forall (acc : VECTOR (V span)) (v : V span),
+    all_disjointMSL v ∗ all_disjointMSL acc ⊢ all_disjointMSL (add acc v).
+Proof.
+  intros acc. destruct acc as [[cap size] VEC]. revert cap size VEC.
+  induction values; simpl; intros.
+  - iIntros. iNorm. unfold all_disjointMSL, all_disjointSL.
+    simpl. destruct H. simpl. edestruct add_vector_list.
+    erewrite H. simpl. iFrame. auto.
+  - iIntros. iNorm. unfold all_disjointMSL, all_disjointSL.
+    simpl. destruct H. simpl. edestruct add_vector_list.
+    erewrite H. simpl. rewrite foldr_app. simpl.
+    iDestruct "HC" as "[HC HD]". iFrame. simpl_list.
+    iDestruct (IHvalues with "[HB HD]") as "HB". iFrame.
+    unfold all_disjointMSL, all_disjointSL. simpl.
+    edestruct add_vector_list. erewrite H0. simpl.
+    rewrite foldr_app.
+    simpl. simpl_list. iApply "HB".
+    Unshelve.
+    3 : { constructor. simpl. reflexivity.
+          simpl. reflexivity. }
+Qed.

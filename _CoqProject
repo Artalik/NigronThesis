@@ -47,6 +47,9 @@ src/CoqNom/src/Formalisation/ZeroCopy/multi_spec.v
 src/CoqNom/src/Formalisation/ZeroCopy/bin_combinators_spec.v
 src/CoqNom/src/Formalisation/ZeroCopy/tactics.v
 src/CoqNom/src/Formalisation/ZeroCopy/adequacy.v
+src/CoqNom/src/Formalisation/ZeroCopy/ZeroCopy.v
+src/CoqNom/src/Formalisation/ZeroCopy/ZC.v
+src/CoqNom/src/Formalisation/ZeroCopy/Nom_ZeroCopy.v
 src/CoqNom/src/Formalisation/Formats/Radius/radius_attr.v
 src/CoqNom/src/Formalisation/Formats/Radius/radius.v
 src/CoqNom/src/Formalisation/Formats/Radius/radius_attr_spec.v

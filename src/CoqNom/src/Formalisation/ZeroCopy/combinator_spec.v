@@ -26,22 +26,23 @@ Section combinator_spec.
   Lemma rest_rule : {{ emp }} (rest : NomG span) {{ v; IsFresh v }}.
   Proof. iBind. eapply length_rule. eapply take_rule. Qed.
 
-  Lemma map_parser_rule : forall (es : NomG span) H (Q : X -> iProp) R,
-      {{ H }} es {{ v; IsFresh v ∗ R }} ->
+
+  Lemma map_parser_rule : forall (s : NomG span) H (Q : X -> iProp) R,
+      {{ H }} s {{ v; IsFresh v ∗ R }} ->
       {{ R }} e {{ v; Q v }} ->
-      {{ H }} map_parser es e {{ v; Q v }}.
+      {{ H }} map_parser s e {{ v; Q v }}.
   Proof.
-    intros. iBind. eapply H0. iIntros "[HA HB]".
-    iApply scope_rule. eapply H1. iFrame.
+    intros s H Q R TS TE. iBind. eapply TS. iIntros "[HA HB]".
+    iApply scope_rule. eapply TE. iFrame.
   Qed.
 
-  Lemma verify_rule : forall cond H (Q : X -> iProp),
+  Lemma verify_rule : forall c H (Q : X -> iProp),
       {{ H }} e {{ v; Q v }} ->
-      {{ H }} verify e cond {{ v; Q v ∗ ⌜Is_true (cond v)⌝ }}.
+      {{ H }} verify e c {{ v; Q v }}.
   Proof.
-    intros. iBind.
-    eapply H0.
-    destruct (cond v) eqn:?.
+    intros c H Q T. iBind.
+    eapply T.
+    destruct (c v) eqn:?.
     - iRet.
     - apply fail_rule.
   Qed.
@@ -49,16 +50,16 @@ Section combinator_spec.
   Lemma map_rule : forall Y (f : X -> Y) H Q,
       {{ H }} e {{ v; Q (f v) }} ->
       {{ H }} map e f {{ v; Q v }}.
-  Proof. intros. iBind. eapply H0. iRet. Qed.
+  Proof. intros Y f H Q T. iBind. eapply T. iRet. Qed.
 
   Lemma cond_rule : forall b (H : iProp) (Q : option X -> iProp),
       {{ H }} e {{ v; Q (Some v) }} ->
       (H ⊢ Q None) ->
       {{ H }} cond b e {{ v; Q v }}.
   Proof.
-    intros. destruct b; simpl cond.
-    - iBind. eapply H0. eauto.
-    - iApply H1.
+    intros b H Q S N. destruct b; simpl cond.
+    - iBind. eapply S. iRet.
+    - iRet. iApply N.
   Qed.
 
 End combinator_spec.

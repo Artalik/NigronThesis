@@ -12,44 +12,37 @@ Lemma parse_ikev2_header_rule :
   {{ emp }} parse_ikev2_header {{ v; <absorb> all_disjointMSL v }}.
 Proof.
   unfold parse_ikev2_header.
-  WpTac; simpl; iIntros.
-  unfold all_disjointMSL. simpl. iNorm.
+  repeat WpTac.
+  iIntros. iNorm.
 Qed.
 
 Lemma bits_split_1_rule :
   {{ emp }} bits_split_1 {{ v; True }}.
 Proof.
-  unfold bits_split_1. iBind. eapply u8_rule.
-  eapply ret_rule. auto.
+  unfold bits_split_1. repeat WpTac. auto.
 Qed.
 
 Lemma parse_ikev2_payload_generic_rule :
   {{ emp }} parse_ikev2_payload_generic {{ v; <absorb> all_disjointMSL v }}.
 Proof.
-  unfold parse_ikev2_payload_generic. iBind.
-  eapply u8_rule. iBind. Frame. eapply bits_split_1_rule. WpTac.
-  unfold all_disjointMSL, all_disjointSL. iIntros. simpl. iNorm.
+  unfold parse_ikev2_payload_generic.
+  repeat WpTac.
+  - Frame_emp bits_split_1_rule.
+  - unfold all_disjointMSL, all_disjointSL. iIntros. simpl. iNorm.
 Qed.
 
 Lemma parse_ikev2_transform_rule :
   {{ emp }} parse_ikev2_transform {{ v; <absorb> all_disjointMSL v }}.
 Proof.
   unfold parse_ikev2_transform, all_disjointMSL, all_disjointSL.
-  WpTac; simpl; iIntros; iNorm; simpl; eauto. iFrame.
+  repeat WpTac; iIntros; iNorm; eauto. iFrame. auto.
 Qed.
-
-(* Lemma foldr_cons : forall X l1 l2, *)
-(*     list.foldr (λ (a : X) (b : list X), a :: b) l1 l2 = l2 ++ l1. *)
-(* Proof. *)
-(*   induction l2; simpl; intros; eauto. *)
-(*   f_equal. rewrite IHl2. reflexivity. *)
-(* Qed. *)
 
 Lemma parse_ikev2_proposal_rule :
   {{ emp }} parse_ikev2_proposal {{ v; <absorb> all_disjointMSL v }}.
 Proof.
   unfold parse_ikev2_proposal.
-  WpTac.
+  repeat WpTac.
   3 : eapply parse_ikev2_transform_rule.
   all : simpl; iIntros.
   - instantiate (1 := fun v => <absorb> Some_span v). simpl. iNorm.
@@ -65,10 +58,9 @@ Lemma parse_ikev2_payload_sa_rule : forall len,
     {{ emp }} @parse_ikev2_payload_sa len {{ v; <absorb> all_disjointMSL v }}.
 Proof.
   intro. unfold parse_ikev2_payload_sa.
-  WpTac.
+  repeat WpTac.
   - eapply parse_ikev2_proposal_rule.
-  - unfold all_disjointMSL, all_disjointSL.
-    iIntros (v) "[HA _]".
+  - iIntros "HA".
     iDestruct (big_sepL_absorb_out with "HA") as ">HA".
     iDestruct (big_sepL_double with "HA") as "HA". simpl.
     iFrame.
@@ -77,98 +69,107 @@ Qed.
 Lemma parse_ikev2_payload_kex_rule : forall len,
     {{ emp }} parse_ikev2_payload_kex len {{ v; <absorb> all_disjointMSL v }}.
 Proof.
-  intro. unfold parse_ikev2_payload_kex. WpTac.
-  iIntros. iNorm. unfold all_disjointMSL. iFrame. eauto.
+  intro. unfold parse_ikev2_payload_kex.
+  repeat WpTac.
+  iIntros. iNorm. iFrame. eauto.
 Qed.
 
 Lemma parse_ikev2_payload_ident_init_rule : forall len,
     {{ emp }} parse_ikev2_payload_ident_init len {{ v; <absorb> all_disjointMSL v }}.
 Proof.
-  intros. unfold parse_ikev2_payload_ident_init. WpTac.
-  unfold all_disjointMSL. iIntros. iNorm. iFrame. eauto.
+  intros. unfold parse_ikev2_payload_ident_init.
+  repeat WpTac.
+  iIntros. iNorm. iFrame. eauto.
 Qed.
 
 Lemma parse_ikev2_payload_ident_resp_rule : forall len,
     {{ emp }} parse_ikev2_payload_ident_resp len {{ v; <absorb> all_disjointMSL v }}.
 Proof.
-  intro. unfold parse_ikev2_payload_ident_resp. WpTac.
-  iIntros. iNorm. unfold all_disjointMSL. iFrame. eauto.
+  intro. unfold parse_ikev2_payload_ident_resp.
+  repeat WpTac.
+  iIntros. iNorm. iFrame. eauto.
 Qed.
 
 Lemma parse_ikev2_payload_certificate_rule : forall len,
     {{ emp }} parse_ikev2_payload_certificate len {{ v; <absorb> all_disjointMSL v }}.
 Proof.
-  intros. unfold parse_ikev2_payload_certificate. WpTac.
-  iIntros. iNorm. unfold all_disjointMSL. iFrame. eauto.
+  intros. unfold parse_ikev2_payload_certificate.
+  repeat WpTac.
+  iIntros. iNorm. iFrame. eauto.
 Qed.
 
 Lemma parse_ikev2_payload_certificate_request_rule : forall len,
     {{ emp }} parse_ikev2_payload_certificate_request len {{ v; <absorb> all_disjointMSL v }}.
 Proof.
-  intros. unfold parse_ikev2_payload_certificate_request. WpTac.
-  iIntros. unfold all_disjointMSL, all_disjointSL. simpl. iNorm.
+  intros. unfold parse_ikev2_payload_certificate_request.
+  repeat WpTac.
+  iIntros. iNorm. iFrame. auto.
 Qed.
 
 Lemma parse_ikev2_payload_authentication_rule : forall len,
     {{ emp }} parse_ikev2_payload_authentication len {{ v; <absorb> all_disjointMSL v }}.
 Proof.
-  intros. unfold parse_ikev2_payload_authentication. WpTac.
-  iIntros. unfold all_disjointMSL, all_disjointSL. simpl. iNorm.
+  intros. unfold parse_ikev2_payload_authentication.
+  repeat WpTac.
+  iIntros. iNorm. iFrame. auto.
 Qed.
 
 Lemma parse_ikev2_payload_nonce_rule : forall len,
     {{ emp }} parse_ikev2_payload_nonce len {{ v; <absorb> all_disjointMSL v }}.
 Proof.
-  intros. unfold parse_ikev2_payload_nonce. WpTac.
-  iIntros. unfold all_disjointMSL, all_disjointSL. simpl. iNorm.
+  intros. unfold parse_ikev2_payload_nonce.
+  repeat WpTac.
+  iIntros. iFrame. auto.
 Qed.
 
 
 Lemma parse_ikev2_payload_notify_rule : forall len,
     {{ emp }} parse_ikev2_payload_notify len {{ v; <absorb> all_disjointMSL v }}.
 Proof.
-  intros. unfold parse_ikev2_payload_notify. WpTac.
+  intros. unfold parse_ikev2_payload_notify. repeat WpTac.
   - instantiate (1 := fun v => <absorb> Some_span v). iIntros. iNorm.
   - eauto.
   - instantiate (1 := fun v => <absorb> Some_span v ∗ Some_span v2). iIntros. iNorm. iFrame.
   - iIntros. iNorm.
-  - iIntros. unfold all_disjointMSL, all_disjointSL. simpl. iNorm.
-    iModIntro. destruct v2, v3; iFrame; auto.
+  - iIntros. iNorm. iModIntro.
+    destruct v2, v3; iFrame; auto. iFrame. auto.
 Qed.
 
 Lemma parse_ikev2_payload_vendor_rule : forall len,
     {{ emp }} parse_ikev2_payload_vendor_id len {{ v; <absorb> all_disjointMSL v }}.
 Proof.
-  intros. unfold parse_ikev2_payload_vendor_id. WpTac.
-  unfold all_disjointMSL, all_disjointSL. simpl. iIntros. iNorm.
+  intros. unfold parse_ikev2_payload_vendor_id.
+  repeat WpTac.
+  iIntros. iFrame. auto.
 Qed.
 
 Lemma parse_ikev2_payload_delete_rule : forall len,
     {{ emp }} parse_ikev2_payload_delete len {{ v; <absorb> all_disjointMSL v }}.
 Proof.
-  intros. unfold parse_ikev2_payload_delete. WpTac.
-  iIntros. unfold all_disjointMSL, all_disjointSL. simpl. iNorm.
+  intros. unfold parse_ikev2_payload_delete.
+  repeat WpTac.
+  iIntros. iNorm. iFrame. auto.
 Qed.
 
 Lemma parse_ts_addr_rule : forall t,
     {{ emp }} parse_ts_addr t {{ v; IsFresh v }}.
-Proof. intro. unfold parse_ts_addr. WpTac. Qed.
+Proof. intro. unfold parse_ts_addr. repeat WpTac. Qed.
 
 Lemma parse_ikev2_ts_rule :
   {{ emp }} parse_ikev2_ts {{ v; <absorb> all_disjointMSL v }}.
 Proof.
-  unfold parse_ikev2_ts. WpTac.
-  - Frame. eapply parse_ts_addr_rule.
-  - Frame. eapply parse_ts_addr_rule.
-  - iIntros. unfold all_disjointMSL, all_disjointSL. simpl. iNorm. iFrame.
+  unfold parse_ikev2_ts. repeat WpTac.
+  - Frame_emp parse_ts_addr_rule.
+  - Frame_emp parse_ts_addr_rule.
+  - iIntros. iNorm. iFrame. auto.
 Qed.
 
 Lemma parse_ikev2_payload_ts_rule : forall len,
     {{ emp }} @parse_ikev2_payload_ts len {{ v; <absorb> all_disjointMSL v }}.
 Proof.
-  intro. unfold parse_ikev2_payload_ts. WpTac.
+  intro. unfold parse_ikev2_payload_ts. repeat WpTac.
   - eapply parse_ikev2_ts_rule.
-  - iIntros. iNorm. unfold all_disjointMSL, all_disjointSL.
+  - iIntros. iNorm.
     iDestruct (big_sepL_absorb_out with "HB") as ">HB".
     iDestruct (big_sepL_double with "HB") as "HB".
     iFrame. auto.
@@ -177,31 +178,37 @@ Qed.
 Lemma parse_ikev2_payload_ts_init_rule : forall len,
     {{ emp }} @parse_ikev2_payload_ts_init len {{ v; <absorb> all_disjointMSL v }}.
 Proof.
-  unfold parse_ikev2_payload_ts_init. intros. WpTac. eapply parse_ikev2_payload_ts_rule.
+  unfold parse_ikev2_payload_ts_init. intros.
+  repeat WpTac. eapply parse_ikev2_payload_ts_rule. auto.
 Qed.
 
 Lemma parse_ikev2_payload_ts_resp_rule : forall len,
     {{ emp }} @parse_ikev2_payload_ts_resp len {{ v; <absorb> all_disjointMSL v }}.
 Proof.
-  unfold parse_ikev2_payload_ts_resp. intros. WpTac. eapply parse_ikev2_payload_ts_rule.
+  unfold parse_ikev2_payload_ts_resp. intros. repeat WpTac.
+  eapply parse_ikev2_payload_ts_rule. auto.
 Qed.
 
 Lemma parse_ikev2_payload_encrypted_rule : forall len,
     {{ emp }} parse_ikev2_payload_encrypted len {{ v; <absorb> all_disjointMSL v }}.
 Proof.
-  unfold parse_ikev2_payload_encrypted. intro. WpTac.
+  unfold parse_ikev2_payload_encrypted. intro.
+  repeat WpTac.
+  iIntros. iFrame. auto.
 Qed.
 
 Lemma parse_ikev2_payload_unknown_rule : forall len,
     {{ emp }} parse_ikev2_payload_unknown len {{ v; <absorb> all_disjointMSL v }}.
 Proof.
-  unfold parse_ikev2_payload_unknown. intros. WpTac.
+  unfold parse_ikev2_payload_unknown. intros.
+  repeat WpTac.
+  iIntros. iFrame. auto.
 Qed.
 
 Lemma parse_ikev2_payload_with_type_rule : forall len t,
     {{ emp }} @parse_ikev2_payload_with_type len t {{ v; <absorb> all_disjointMSL v }}.
 Proof.
-  intros. unfold parse_ikev2_payload_with_type. WpTac.
+  intros. unfold parse_ikev2_payload_with_type. repeat WpTac.
   all : try eapply parse_ikev2_payload_unknown_rule.
   - eapply parse_ikev2_payload_authentication_rule.
   - eapply parse_ikev2_payload_vendor_rule.
@@ -218,37 +225,16 @@ Proof.
     Unshelve. all : eauto.
 Qed.
 
-Lemma all_disjointMSL_vector `{Foldable V} : forall (acc : VECTOR (V span)) (v : V span),
-    all_disjointMSL v ∗ all_disjointMSL acc ⊢ all_disjointMSL (add acc v).
-Proof.
-  intros acc. destruct acc as [[cap size] VEC]. revert cap size VEC.
-  induction values; simpl; intros.
-  - iIntros. iNorm. unfold all_disjointMSL, all_disjointSL.
-    simpl. destruct H. simpl. edestruct add_vector_list.
-    erewrite H. simpl. iFrame. auto.
-  - iIntros. iNorm. unfold all_disjointMSL, all_disjointSL.
-    simpl. destruct H. simpl. edestruct add_vector_list.
-    erewrite H. simpl. rewrite foldr_app. simpl.
-    iDestruct "HC" as "[HC HD]". iFrame. simpl_list.
-    iDestruct (IHvalues with "[HB HD]") as "HB". iFrame.
-    unfold all_disjointMSL, all_disjointSL. simpl.
-    edestruct add_vector_list. erewrite H0. simpl.
-    rewrite foldr_app.
-    simpl. simpl_list. iApply "HB".
-    Unshelve.
-    3 : { constructor. simpl. reflexivity.
-          simpl. reflexivity. }
-Qed.
-
 Lemma parse_ikev2_payload_list_fold_rule : forall acc p,
     {{ IsFresh (payloadGen p) ∗
        <absorb> all_disjointMSL acc }}
       parse_ikev2_payload_list_fold acc p
       {{ res; <absorb> all_disjointMSL res }}.
 Proof.
-  intros. rewrite parse_ikev2_payload_list_fold_equation_1. WpTac.
-  eapply consequence_rule. apply scope_rule. WpTac.
-  Frame. eapply parse_ikev2_payload_with_type_rule.
+  intros. rewrite parse_ikev2_payload_list_fold_equation_1.
+  repeat WpTac.
+  eapply consequence_rule. apply scope_rule. repeat WpTac.
+  Frame_emp parse_ikev2_payload_with_type_rule.
   all : eauto. simpl. iIntros. iNorm.
   iModIntro. iApply (all_disjointMSL_vector acc). iFrame.
 Qed.
@@ -261,7 +247,7 @@ Lemma parse_ikev2_payload_list_rule : forall init,
 Proof.
   intros. rewrite parse_ikev2_payload_list_equation_1.
   eapply consequence_rule. eapply repeat_rule.
-  intros res. WpTac. Frame. eapply parse_ikev2_payload_generic_rule.
+  intros res. repeat WpTac. Frame_emp parse_ikev2_payload_generic_rule.
   eapply consequence_rule. eapply parse_ikev2_payload_list_fold_rule.
   - iIntros "[>HA [_ HC]]". iSplitL "HA".
     unfold all_disjointMSL, all_disjointSL. simpl. iNorm.
@@ -275,7 +261,7 @@ Lemma parse_ikev2_message_rule :
   {{ emp }} parse_ikev2_message {{ res; <absorb> all_disjointMSL res }}.
 Proof.
   unfold parse_ikev2_message.
-  WpTac. eapply parse_ikev2_header_rule.
+  repeat WpTac. eapply parse_ikev2_header_rule.
   Frame. eapply parse_ikev2_payload_list_rule. simpl.
   iIntros. iNorm.
 Qed.

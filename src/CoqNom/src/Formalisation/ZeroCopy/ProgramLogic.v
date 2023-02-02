@@ -90,24 +90,6 @@ Fixpoint wp {X} (m: @NomG atom X) (Q : X -> iProp) : iProp :=
   Qed.
 
 
-
-  (* Lemma wp_bind {X Y} (e : NomG X) (f : X → NomG Y) (Q : Y -> iProp) (Q' : X -> iProp) : *)
-  (*   wp e Q' ⊢ (∀ v,  Q' v -∗ wp (f v) Q) -∗ wp (let! v := e in f v) Q. *)
-  (* Proof. *)
-  (*   induction e; simpl; iIntros "HA HB". *)
-  (*   - iApply ("HB" with "HA"). *)
-  (*   - destruct n; eauto; iIntros; iNorm; try iApply (H with "HA HB"). *)
-  (*     + iApply (H with "[HA HC] HB"). iApply ("HA" with "HC"). *)
-  (*     + iExists x. iFrame. iIntros (v) "HA". *)
-  (*       iDestruct ("HD" with "HA") as "HA". iApply (H with "HA HB"). *)
-  (*     + destruct o. iNorm. *)
-  (*       iFrame. iExists x. iFrame. iIntros (v) "HA". *)
-  (*       iDestruct ("HF" with "HA") as "HA". iApply (H with "HA HB"). *)
-  (*       iIntros (v). iApply (H with "HA HB"). *)
-  (*     + iExists x0. iFrame. iIntros (res) "HE". *)
-  (*       iDestruct ("HF" with "HE") as "HA". iApply (H with "HA HB"). *)
-  (* Qed. *)
-
   Lemma bind_wp : forall X Y (e : NomG X) (k : X -> NomG Y) Q,
       wp (let! v := e in k v) Q ⊢
         wp e (fun v => wp (k v) Q).
@@ -130,6 +112,49 @@ Fixpoint wp {X} (m: @NomG atom X) (Q : X -> iProp) : iProp :=
         iIntros (v). iApply (IH with "HA").
       + iNorm. iExists x0. iSplitL "HB"; auto. iSplitL "HD"; auto.
         iIntros (v) "HA". iApply IH. iApply ("HE" with "HA").
+  Qed.
+
+
+  Lemma wp_absorb_out : forall X (e : @NomG atom X) Q,
+      (<absorb> wp e (fun v => <absorb> Q v)) ⊢
+        wp e (fun v => <absorb> Q v).
+  Proof.
+    fix IH 2. destruct e; intros.
+    - iIntros ">HA". iApply "HA".
+    - destruct n; simpl.
+      + iIntros ">HA". iApply "HA".
+      + iIntros "HA" (v). iDestruct (IH with "[HA]") as "$".
+        iDestruct "HA" as ">HA". iApply "HA".
+      + iIntros "HA" (v). iDestruct (IH with "[HA]") as "$".
+        iDestruct "HA" as ">HA". iApply "HA".
+      + iIntros "HA" (v) "HB". iApply IH. iDestruct ("HA") as ">HA".
+        iApply ("HA" with "HB").
+      + iIntros "HA". iSplit.
+        * iApply (wp_consequence with "[HA]").
+          2 : { instantiate (1 := fun v => <absorb> wp (n0 v) (fun v0 => <absorb> Q v0)).
+                iIntros (v) "HA". iApply (IH with "HA"). }
+          iApply (IH with "[HA]"). iDestruct "HA" as ">[HA _]".
+          iModIntro. iApply (wp_consequence with "HA"). auto.
+        * iApply (wp_consequence with "[HA]").
+          2 : { instantiate (1 := fun v => <absorb> wp (n0 v) (fun v0 => <absorb> Q v0)).
+                iIntros (v) "HA". iApply (IH with "HA"). }
+          iApply (IH with "[HA]"). iDestruct "HA" as ">[_ HA]".
+          iModIntro. iApply (wp_consequence with "HA"). auto.
+      + destruct o.
+        * iIntros "HA". iDestruct (bi.absorbingly_sep_r with "HA") as "[$ HA]".
+          iApply (wp_consequence with "[HA]").
+          2 : { instantiate (1 := fun v => <absorb> wp (n0 v) (fun v0 => <absorb> Q v0)).
+                iIntros (v) "HA". iApply (IH with "HA"). }
+          iApply (IH with "[HA]"). iDestruct "HA" as ">HA".
+          iModIntro. iApply (wp_consequence with "HA"). auto.
+        * iIntros "HA" (v). iApply IH. iDestruct "HA" as ">HA". auto.
+      + iIntros "HA".
+        iDestruct (bi.absorbingly_exist with "HA") as (Q') "HA".
+        iExists Q'.
+        iDestruct (bi.absorbingly_sep_r with "HA") as "[$ HA]".
+        iDestruct (bi.absorbingly_sep_r with "HA") as "[#HA HB]".
+        iSplitR. auto. iIntros (res) "HC". iApply IH.
+        iDestruct "HB" as ">HB". iModIntro. iApply ("HB" with "HC").
   Qed.
 
   Notation "'{{' P } } e {{ v ; Q } }" := (⊢  P -∗ wp e (fun v => Q) )

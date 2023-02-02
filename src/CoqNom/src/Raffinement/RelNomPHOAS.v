@@ -1351,54 +1351,22 @@ Lemma cond_adequate {Y} (hb : VAL Bool) h :
                   end) (cond b e) (proj1_sig (cond_adequate_sig hb h)) data s.
 Proof. intros. destruct cond_adequate_sig. eauto. Qed.
 
-
+(* TODO : définir une relation entre vecteurs. *)
 Definition VECTOR_spec {X Y}
   (R : X -> type_to_Type Y -> Prop) (vecx : VECTOR X) (vecy : type_to_Type (Vector Y)) :=
-  (forall n, List.In n (List.split (vector_to_list vecx)).1 <->
-          List.In n (List.split (vector_to_list vecy)).1) /\
-    forall n x y,
-      List.In (n,x) (vector_to_list vecx) ->
-      List.In (n,y) (vector_to_list vecy) ->
-      R x y.
-
-Lemma test : forall X Y (R : X -> type_to_Type Y -> Prop) v0 v1 r0 r1,
-    R r0 r1 ->
-    VECTOR_spec R v0 v1 ->
-    VECTOR_spec R (add v0 r0) (add v1 r1).
-Proof.
-  intros.
-  destruct H0. split.
-  - intro. split; intros.
-    + destruct v0. destruct v1. destruct x. destruct x0. destruct v. destruct v0.
-      simpl in *. subst. unfold add in *. unfold vector_to_list in *. simpl in *.
-Admitted.
+  True%type.
 
 Definition many1_adequate_sig {Y} (h : PHOAS Y) :
   {code | forall X e (R : X -> type_to_Type Y -> Prop) data s,
       (forall t, adequate (fun _ => R) e h data t) ->
       adequate (fun _ => VECTOR_spec R) (many1 e) code data s}.
   eapply exist. intros. unfold many1.
-  step. step. eapply bind_adequate. eapply H. intros.
-  eapply bind_adequate. step. intros. repeat clean_up.
-  eapply (ite_adequate _ _ (EBin EEq (Var vres) (Var vres1))). subst. repeat econstructor.
-  - intro. step.
-  - intro.
-    eapply (repeat_adequate _ _ (Const ENone) (EBin EAddVec (EUna EMake (Const (ENat 2))) (Var vres0))).
-    1-3 : subst; repeat econstructor; eauto.
-    inversion_clear H2.  simpl in *. auto. inversion_clear H3.
-    inversion_clear H2.  simpl in *. auto. inversion_clear H3.
-    intros. edestruct add_vector_list. erewrite H4 in H2.
-    edestruct add_vector_list. erewrite H5 in H3. clear H4 H5.
-    simpl in *. destruct H2; try contradiction. inversion H2. subst.
-    destruct H3; try contradiction. inversion H3. subst. auto.
-    intros. eapply bind_adequate. step. intros.
-    eapply bind_adequate. eapply H. intros.
-    eapply bind_adequate. step. intros. repeat clean_up.
-    eapply (ite_adequate _ _ (EBin EEq (Var vres2) (Var vres4))). subst. repeat econstructor.
-    intro. step.
-    intro. eapply (ret_adequate _ _ _ _ (EBin EAddVec (Var rv) (Var vres3))).
-    repeat econstructor; eauto.
-    eapply test; auto.
+  repeat step. eapply H.
+  eapply (repeat_adequate _ _ (Const ENone) _ _ (EBin EAddVec (EUna EMake (Const (ENat 2))) (Var vres0))).
+  1-3 : subst; repeat econstructor; eauto.
+  intros. repeat step. eapply H.
+  eapply (ret_adequate _ _ _ (EBin EAddVec (Var rv) (Var vres3))).
+  repeat econstructor; eauto. trivial.
 Defined.
 
 Lemma many1_adequate {Y} h :

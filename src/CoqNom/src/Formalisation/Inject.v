@@ -4,10 +4,10 @@ From SepLogic Require Export SepBasicCore SepSet.
 
 Open Scope N_scope.
 
-Equations seq (start len : N) : list N by wf (N.to_nat len) lt:=
+Equations seq (start len : N) : list positive by wf (N.to_nat len) lt:=
   seq start 0 := nil;
   seq start pos :=
-    start :: seq (N.succ start) (N.pred pos).
+    encode start :: seq (N.succ start) (N.pred pos).
 Next Obligation.
   intros. lia.
 Defined.
@@ -28,25 +28,27 @@ Proof.
     f_equal. lia.
 Qed.
 
-Lemma in_seq : ∀ len start n : N, List.In n (seq start len) ↔ start <= n < start + len.
+Lemma in_seq : ∀ (len start : N) (n : positive),
+    List.In n (seq start len) ↔ exists m, start <= m < start + len /\ decode n = Some m.
   intros. revert start. induction len as [|len IHlen] using N.peano_ind; simpl; intros start.
   - rewrite N.add_0_r. split;[easy|].
-    intros (H,H'). apply (N.lt_irrefl start).
-    eapply N.le_lt_trans; eassumption.
+    intros (m&(P&H)&H'). apply (N.lt_irrefl start).
+    eapply N.le_lt_trans. eauto. eassumption.
   - rewrite <- N.succ_pos_spec. rewrite seq_equation_2.
     rewrite N.succ_pos_spec. rewrite N.pred_succ. split.
     + intros [P|P]; subst; intuition.
-      * lia.
-      * eapply IHlen in P. lia.
-      * eapply IHlen in P. lia.
-    + intros [P0 P1]. destruct (start =? n) eqn:?.
-      * eapply N.eqb_eq in Heqb. constructor. auto.
-      * right. eapply N.eqb_neq in Heqb. eapply IHlen. lia.
+      * exists start. split. lia. apply decode_encode.
+      * eapply IHlen in P as [m [P0 P1]]. exists m. split. lia. assumption.
+    + intros [m [[P0 P1] P2]]. destruct (Pos.eq_dec (encode start) n).
+      * subst. rewrite decode_encode in P2. inversion P2. subst. constructor. auto.
+      * right. eapply IHlen. exists m. split; auto.
+        unfold N_countable in *. unfold encode in n0. unfold decode in P2.
+        destruct start; simpl in *; destruct n; simpl in *; inversion P2; lia.
 Qed.
 
 Definition inject_aux start n := seq start (n - start).
 
-Definition inject (start : N) (fin : N) : gset N :=
+Definition inject (start : N) (fin : N) : gset positive :=
   list_to_set (inject_aux start fin).
 
 Definition injectSL (start : N) (fin : N) := [∗ set] n ∈ inject start fin, & n.
@@ -69,8 +71,8 @@ Proof.
     2-6 : lia. rewrite N.add_comm. rewrite seq_app. f_equal. f_equal. lia.
 Qed.
 
-Lemma inject_add_aux : forall (l1 l2 : list N),
-    l1 ## l2 -> (list_to_set (l1 ++ l2) : gset N) = list_to_set l1 ∪ list_to_set l2.
+Lemma inject_add_aux : forall (l1 l2 : list positive),
+    l1 ## l2 -> (list_to_set (l1 ++ l2) : gset positive) = list_to_set l1 ∪ list_to_set l2.
 Proof.
   induction l1; intros.
   - simpl. rewrite union_empty_l_L. reflexivity.
@@ -86,7 +88,7 @@ Proof.
   unfold inject, inject_aux.
   repeat intro. apply elem_of_list_to_set. apply elem_of_list_to_set in H0.
   apply elem_of_list_In. apply elem_of_list_In in H0.
-  apply in_seq in H0. apply in_seq. lia.
+  apply in_seq in H0 as [m [P0 P1]]. apply in_seq. exists m. split; auto. lia.
 Qed.
 
 Lemma inject_mono_l : forall s1 s2 f ,
@@ -97,42 +99,43 @@ Proof.
   unfold inject, inject_aux.
   repeat intro. apply elem_of_list_to_set. apply elem_of_list_to_set in H0.
   apply elem_of_list_In. apply elem_of_list_In in H0.
-  apply in_seq in H0. apply in_seq. lia.
+  apply in_seq in H0 as [m [P0 P1]]. apply in_seq. exists m. split; auto. lia.
 Qed.
 
 Lemma inject_sup_aux_aux : forall l x,
-    x ∈ (list_to_set l : gset N) ->
+    encode x ∈ (list_to_set l : gset positive) ->
     x ∈ l.
 Proof.
   induction l.
   - intros. inversion H.
-  - intros. destruct (N.eq_dec x a).
+  - intros. destruct (Pos.eq_dec x a).
     + subst. constructor.
     + constructor. apply IHl.
       rewrite list_to_set_cons in H. apply elem_of_union in H.
       destruct H. apply elem_of_singleton_1 in H. subst. contradiction. apply H.
 Qed.
 
-Lemma inject_sup_aux : forall l1 l2,
-    (list_to_set l1 : gset N) ⊆ list_to_set l2 ->
-    l1 ⊆ l2.
-Proof.
-  induction l1 as [ | x l1 IH].
-  - intros. apply list_subseteq_nil.
-  - intros. intros x' IHl1. inversion IHl1.
-    + subst. assert (x ∈ (list_to_set (x :: l1) : gset N)).
-      * rewrite list_to_set_cons. apply elem_of_union_l. eapply elem_of_singleton_2; auto.
-      * apply H in H0. apply inject_sup_aux_aux. apply H0.
-    + subst. apply IH; auto.
-      intros v vIH. apply H. rewrite list_to_set_cons. apply elem_of_union_r. auto.
-Qed.
+(* Lemma inject_sup_aux : forall l1 l2, *)
+(*     (list_to_set l1 : gset N) ⊆ list_to_set l2 -> *)
+(*     l1 ⊆ l2. *)
+(* Proof. *)
+(*   induction l1 as [ | x l1 IH]. *)
+(*   - intros. apply list_subseteq_nil. *)
+(*   - intros. intros x' IHl1. inversion IHl1. *)
+(*     + subst. assert (x ∈ (list_to_set (x :: l1) : gset N)). *)
+(*       * rewrite list_to_set_cons. apply elem_of_union_l. eapply elem_of_singleton_2; auto. *)
+(*       * apply H in H0. apply inject_sup_aux_aux. apply H0. *)
+(*     + subst. apply IH; auto. *)
+(*       intros v vIH. apply H. rewrite list_to_set_cons. apply elem_of_union_r. auto. *)
+(* Qed. *)
 
-Lemma inject_add_disjoint : forall v fin, {[v]} ## inject (N.succ v) fin.
+Lemma inject_add_disjoint : forall v fin, {[encode v]} ## inject (N.succ v) fin.
 Proof.
   unfold inject, inject_aux. repeat intro.
   apply elem_of_singleton_1 in H. subst.
   apply inject_sup_aux_aux in H0.
-  apply elem_of_list_In in H0. eapply in_seq in H0. lia.
+  apply elem_of_list_In in H0. eapply in_seq in H0 as [m [P0 P1]].
+  rewrite decode_encode in P1. inversion P1. lia.
 Qed.
 
 Lemma inject_aux_disjoint : forall start int fin, inject_aux start int ## inject_aux int fin.
@@ -140,7 +143,8 @@ Proof.
   intros start int fin p H H0.
   unfold inject_aux in H. unfold inject_aux in H0.
   apply elem_of_list_In in H. apply elem_of_list_In in H0.
-  apply in_seq in H. apply in_seq in H0. lia.
+  apply in_seq in H as [m [P0 P1]]. apply in_seq in H0 as [n [P2 P3]].
+  rewrite P1 in P3. inversion P3. lia.
 Qed.
 
 Lemma inject_disjoint : forall start int fin, inject start int ## inject int fin.
@@ -148,12 +152,13 @@ Proof.
   unfold inject, inject_aux. repeat intro.
   apply inject_sup_aux_aux in H. apply inject_sup_aux_aux in H0.
   apply elem_of_list_In in H. apply elem_of_list_In in H0.
-  apply in_seq in H. apply in_seq in H0. lia.
+  apply in_seq in H as [m [P0 P1]]. apply in_seq in H0 as [n [P2 P3]].
+  rewrite P1 in P3. inversion P3. lia.
 Qed.
 
 Lemma inject_aux_add_head : forall fin start,
     start < fin ->
-    inject start fin = {[start]} ∪ inject (N.succ start) fin.
+    inject start fin = {[encode start]} ∪ inject (N.succ start) fin.
 Proof.
   unfold inject, inject_aux. intros.
   rewrite <- list_to_set_cons. f_equal.
@@ -193,7 +198,7 @@ Qed.
 Lemma injectSL_emp : forall v1 v2, v2 <= v1 -> ⊢ injectSL v1 v2 ∗-∗ emp.
 Proof. intros. unfold injectSL. rewrite inject_empty; auto. Qed.
 
-Lemma inject_singleton : forall pos, inject pos (N.succ pos) = {[pos]}.
+Lemma inject_singleton : forall pos, inject pos (N.succ pos) = {[encode pos]}.
 Proof.
   intro pos. unfold inject, inject_aux.
   assert (N.succ pos - pos = 1) by lia. rewrite H. clear H.

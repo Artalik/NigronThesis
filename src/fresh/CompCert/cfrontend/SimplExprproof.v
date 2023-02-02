@@ -782,11 +782,11 @@ Proof.
     - destruct dst; norm_all.
       + init H0 "HD". core1 "_A" e'. iApply locally_simpl. finish_him.
       + init H0 "HB". core1 "_A" e'. iApply locally_simpl. finish_him.
-      + destruct (Pos.eq_dec x0 (sd_temp sd)) eqn:?; norm_all.
+      + destruct (Pos.eq_dec x0 (sd_temp sd)) eqn:Heqsd; norm_all.
         * init H0 "HB". core1 "_A" e'. iApply locally_simpl. finish_him.
-          instantiate (2 := (sd_temp sd)). rewrite Heqs. iFrame.
+          instantiate (2 := (sd_temp sd)). rewrite Heqsd. iFrame.
         * init H0 "HD". core1 "_A" e'. iApply locally_simpl. finish_him.
-          instantiate (2 := x0). rewrite Heqs. iFrame.
+          instantiate (2 := x0). rewrite Heqsd. iFrame.
     - iDestruct (proj2 tr_expr_invariant with "HD") as "HD". init H0 "HB".
       core1 "_A" e'. iApply (locally_consequence with "HD"). finish_him.
     - iDestruct (tr_simple_expr_nil with "HB [] []") as "%"; auto.
