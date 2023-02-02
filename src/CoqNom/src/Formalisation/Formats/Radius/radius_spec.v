@@ -35,8 +35,8 @@ Proof.
   eapply PARSE.
 Qed.
 
-Lemma parse_radius_zerocopy : parse_ZC parse_radius_data.
+Lemma parse_radius_Safe : parse_Safe parse_radius_data.
 Proof.
-  eapply parse_is_ZC.
+  eapply parse_is_Safe.
   eapply parse_radius_data_spec.
 Qed.
