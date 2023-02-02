@@ -67,37 +67,23 @@ Definition scope_in (s t : span) := set_span s ⊆ set_span t.
 (* =end= *)
 
 (* =ResultWeakZC= *)
-Fixpoint ResultWeakZC (s : span) (r : Result) : Prop :=
+Fixpoint ResultSafe (s : span) (r : Result) : Prop :=
   match r with
   | Value _ => True
   | Span v => scope_in v s
-  | Struct ft => forall e, ResultWeakZC s (ft e)
+  | Struct ft => forall e, ResultSafe s (ft e)
   end.
 (* =end= *)
 
 (* =DecodeurWeakZC= *)
-Definition DecodeurWeakZC (d: Decodeur) := forall s ft,
-    d s = Some ft -> ResultWeakZC s ft.
-(* =end= *)
-
-(* =ResultZC= *)
-Fixpoint ResultZC (s : span) (r : Result) : Prop :=
-  match r with
-  | Value _ => False
-  | Span v => scope_in v s
-  | Struct ft => forall e, ResultZC s (ft e)
-  end.
-(* =end= *)
-
-(* =DecodeurZC= *)
-Definition DecodeurZC (d : Decodeur) := forall s ft,
-    d s = Some ft -> ResultZC s ft.
+Definition DecodeurSafe (d: Decodeur) := forall s ft,
+    d s = Some ft -> ResultSafe s ft.
 (* =end= *)
 
 (** Version tous les spans de la structures sont disjointes deux à deux **)
 
 (* =Result_safe= *)
-Definition Result_safe (r : Result) : Prop := forall s t,
+Definition ResultZC (r : Result) : Prop := forall s t,
     s <> t ->
     s ∈ Result_to_list r ->
     t ∈ Result_to_list r ->
@@ -107,21 +93,21 @@ Definition Result_safe (r : Result) : Prop := forall s t,
 (** Version SL **)
 
 (* =Result_safeSL= *)
-Definition Result_safeSL (r : Result) : iProp :=
+Definition ResultZCSL (r : Result) : iProp :=
   [∗ list] v ∈ Result_to_list r, IsFresh v.
 (* =end= *)
 
 (* =safe_bridge= *)
-Theorem safe_bridge : forall (r : Result), Result_safeSL r ⊢ ⌜ Result_safe r ⌝.
+Theorem safe_bridge : forall (r : Result), ResultZCSL r ⊢ ⌜ ResultZC r ⌝.
 (* =end= *)
 Proof.
-  unfold Result_safe. induction r; simpl; intros.
+  unfold ResultZC. induction r; simpl; intros.
   - iIntros "HA". iPureIntro. intros s t NEQ F. inversion F.
   - iIntros "HA". iPureIntro. intros t0 t1 NEQ INt0 INt1.
     eapply elem_of_list_singleton in INt0. eapply elem_of_list_singleton in INt1.
     subst. contradiction.
   - iIntros "HA" (s t NEQ INs INt).
-    unfold Result_safeSL. simpl.
+    unfold ResultZCSL. simpl.
     eapply elem_of_list_lookup_1 in INs as [Is Ps].
     eapply elem_of_list_lookup_1 in INt as [It Pt].
     iDestruct (big_sepL_delete with "HA") as "[Hs HA]". eapply Ps.
@@ -132,5 +118,6 @@ Proof.
 Qed.
 
 (* =DecodeurZC_safe= *)
-Definition DecodeurZC_safe (d : Decodeur) :=
-  forall s ft, d s = Some ft -> Result_safe ft.
+Definition DecodeurZC (d : Decodeur) :=
+  forall s ft, d s = Some ft -> ResultZC ft.
+(* =end= *)
